@@ -1,0 +1,1120 @@
+{
+    "ROLE_DICT": {
+        "wolf": {
+            "name": "狼人",
+            "icon": "🐺",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "wolf_king": {
+            "name": "狼王",
+            "icon": "👑",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "white_wolf_king": {
+            "name": "白狼王",
+            "icon": "🐺🤍",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "ghost_rider": {
+            "name": "惡靈騎士",
+            "icon": "💀",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "wolf_beauty": {
+            "name": "狼美人",
+            "icon": "💋",
+            "wakeOrder": [
+                270
+            ]
+        },
+        "blood_moon": {
+            "name": "血月使徒",
+            "icon": "🩸",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "wolf_brother": {
+            "name": "狼兄",
+            "icon": "🐺🐺",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "wolf_brother_little": {
+            "name": "狼弟",
+            "icon": "🐶"
+        },
+        "awaken_wolf_king": {
+            "name": "覺醒狼王",
+            "icon": "👑✨",
+            "wakeOrder": [
+                230,
+                235
+            ]
+        },
+        "mask_wolf": {
+            "name": "假面",
+            "icon": "🎭",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "wolf_witch": {
+            "name": "狼巫",
+            "icon": "🧙‍♀️",
+            "wakeOrder": [
+                260
+            ]
+        },
+        "wolf_crow": {
+            "name": "狼鴉之爪",
+            "icon": "🦅",
+            "wakeOrder": [
+                205
+            ]
+        },
+        "awaken_wolf_beauty": {
+            "name": "覺醒狼美人",
+            "icon": "💋✨",
+            "wakeOrder": [
+                190
+            ]
+        },
+        "night_mentor": {
+            "name": "寂夜導師",
+            "icon": "🌙",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "eclipse_maid": {
+            "name": "蝕日侍女",
+            "icon": "🌑",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "hidden_wolf": {
+            "name": "隱狼",
+            "icon": "🐺😶‍🌫️",
+            "wakeOrder": [
+                90
+            ]
+        },
+        "trickster": {
+            "name": "詭術師",
+            "icon": "🃏",
+            "wakeOrder": [
+                100
+            ]
+        },
+        "wolf_sorcerer": {
+            "name": "狼術師",
+            "icon": "🧙‍♂️",
+            "wakeOrder": [
+                120
+            ]
+        },
+        "awaken_gargoyle": {
+            "name": "覺醒石像鬼",
+            "icon": "🦇✨",
+            "wakeOrder": [
+                250
+            ]
+        },
+        "time_wolf": {
+            "name": "蝕時狼妃",
+            "icon": "⏳",
+            "wakeOrder": [
+                200
+            ]
+        },
+        "night_noble": {
+            "name": "夜之貴族",
+            "icon": "🧛‍♂️",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "big_bad_wolf": {
+            "name": "大野狼",
+            "icon": "🐺",
+            "wakeOrder": [
+                300
+            ]
+        },
+        "seed_wolf": {
+            "name": "種狼",
+            "icon": "🐺",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "big_grey_wolf": {
+            "name": "大灰狼",
+            "icon": "🐺",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "gargoyle": {
+            "name": "石像鬼",
+            "icon": "🦇",
+            "wakeOrder": [
+                250
+            ]
+        },
+        "nightmare": {
+            "name": "夢魘",
+            "icon": "🌑",
+            "wakeOrder": [
+                140
+            ]
+        },
+        "machine_wolf": {
+            "name": "機械狼",
+            "icon": "🤖",
+            "wakeOrder": [
+                240
+            ]
+        },
+        "villager": {
+            "name": "平民",
+            "icon": "🧑‍🌾"
+        },
+        "alpaca": {
+            "name": "羊駝",
+            "icon": "🦙"
+        },
+        "high_villager": {
+            "name": "高級平民",
+            "icon": "👑"
+        },
+        "shadow_seer": {
+            "name": "燈影預言家",
+            "icon": "🏮",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "seer": {
+            "name": "預言家",
+            "icon": "👁️",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "seer_A": {
+            "name": "預言家A",
+            "icon": "👁️",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "seer_B": {
+            "name": "預言家B",
+            "icon": "👁️",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "witch": {
+            "name": "女巫",
+            "icon": "🧪",
+            "wakeOrder": [
+                290
+            ]
+        },
+        "hunter": {
+            "name": "獵人",
+            "icon": "🎯",
+            "wakeOrder": [
+                330
+            ]
+        },
+        "guard": {
+            "name": "守衛",
+            "icon": "🛡️",
+            "wakeOrder": [
+                150
+            ]
+        },
+        "idiot": {
+            "name": "白痴",
+            "icon": "🤡"
+        },
+        "dreamwalker": {
+            "name": "攝夢人",
+            "icon": "💤",
+            "wakeOrder": [
+                170
+            ]
+        },
+        "magician": {
+            "name": "魔術師",
+            "icon": "🎩",
+            "wakeOrder": [
+                110
+            ]
+        },
+        "knight": {
+            "name": "騎士",
+            "icon": "⚔️"
+        },
+        "old_hooligan": {
+            "name": "老流氓",
+            "icon": "👴"
+        },
+        "grave_keeper": {
+            "name": "守墓人",
+            "icon": "🪦"
+        },
+        "demon_hunter": {
+            "name": "獵魔人",
+            "icon": "🏹"
+        },
+        "psychic": {
+            "name": "通靈師",
+            "icon": "🔮",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "awaken_seer": {
+            "name": "覺醒預言家",
+            "icon": "👁️✨",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "phantom": {
+            "name": "尋香魅影",
+            "icon": "🌸",
+            "wakeOrder": [
+                130
+            ]
+        },
+        "awaken_hunter": {
+            "name": "覺醒獵人",
+            "icon": "🎯✨",
+            "wakeOrder": [
+                330
+            ]
+        },
+        "awaken_witch": {
+            "name": "覺醒女巫",
+            "icon": "🧪✨",
+            "wakeOrder": [
+                290,
+                292
+            ]
+        },
+        "dancer": {
+            "name": "舞者",
+            "icon": "💃"
+        },
+        "pure_white": {
+            "name": "純白之女",
+            "icon": "🕊️",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "alchemist": {
+            "name": "煉金魔女",
+            "icon": "⚗️",
+            "wakeOrder": [
+                160
+            ]
+        },
+        "day_scholar": {
+            "name": "白晝學者",
+            "icon": "☀️"
+        },
+        "light_count": {
+            "name": "流光伯爵",
+            "icon": "🧛"
+        },
+        "bear": {
+            "name": "熊",
+            "icon": "🐻",
+            "wakeOrder": [
+                340
+            ]
+        },
+        "pufferfish": {
+            "name": "河豚",
+            "icon": "🐡"
+        },
+        "white_cat": {
+            "name": "白貓",
+            "icon": "🐱"
+        },
+        "sequence_prince": {
+            "name": "定序王子",
+            "icon": "🤴"
+        },
+        "awaken_dreamwalker": {
+            "name": "覺醒攝夢人",
+            "icon": "💤✨",
+            "wakeOrder": [
+                170
+            ]
+        },
+        "awaken_idiot": {
+            "name": "覺醒白痴",
+            "icon": "🤡✨",
+            "wakeOrder": [
+                180
+            ]
+        },
+        "crow": {
+            "name": "烏鴉",
+            "icon": "🐦‍⬛",
+            "wakeOrder": [
+                320
+            ]
+        },
+        "little_girl": {
+            "name": "小女孩",
+            "icon": "👧"
+        },
+        "rust_sword_knight": {
+            "name": "鏽劍騎士",
+            "icon": "🗡️"
+        },
+        "diviner": {
+            "name": "占卜師",
+            "icon": "🔮",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "real_fox": {
+            "name": "狐狸",
+            "icon": "🦊",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "thief": {
+            "name": "盜賊",
+            "icon": "🦹",
+            "wakeOrder": [
+                10
+            ]
+        },
+        "cupid": {
+            "name": "邱比特",
+            "icon": "👼",
+            "wakeOrder": [
+                20
+            ]
+        },
+        "ghost_bride": {
+            "name": "鬼魅新娘",
+            "icon": "👰‍♀️",
+            "wakeOrder": [
+                60,
+                65
+            ]
+        },
+        "wild_child": {
+            "name": "野孩子",
+            "icon": "👶",
+            "wakeOrder": [
+                40
+            ]
+        },
+        "awaken_lonely_girl": {
+            "name": "覺醒孤獨少女",
+            "icon": "👧✨",
+            "wakeOrder": [
+                50
+            ]
+        },
+        "curse_fox": {
+            "name": "咒狐",
+            "icon": "🦊",
+            "wakeOrder": [
+                220
+            ]
+        },
+        "half_blood": {
+            "name": "混血兒",
+            "icon": "🩸",
+            "wakeOrder": [
+                30
+            ]
+        },
+        "black_market": {
+            "name": "黑市商人",
+            "icon": "🛍️",
+            "wakeOrder": [
+                280
+            ]
+        },
+        "miracle_merchant": {
+            "name": "奇蹟商人",
+            "icon": "🎁",
+            "wakeOrder": [
+                280
+            ]
+        },
+        "fox": {
+            "name": "子狐",
+            "icon": "🦊"
+        }
+    },
+    "BOARD_CONFIGS": {
+        "8": [
+            {
+                "id": "8_ragnarok",
+                "name": "諸神黃昏 (狼王/白狼王/惡靈騎士｜預/女/獵/守/白)",
+                "roles": {
+                    "wolf_king": 1,
+                    "white_wolf_king": 1,
+                    "ghost_rider": 1,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "idiot": 1
+                }
+            }
+        ],
+        "9": [
+            {
+                "id": "9_standard",
+                "name": "經典 (3小狼｜3民｜預/女/獵)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1
+                }
+            }
+        ],
+        "10": [
+            {
+                "id": "10_standard",
+                "name": "經典 (3小狼｜4民｜預/女/獵)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1
+                }
+            },
+            {
+                "id": "10_idiot",
+                "name": "白痴 (3小狼｜3民｜預/女/獵/白)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "idiot": 1
+                }
+            },
+            {
+                "id": "10_hidden_knight",
+                "name": "隱狼騎士 (2小狼/隱狼｜3民｜預/女/獵/騎)",
+                "roles": {
+                    "wolf": 2,
+                    "hidden_wolf": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "knight": 1
+                }
+            },
+            {
+                "id": "10_blood_moon_hunter",
+                "name": "血月獵魔 (2小狼/血月使徒｜3民｜預/女/白/獵魔人)",
+                "roles": {
+                    "wolf": 2,
+                    "blood_moon": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "idiot": 1,
+                    "demon_hunter": 1
+                }
+            },
+            {
+                "id": "10_nightmare_dreamwalker",
+                "name": "夢魘攝夢 (2小狼/夢魘｜3民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 2,
+                    "nightmare": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "10_half_blood",
+                "name": "混血兒 (3小狼｜3民｜預/女/獵｜混血兒)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "half_blood": 1
+                }
+            }
+        ],
+        "12": [
+            {
+                "id": "12_classic",
+                "name": "經典 (4小狼｜4民｜預/女/獵/白)",
+                "roles": {
+                    "wolf": 4,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "idiot": 1
+                }
+            },
+            {
+                "id": "12_guard",
+                "name": "狼王守衛 (3小狼/狼王｜4民｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            },
+            {
+                "id": "12_brothers",
+                "name": "狼兄弟黑市 (2小狼/狼兄/狼弟｜4民｜預/女/守｜黑市商人)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_brother": 1,
+                    "wolf_brother_little": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "black_market": 1
+                }
+            },
+            {
+                "id": "12_miracle",
+                "name": "覺醒狼王奇商 (3小狼/覺醒狼王｜4民｜預/女/攝｜奇蹟商人)",
+                "roles": {
+                    "wolf": 3,
+                    "awaken_wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "dreamwalker": 1,
+                    "miracle_merchant": 1
+                }
+            },
+            {
+                "id": "12_dream",
+                "name": "狼王攝夢人 (3小狼/狼王｜4民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "12_magician",
+                "name": "狼王魔術師 (3小狼/狼王｜4民｜預/女/獵/魔術師)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "magician": 1
+                }
+            },
+            {
+                "id": "12_ghost_rider",
+                "name": "惡靈騎士 (3小狼/惡靈騎士｜4民｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 3,
+                    "ghost_rider": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            },
+            {
+                "id": "12_white_knight",
+                "name": "白狼王騎士 (3小狼/白狼王｜4民｜預/女/守/騎)",
+                "roles": {
+                    "wolf": 3,
+                    "white_wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "knight": 1
+                }
+            },
+            {
+                "id": "12_beauty_knight",
+                "name": "狼美人騎士 (3小狼/狼美人｜4民｜預/女/守/騎)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_beauty": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "knight": 1
+                }
+            },
+            {
+                "id": "12_beauty_hooligan",
+                "name": "狼美人老流氓 (3小狼/狼美人｜3民/老流氓｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_beauty": 1,
+                    "villager": 3,
+                    "old_hooligan": 1,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            },
+            {
+                "id": "12_gargoyle",
+                "name": "石像鬼守墓人 (3小狼/石像鬼｜4民｜預/女/獵/守墓人)",
+                "roles": {
+                    "wolf": 3,
+                    "gargoyle": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "grave_keeper": 1
+                }
+            },
+            {
+                "id": "12_blood_moon",
+                "name": "血月獵魔人 (3小狼/血月使徒｜4民｜預/女/白/獵魔人)",
+                "roles": {
+                    "wolf": 3,
+                    "blood_moon": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "idiot": 1,
+                    "demon_hunter": 1
+                }
+            },
+            {
+                "id": "12_nightmare",
+                "name": "夢魘攝夢 (3小狼/夢魘｜4民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 3,
+                    "nightmare": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "12_shadow",
+                "name": "燈影 (3小狼/狼王｜3民/燈影預言家｜預/女/守/騎)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 3,
+                    "shadow_seer": 1,
+                    "seer_A": 1,
+                    "seer_B": 1,
+                    "witch": 1,
+                    "guard: ": 1,
+                    "knight": 1
+                }
+            },
+            {
+                "id": "12_machine_wolf",
+                "name": "通靈師機械狼 (3小狼/機械狼｜4民｜女/獵/守/通靈師)",
+                "roles": {
+                    "wolf": 3,
+                    "machine_wolf": 1,
+                    "villager": 4,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "psychic": 1
+                }
+            },
+            {
+                "id": "12_awaken_seer",
+                "name": "覺醒預言家 (3小狼/尋香魅影｜4民｜女/獵/守/覺醒預言家)",
+                "roles": {
+                    "wolf": 3,
+                    "phantom": 1,
+                    "villager": 4,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "awaken_seer": 1
+                }
+            },
+            {
+                "id": "12_awaken_hunter",
+                "name": "覺醒獵人 (3小狼/覺醒狼美人｜4民｜預/女/白/覺醒獵人)",
+                "roles": {
+                    "wolf": 3,
+                    "awaken_wolf_beauty": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "idiot": 1,
+                    "awaken_hunter": 1
+                }
+            },
+            {
+                "id": "12_awaken_witch",
+                "name": "覺醒女巫 (3小狼/覺醒狼王｜4民｜預/獵/守/覺醒女巫)",
+                "roles": {
+                    "wolf": 3,
+                    "awaken_wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "awaken_witch": 1
+                }
+            },
+            {
+                "id": "12_dancer",
+                "name": "假面舞會 (3小狼/假面｜4民｜預/女/白/舞者)",
+                "roles": {
+                    "wolf": 3,
+                    "mask_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "idiot": 1,
+                    "dancer": 1
+                }
+            },
+            {
+                "id": "12_pure_white",
+                "name": "純白夜影 (3小狼/狼巫｜4民｜女/獵/守/純白之女)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_witch": 1,
+                    "villager": 4,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "pure_white": 1
+                }
+            },
+            {
+                "id": "12_time_scholar",
+                "name": "時波之亂 (3小狼/寂夜導師｜4民｜預/女/守/白晝學者)",
+                "roles": {
+                    "wolf": 3,
+                    "night_mentor": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "day_scholar": 1
+                }
+            },
+            {
+                "id": "12_eclipse",
+                "name": "獵日逐光 (3小狼/蝕日侍女｜4民｜預/女/攝/流光伯爵)",
+                "roles": {
+                    "wolf": 3,
+                    "eclipse_maid": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "dreamwalker": 1,
+                    "light_count": 1
+                }
+            },
+            {
+                "id": "12_animals",
+                "name": "動物夢境 (3小狼/狼美人｜4羊駝｜熊/河豚/白貓/子狐)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_beauty": 1,
+                    "alpaca": 4,
+                    "bear": 1,
+                    "pufferfish": 1,
+                    "white_cat": 1,
+                    "fox": 1
+                }
+            },
+            {
+                "id": "12_variable_wolf",
+                "name": "百變狼王 (2小狼/狼王｜4民｜預/女/獵/熊/攝)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "bear": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "12_eyeless_night",
+                "name": "無目之夜 (小狼/隱狼/石像鬼/狼鴉之爪｜4民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 1,
+                    "hidden_wolf": 1,
+                    "gargoyle": 1,
+                    "wolf_crow": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "12_magician_trickster",
+                "name": "魔術詭術 (3小狼/詭術師｜4民｜預/女/魔術師/定序王子)",
+                "roles": {
+                    "wolf": 3,
+                    "trickster": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "magician": 1,
+                    "sequence_prince": 1
+                }
+            },
+            {
+                "id": "12_magician_wolf_sorcerer",
+                "name": "狼術魔術 (3小狼/狼術師｜4民｜預/女/獵/魔術師)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_sorcerer": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "magician": 1
+                }
+            },
+            {
+                "id": "12_awaken_dreamwalker_gargoyle",
+                "name": "覺攝覺石 (小狼/狼王/覺石｜4民｜預/女/獵/守墓人/覺攝)",
+                "roles": {
+                    "wolf": 1,
+                    "wolf_king": 1,
+                    "awaken_gargoyle": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "grave_keeper": 1,
+                    "awaken_dreamwalker": 1
+                }
+            },
+            {
+                "id": "12_time_wheel",
+                "name": "永序之輪 (3小狼/蝕時狼妃｜4民｜預/女/守/白)",
+                "roles": {
+                    "wolf": 3,
+                    "time_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "idiot": 1
+                }
+            },
+            {
+                "id": "12_awaken_idiot_noble",
+                "name": "夜之貴族 (3小狼/夜之貴族｜4民｜預/女/獵魔人/覺醒白痴)",
+                "roles": {
+                    "wolf": 3,
+                    "night_noble": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "demon_hunter": 1,
+                    "awaken_idiot": 1
+                }
+            },
+            {
+                "id": "12_crow_hidden",
+                "name": "烏鴉隱狼 (3小狼/隱狼｜4民｜預/女/獵/烏鴉)",
+                "roles": {
+                    "wolf": 3,
+                    "hidden_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "crow": 1
+                }
+            },
+            {
+                "id": "12_little_girl_big_wolf",
+                "name": "女孩與野狼 (3小狼/大野狼｜4民｜女/獵/守/小女孩)",
+                "roles": {
+                    "wolf": 3,
+                    "big_bad_wolf": 1,
+                    "villager": 4,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "little_girl": 1
+                }
+            },
+            {
+                "id": "12_seed_wolf",
+                "name": "種狼 (2小狼/種狼｜4民/高級平民｜女/熊/鏽劍騎士/狐狸)",
+                "roles": {
+                    "wolf": 2,
+                    "seed_wolf": 1,
+                    "villager": 4,
+                    "high_villager": 1,
+                    "witch": 1,
+                    "bear: ": 1,
+                    "rust_sword_knight": 1,
+                    "real_fox": 1
+                }
+            },
+            {
+                "id": "12_big_grey_wolf",
+                "name": "大灰狼 (3小狼/大灰狼｜4民｜預/女/獵/占卜師)",
+                "roles": {
+                    "wolf": 3,
+                    "big_grey_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "diviner": 1
+                }
+            },
+            {
+                "id": "12_mist_crow",
+                "name": "迷霧鴉影 (3小狼/狼鴉之爪｜4民｜預/白/攝/煉金魔女)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_crow": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "idiot": 1,
+                    "dreamwalker": 1,
+                    "alchemist": 1
+                }
+            },
+            {
+                "id": "12_thief_cupid",
+                "name": "盜賊邱比特 (2小狼/狼王｜5民｜預/女/獵/白｜盜賊/邱比特)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_king": 1,
+                    "villager": 5,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "idiot": 1,
+                    "thief": 1,
+                    "cupid": 1
+                }
+            },
+            {
+                "id": "12_crow_fox",
+                "name": "烏鴉咒狐 (2小狼/狼王｜4民｜預/女/獵/烏鴉｜咒狐)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "crow": 1,
+                    "curse_fox": 1
+                }
+            },
+            {
+                "id": "12_awaken_lonely_girl",
+                "name": "覺醒少女 (4小狼｜3民｜預/女/獵/攝｜覺醒孤獨少女)",
+                "roles": {
+                    "wolf": 4,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1,
+                    "awaken_lonely_girl": 1
+                }
+            },
+            {
+                "id": "12_wild_child",
+                "name": "野孩子 (3小狼｜4民｜預/女/獵/守｜野孩子)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "wild_child": 1
+                }
+            },
+            {
+                "id": "12_ghost_bride",
+                "name": "鬼魅新娘 (2小狼/狼王｜4民｜預/女/獵/守｜鬼魅新娘)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "ghost_bride": 1
+                }
+            }
+        ]
+    }
+}

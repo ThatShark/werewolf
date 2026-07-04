@@ -1,0 +1,246 @@
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #1a1a2e;
+    color: #fff;
+    font-family: '微軟正黑體', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    text-align: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 號碼鍵盤網格 */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.num-btn {
+    background-color: #24345e;
+    color: white;
+    border: 2px solid #0f3460;
+    border-radius: 12px;
+    padding: 20px 0;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.num-btn.selected {
+    background-color: #e94560;
+    border-color: #fff;
+    transform: scale(1.1);
+}
+
+.flex-btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.primary-btn { background-color: #e94560; color: white; }
+.secondary-btn { background-color: #0f3460; color: white; }
+.special-btn { background-color: #4b0082; color: white; } /* 毒藥用紫色 */
+.text-btn { background-color: transparent; color: #a2a8d3; border: 1px solid #a2a8d3;}
+
+/* 新增的設定區塊樣式 */
+.game-settings {
+    background-color: #24345e;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.game-settings label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    color: #a2a8d3;
+}
+
+.game-settings select {
+    margin-top: 5px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: #16213e;
+    color: white;
+    border: 1px solid #4b5563;
+    font-size: 16px;
+}
+
+.checkbox-label {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px !important;
+    color: #fff !important;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #e94560;
+}
+
+/* 身分設定按鈕樣式 */
+.role-btn {
+    background-color: #24345e;
+    color: white;
+    border: 2px solid #0f3460;
+    border-radius: 8px;
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.role-btn .seat-num {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.role-btn .role-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* 不同陣營的顏色提示 */
+.role-btn[data-role="wolf"] { border-color: #e94560; color: #ff7b93; }
+.role-btn[data-role="villager"] { border-color: #a2a8d3; }
+.role-btn[data-role="seer"] { border-color: #fca311; color: #fca311; }
+.role-btn[data-role="witch"] { border-color: #4b0082; color: #d8bfd8; }
+.role-btn[data-role="hunter"] { border-color: #00fa9a; color: #00fa9a; }
+
+/* --- 新增：彈出視窗 (Modal) 樣式 --- */
+.modal {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* 半透明黑底屏蔽背景 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background-color: #16213e;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 350px;
+    border: 2px solid #24345e;
+    text-align: center;
+}
+
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.role-select-btn {
+    background-color: #24345e;
+    color: white;
+    border: 1px solid #4b5563;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.role-select-btn:hover {
+    background-color: #e94560;
+    border-color: #fff;
+}
+
+/* --- 修改：身分按鈕狀態 --- */
+.role-btn[data-status="unset"] {
+    border-color: #4b5563;
+    color: #a2a8d3;
+    background-color: transparent;
+}
+
+.role-btn[data-status="set"] {
+    border-color: #00ff88;
+    color: #00ff88;
+    background-color: #0f3460;
+}
+
+/* --- 新增：剩餘身分指示器樣式 --- */
+.remaining-container {
+    background: #24345e;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.remaining-badge {
+    background: #16213e;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    border: 1px solid #4b5563;
+    color: #fff;
+    transition: 0.2s;
+}
+
+/* 該職業發完時的狀態 */
+.remaining-badge.zero {
+    border-color: #00ff88;
+    color: #00ff88;
+    background: #0f3460;
+    opacity: 0.7;
+}
+
+/* 彈窗按鈕禁用狀態 */
+.role-select-btn:disabled {
+    background-color: #1a1a2e;
+    color: #4b5563;
+    border-color: #1a1a2e;
+    cursor: not-allowed;
+}
