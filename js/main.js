@@ -332,7 +332,6 @@ export function runNextNightRole() {
             } else {
                 nightInstruction.textContent = "請選擇你要毒殺的號碼：";
             }
-            btnOptionalSkip.textContent = "返回重選"; btnOptionalSkip.classList.remove('hidden');
         };
         btnSkip.onclick = () => {
             document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
@@ -896,12 +895,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s.currentStage === 'wolf' && btnOptionalSkip.textContent === "返回選單") {
             resetSelections(); numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
             btnOptionalSkip.classList.add('hidden'); btnConfirmAction.classList.add('hidden'); s.isSeedWolfInfecting = false; return;
-        }
-        if ((s.currentStage === 'witch' || s.currentStage === 'awaken_witch') && btnOptionalSkip.textContent === "返回重選") {
-            resetSelections(); numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
-            btnOptionalSkip.classList.add('hidden'); btnConfirmAction.classList.add('hidden'); s.awakenWitchStep = null;
-            nightInstruction.textContent = "請選擇你要使用的藥水：";
-            return;
         }
 
         resetSelections();

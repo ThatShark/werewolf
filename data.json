@@ -313,10 +313,7 @@
         },
         "awaken_hunter": {
             "name": "覺醒獵人",
-            "icon": "🎯✨",
-            "wakeOrder": [
-                330
-            ]
+            "icon": "🎯✨"
         },
         "awaken_witch": {
             "name": "覺醒女巫",
