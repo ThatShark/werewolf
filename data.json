@@ -352,10 +352,7 @@
         },
         "bear": {
             "name": "熊",
-            "icon": "🐻",
-            "wakeOrder": [
-                340
-            ]
+            "icon": "🐻"
         },
         "pufferfish": {
             "name": "河豚",
@@ -490,6 +487,43 @@
         }
     },
     "BOARD_CONFIGS": {
+        "6": [
+            {
+                "id": "6_standard",
+                "name": "經典 (2小狼｜2民｜預/獵)",
+                "roles": {
+                    "wolf": 2,
+                    "villager": 2,
+                    "seer": 1,
+                    "hunter": 1
+                }
+            },
+            {
+                "id": "6_standard2",
+                "name": "經典II (2小狼｜2民｜預/守)",
+                "roles": {
+                    "wolf": 2,
+                    "villager": 2,
+                    "seer": 1,
+                    "guard": 1
+                }
+            }
+        ],
+        "7": [
+            {
+                "id": "7_survivor",
+                "name": "生還者 (小狼/白狼王｜1民｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 1,
+                    "white_wolf_king": 1,
+                    "villager": 1,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            }
+        ],
         "8": [
             {
                 "id": "8_ragnarok",
@@ -503,6 +537,17 @@
                     "hunter": 1,
                     "guard": 1,
                     "idiot": 1
+                }
+            },
+            {
+                "id": "8_disaster",
+                "name": "末日狂徒 (3小狼｜2民｜預/守/騎)",
+                "roles": {
+                    "wolf": 3,
+                    "villager": 2,
+                    "seer": 1,
+                    "guard": 1,
+                    "knight": 1
                 }
             }
         ],
@@ -767,18 +812,16 @@
                 }
             },
             {
-                "id": "12_shadow",
-                "name": "燈影 (3小狼/狼王｜3民/燈影預言家｜預/女/守/騎)",
+                "id": "12_nightmare_guard",
+                "name": "夢魘守衛 (3小狼/夢魘｜4民｜預/女/獵/守)",
                 "roles": {
                     "wolf": 3,
-                    "wolf_king": 1,
-                    "villager": 3,
-                    "shadow_seer": 1,
-                    "seer_A": 1,
-                    "seer_B": 1,
+                    "nightmare": 1,
+                    "villager": 4,
+                    "seer": 1,
                     "witch": 1,
-                    "guard": 1,
-                    "knight": 1
+                    "hunter": 1,
+                    "guard": 1
                 }
             },
             {
@@ -831,6 +874,21 @@
                     "hunter": 1,
                     "guard": 1,
                     "awaken_witch": 1
+                }
+            },
+            {
+                "id": "12_shadow",
+                "name": "燈影 (3小狼/狼王｜3民/燈影預言家｜預/女/守/騎)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 3,
+                    "shadow_seer": 1,
+                    "seer_A": 1,
+                    "seer_B": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "knight": 1
                 }
             },
             {

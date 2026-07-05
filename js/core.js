@@ -9,7 +9,7 @@ export const s = {
     witchSaved: false, seerTarget: null, bigBadWolfKillTarget: null, wolfCrowMark: null, machineWolfTarget: null, 
     phantomTargets: [], awakenSeerTargets: [], awakenBeautyTarget: null, phantomKnownWolf: null, 
     spareCards: [], discardedRoles: [], initialThiefSeat: null, thiefChosenRole: null, cupidLovers: [], 
-    merchantTarget: null, merchantItem: null, awakenWitchStep: null, awakenWitchAssistant: null, 
+    merchantTarget: null, merchantItem: null, merchantType: null, awakenWitchStep: null, awakenWitchAssistant: null, 
     alchemistFogTargets: [], alchemistSnakeUsed: false, vwkSeat: null, awakenWolfGunTarget: null,
     halfBloodTarget: null, wildChildTarget: null, lonelyGirlTarget: null, timeWolfTarget: null, 
     awakenIdiotTarget: null, crowTarget: null, seedWolfTarget: null, isSeedWolfInfecting: false, 

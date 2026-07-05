@@ -1,3 +1,4 @@
+// js/night.js
 import { s, wolfFaction, evilRoles, getActualTarget, applyTimeWolfReflection, getStageVoiceName, speak } from './core.js';
 import { runNextNightRole } from './main.js';
 
@@ -39,7 +40,7 @@ export function createNumberPad() {
         if (i === actualCurrentActorSeat) {
             const cannotSelectSelf = [
                 'witch', 'awaken_witch', 'dreamwalker', 'nightmare', 
-                'gargoyle', 'machine_wolf', 'black_market_select', 'miracle_merchant_select', 
+                'gargoyle', 'machine_wolf', 'black_market', 'miracle_merchant', 
                 'crow', 'awaken_dreamwalker', 'ghost_bride', 'ghost_bride_couple',
                 'seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'wolf_witch', 'psychic', 'wolf_beauty'
             ];
@@ -48,6 +49,9 @@ export function createNumberPad() {
         }
         if (s.currentStage === 'awaken_wolf_king_gun' && s.playerRoles[i] !== 'wolf') isDisabled = true;
         if (s.currentStage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='ghost_bride')) || i === s.ghostBrideGroom)) isDisabled = true;
+        
+        // 奇蹟商人的查驗和毒不能對自己，盾可以對自己
+        if (s.currentStage === 'lucky_boy_action' && ['seer', 'poison'].includes(s.merchantItem) && i === actualCurrentActorSeat) isDisabled = true;
 
         if (s.currentStage === 'awaken_gargoyle') {
             let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]));
@@ -77,11 +81,6 @@ export function createNumberPad() {
             if (s.currentStage === 'awaken_witch' && s.awakenWitchStep === 'assistant_target') {
                 resetSelections(); btn.classList.add('selected');
                 s.awakenWitchAssistant = parseInt(i);
-                btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
-                return;
-            }
-            if (['black_market_select', 'miracle_merchant_select'].includes(s.currentStage)) {
-                resetSelections(); btn.classList.add('selected'); s.selectedNumber = i;
                 btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
                 return;
             }
