@@ -3,75 +3,110 @@ import { createNumberPad, resetSelections } from './night.js';
 import { calculateNightDeaths, proceedDayResultRender, handleChainDeaths } from './day.js';
 
 // ==========================================
-// 1. 夜晚陣列排程建構
+// 1. 夜晚陣列排程建構 (基於 data.json 的 wakeOrder)
 // ==========================================
 function buildNightQueue() {
     s.nightQueue = [];
     const activeRoles = Object.values(s.playerRoles);
     let queueList = [];
 
-    const pushStage = (stage, order, seat = null, subLabel = null, isFake = false) => {
-        queueList.push({ stage, order, seat, subLabel, isFake });
-    };
-
-    let addedStages = new Set();
+    // 依照 wakeOrder 將角色分組
+    let orderMap = {};
     activeRoles.forEach(role => {
-        if (addedStages.has(role)) return;
         let orders = s.ROLE_DICT[role]?.wakeOrder;
-        if (orders && orders.length > 0) {
-            if (role === 'ghost_bride') {
-                pushStage('ghost_bride', orders[0]);
-                pushStage('ghost_bride_couple', orders[1]);
-            } else if (role === 'awaken_wolf_king') {
-                pushStage('awaken_wolf_king_gun', orders[0]);
-                pushStage('wolf_gun_confirm', orders[1]);
-            } else if (role === 'awaken_witch') {
-                pushStage('awaken_witch', orders[0]);
-                pushStage('awaken_witch_assign', orders[1]);
-            } else {
-                pushStage(role, orders[0]);
-            }
-            addedStages.add(role);
+        if (orders) {
+            orders.forEach(o => {
+                if (!orderMap[o]) orderMap[o] = new Set();
+                orderMap[o].add(role);
+            });
         }
     });
 
+    // 處理盜賊棄牌的偽裝睜眼
     s.discardedRoles.forEach(role => {
         let orders = s.ROLE_DICT[role]?.wakeOrder;
-        if (orders && ['seer', 'witch', 'hunter', 'cupid'].includes(role)) pushStage(role, orders[0], null, null, true);
+        if (orders && ['seer', 'witch', 'hunter', 'cupid'].includes(role)) {
+            queueList.push({ stage: role, order: orders[0], seat: null, subLabel: null, isFake: true });
+        }
     });
 
-    if (activeRoles.includes('cupid')) pushStage('lovers_meet', 70);
-    if (activeRoles.includes('wolf_brother') && activeRoles.includes('wolf_brother_little')) pushStage('wolf_brother_meet', 80);
-    if (activeRoles.some(r => wolfFaction.includes(r) && r !== 'hidden_wolf' && r !== 'night_noble')) {
-        pushStage(s.currentBoard?.id === '12_animals' ? 'wolf_meet' : 'wolf', 210);
+    let activeOrderArr = Object.keys(orderMap).map(Number).sort((a, b) => a - b);
+
+    // 依序建立每個 wakeOrder 的階段
+    activeOrderArr.forEach(order => {
+        if (order === 292) return;
+        let roles = Array.from(orderMap[order]);
+        let stage = null;
+
+        switch (order) {
+            case 65: stage = 'ghost_bride_couple'; break;
+            case 69: stage = 'ghost_bride_witness'; break;
+            case 70: stage = 'lovers_meet'; break;
+            case 80: stage = 'wolf_brother_meet'; break;
+            case 210: stage = s.currentBoard?.id === '12_animals' ? 'wolf_meet' : 'wolf'; break;
+            case 230: stage = 'awaken_wolf_king_gun'; break;
+            case 235: stage = 'wolf_gun_confirm'; break;
+            case 285: stage = 'lucky_boy_action'; break;
+            case 295: stage = 'awaken_witch_assistant_action'; break;
+            case 360: stage = 'awaken_dreamwalker_result'; break;
+            default: stage = roles[0]; break;
+        }
+
+        if (stage) {
+            queueList.push({ stage, order, seat: null, subLabel: null, isFake: false });
+        }
+    });
+
+    // Notify 狀態通知階段安插
+    if (activeRoles.includes('ghost_bride')) {
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_groom_${i}`, order: 64, seat: null, subLabel: null, isFake: false });
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_witness_${i}`, order: 67, seat: null, subLabel: null, isFake: false });
     }
-    if (activeRoles.includes('miracle_merchant') || activeRoles.includes('black_market')) pushStage('lucky_boy_action', 285);
-    if (activeRoles.includes('awaken_witch')) pushStage('awaken_witch_assistant_action', 295);
-    if (s.vwkSeat) pushStage('variable_wolf_king', 350);
-    if (activeRoles.includes('awaken_dreamwalker')) pushStage('awaken_dreamwalker_result', 360);
-    
-    let notifyPos = 25; 
-    if (activeRoles.includes('ghost_bride')) notifyPos = 68;
-    else if (activeRoles.includes('seed_wolf')) notifyPos = 215;
-    else if (activeRoles.includes('awaken_witch')) notifyPos = 292;
 
-    let needsNotify = activeRoles.some(r => ['cupid', 'black_market', 'miracle_merchant', 'awaken_witch', 'seed_wolf', 'ghost_bride', 'awaken_gargoyle'].includes(r));
-    if (needsNotify) { for (let i = 1; i <= s.totalPlayers; i++) pushStage(`notify_${i}`, notifyPos); }
-    if (activeRoles.includes('ghost_bride')) pushStage('ghost_bride_witness', 69);
-    if (activeRoles.includes('awaken_gargoyle')) { for (let i = 1; i <= s.totalPlayers; i++) pushStage(`notify_end_${i}`, 999); }
+    if (activeRoles.some(r => ['black_market', 'miracle_merchant'].includes(r))) {
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_luckyboy_${i}`, order: 284, seat: null, subLabel: null, isFake: false });
+    }
 
-    if (s.currentBoard?.id === '12_shadow') {
-        queueList = queueList.filter(q => q.stage !== 'seer' && q.stage !== 'shadow_seer');
-        let sA = Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='seer_A') || Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='seer');
-        let sB = Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='seer_B') || Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='shadow_seer');
-        if(sA) pushStage('seer', 310, sA, 'A');
-        if(sB) pushStage('seer', 310, sB, 'B');
-    } else {
-        let seerSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'seer');
-        if (seerSeat) { let sItem = queueList.find(q => q.stage === 'seer'); if (sItem) sItem.seat = seerSeat; }
+    if (activeRoles.includes('awaken_witch')) {
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_assistant_${i}`, order: 294, seat: null, subLabel: null, isFake: false });
+    }
+
+    // 處理其他原有狀態 (例如種狼、覺醒石像鬼、邱比特等)
+    let otherNotifyRoles = activeRoles.some(r => ['cupid', 'seed_wolf', 'awaken_gargoyle'].includes(r));
+    if (otherNotifyRoles) {
+        let baseNotifyPos = activeRoles.includes('seed_wolf') ? 215 : 25;
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_general_${i}`, order: baseNotifyPos, seat: null, subLabel: null, isFake: false });
+    }
+
+    if (activeRoles.includes('awaken_gargoyle')) {
+        for (let i = 1; i <= s.totalPlayers; i++) queueList.push({ stage: `notify_end_${i}`, order: 999, seat: null, subLabel: null, isFake: false });
+    }
+
+    if (s.vwkSeat) {
+        queueList.push({ stage: 'variable_wolf_king', order: 350, seat: null, subLabel: null, isFake: false });
     }
 
     queueList.sort((a, b) => a.order - b.order);
+
+    // 針對預言家 A/B 與特殊查驗角色的座號/名稱綁定修正
+    queueList.forEach(q => {
+        if (q.stage === 'seer' || q.stage === 'shadow_seer' || q.stage === 'seer_A' || q.stage === 'seer_B') {
+            if (q.order === 310) {
+                let sA = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'seer_A');
+                let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'diviner', 'pure_white', 'real_fox', 'psychic', 'awaken_seer'].includes(s.playerRoles[k]));
+                q.seat = sA || seerSeat;
+                if (sA) { q.subLabel = 'A'; q.stage = 'seer'; }
+                else if (seerSeat) { q.stage = s.playerRoles[seerSeat]; }
+            } else if (q.order === 311) {
+                let sB = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'seer_B');
+                let shadow = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'shadow_seer');
+                q.seat = sB || shadow;
+                if (sB) { q.subLabel = 'B'; q.stage = 'seer'; }
+                else if (shadow) { q.stage = 'shadow_seer'; }
+            }
+        }
+    });
+
     s.nightQueue = queueList;
 }
 
@@ -83,15 +118,15 @@ export function showDayResult() {
     document.getElementById('screen-day').classList.remove('hidden');
     document.getElementById('day-skill-section').classList.add('hidden');
     document.getElementById('day-result-content').classList.add('hidden');
-    
+
     let crowPanel = document.getElementById('crow-record-panel');
     let btnShowCrow = document.getElementById('btn-show-crow');
     if (crowPanel) crowPanel.classList.add('hidden');
     if (btnShowCrow) btnShowCrow.classList.add('hidden');
 
     let alchSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'alchemist');
-    let wTarget = s.wolfKillTarget; 
-    
+    let wTarget = s.wolfKillTarget;
+
     const alchemistCallSection = document.getElementById('alchemist-call-section');
     const dayResultContent = document.getElementById('day-result-content');
 
@@ -104,7 +139,7 @@ export function showDayResult() {
             </div>
         `;
         alchemistCallSection.classList.remove('hidden');
-        
+
         document.getElementById('btn-end-speech').onclick = () => {
             let targetText = wTarget ? `【 ${wTarget} 號 】` : `【 無 】`;
             alchemistCallSection.innerHTML = `
@@ -123,22 +158,22 @@ export function showDayResult() {
                     s.primaryKilled = s.primaryKilled.filter(k => k !== parseInt(wTarget));
                     s.chainKilled = [];
                     s.finalKilled = [...s.primaryKilled];
-                    handleChainDeaths(); // 重新推演連鎖死亡
+                    handleChainDeaths();
                     s.alchemistSnakeUsed = true;
                     alchemistCallSection.classList.add('hidden');
                     dayResultContent.classList.remove('hidden');
-                    proceedDayResultRender(); 
+                    proceedDayResultRender();
                 };
             }
             document.getElementById('btn-alch-pass').onclick = () => {
                 alchemistCallSection.classList.add('hidden');
                 dayResultContent.classList.remove('hidden');
-                proceedDayResultRender(); 
+                proceedDayResultRender();
             };
         };
         return;
     }
-    
+
     dayResultContent.classList.remove('hidden');
     proceedDayResultRender();
 }
@@ -149,20 +184,23 @@ export function showDayResult() {
 export function runNextNightRole() {
     const btnConfirmAction = document.getElementById('btn-confirm-action');
     const btnOptionalSkip = document.getElementById('btn-optional-skip');
-    const witchActions = document.getElementById('witch-actions');
-    const skillResult = document.getElementById('skill-result');
-    const hunterStatus = document.getElementById('hunter-status');
     const numberPad = document.getElementById('number-pad');
     const actionPad = document.getElementById('action-pad');
     const nightRoleTitle = document.getElementById('night-role-title');
     const nightInstruction = document.getElementById('night-instruction');
 
-    btnConfirmAction.classList.add('hidden'); btnOptionalSkip.classList.add('hidden');
-    witchActions.classList.add('hidden'); skillResult.classList.add('hidden'); hunterStatus.classList.add('hidden');
-    numberPad.classList.add('hidden'); actionPad.classList.add('hidden');
-    
-    resetSelections(); 
-    s.isShowingResult = false; s.currentRoleFeared = false; s.isFakeWake = false; 
+    let existingCustomPanel = document.getElementById('custom-action-panel');
+    if (existingCustomPanel) existingCustomPanel.remove();
+
+    btnConfirmAction.classList.add('hidden');
+    btnOptionalSkip.classList.add('hidden');
+    numberPad.classList.add('hidden');
+    actionPad.classList.add('hidden');
+    actionPad.innerHTML = '';
+    nightInstruction.innerHTML = "請依照語音指示行動...";
+
+    resetSelections();
+    s.isShowingResult = false; s.currentRoleFeared = false; s.isFakeWake = false;
     s.currentSubLabel = null; s.awakenWitchStep = null; s.isSeedWolfInfecting = false;
 
     if (s.nightQueue.length === 0) {
@@ -172,7 +210,7 @@ export function runNextNightRole() {
         let morningVoice = document.getElementById('setting-sheriff').checked ? "要競選警長的請舉手，三秒後天亮，三、二、一。" : "三秒後天亮，三、二、一。";
         speak(morningVoice, () => {
             if (document.getElementById('setting-sheriff').checked) {
-                document.getElementById('screen-night').classList.add('hidden'); 
+                document.getElementById('screen-night').classList.add('hidden');
                 document.getElementById('screen-sheriff').classList.remove('hidden');
             } else {
                 showDayResult();
@@ -183,13 +221,16 @@ export function runNextNightRole() {
 
     let nextTask = s.nightQueue.shift();
     s.currentStage = nextTask.stage; s.currentActorSeat = nextTask.seat; s.currentSubLabel = nextTask.subLabel; s.isFakeWake = nextTask.isFake;
-    
+
     if (s.isFakeWake) {
         nightRoleTitle.textContent = `🎭 ${s.ROLE_DICT[s.currentStage]?.name}行動 (偽裝)`;
         nightInstruction.textContent = "該身分已被棄掉，模擬睜眼等待中...";
         let waitTime = Math.random() * 2000 + 3000;
-        speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請睜眼。`, () => { 
-            setTimeout(() => { speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請閉眼。`, runNextNightRole); }, waitTime); 
+        speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請睜眼。`, () => {
+            setTimeout(() => {
+                nightInstruction.textContent = "請閉眼等待...";
+                speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請閉眼。`, runNextNightRole);
+            }, waitTime);
         });
         return;
     }
@@ -215,7 +256,7 @@ export function runNextNightRole() {
             let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['eclipse_maid', 'hidden_wolf'].includes(s.playerRoles[k]));
             let hasLG = Object.values(s.playerRoles).includes('little_girl');
             if (hasLG) wSeats.push(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'little_girl'));
-            wSeats.sort((a,b)=>a-b);
+            wSeats.sort((a, b) => a - b);
             nightRoleTitle.textContent = hasLG ? "🐺 狼隊與小女孩行動 (被恐懼)" : "🐺 狼人行動 (被恐懼)";
             nightInstruction.innerHTML = `<span style="color:#e94560;">今晚已被夢魘恐懼，無法刀人。</span><br><br>🐺 睜眼名單：${hasLG ? '【隱藏】' : wSeats.map(id => id + '號').join(', ')}`;
             btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認並閉眼";
@@ -226,12 +267,125 @@ export function runNextNightRole() {
         btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認並閉眼";
         speak(`${roleName}請睜眼。`); return;
     }
-    
+
+    // 初始化號碼鍵盤
     createNumberPad(); numberPad.classList.remove('hidden');
-    
-    // UI 指引文字切換
-    if (s.currentStage === 'wolf_crow') {
-        nightRoleTitle.textContent = "🦅 狼鴉之爪行動"; nightInstruction.textContent = "請選擇你要標記的號碼 (當晚狼隊只能刀此號及其左右兩位)：";
+
+    // ==========================================
+    // 核心分支：各角色動態介面渲染
+    // ==========================================
+    if (s.currentStage === 'witch' || s.currentStage === 'awaken_witch') {
+        let titleName = s.currentStage === 'awaken_witch' ? '覺醒女巫' : '女巫';
+        nightRoleTitle.textContent = `🧪 ${titleName}行動`;
+        nightInstruction.innerHTML = "請選擇你要使用的藥水：";
+        numberPad.classList.add('hidden');
+
+        let target = s.isSeedWolfInfecting ? null : (s.wolfKillTarget ? getActualTarget(parseInt(s.wolfKillTarget)) : null);
+
+        let customPanel = document.createElement('div');
+        customPanel.id = 'custom-action-panel';
+        customPanel.style = "display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 15px;";
+
+        let infoP = document.createElement('p');
+        infoP.style = "color: #ff7b93; font-size: 20px; font-weight: bold; margin-bottom: 15px;";
+        infoP.textContent = target ? `昨晚倒牌的是：【 ${target} 號 】` : `昨晚倒牌的是：【 無 】`;
+        customPanel.appendChild(infoP);
+
+        let btnGroup = document.createElement('div');
+        btnGroup.style = "display: flex; gap: 10px; width: 100%; justify-content: center;";
+
+        let btnSave = document.createElement('button');
+        btnSave.className = 'secondary-btn'; btnSave.textContent = "解藥 (救)";
+        let witchSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'witch' || s.playerRoles[k] === 'awaken_witch');
+        let rule = document.getElementById('setting-witch-rule').checked ? 'can_save' : 'cannot_save';
+        if (target && target === getActualTarget(parseInt(witchSeat)) && rule === 'cannot_save') {
+            btnSave.disabled = true; btnSave.textContent = "解藥 (不可自救)"; btnSave.style.opacity = "0.5";
+        }
+        if (!target) { btnSave.disabled = true; btnSave.style.opacity = "0.5"; }
+
+        let btnPoison = document.createElement('button');
+        btnPoison.className = 'special-btn'; btnPoison.textContent = "毒藥 (毒)";
+
+        let btnSkip = document.createElement('button');
+        btnSkip.className = 'text-btn'; btnSkip.textContent = "不使用";
+
+        btnGroup.appendChild(btnSave); btnGroup.appendChild(btnPoison); btnGroup.appendChild(btnSkip);
+        customPanel.appendChild(btnGroup);
+        numberPad.parentNode.insertBefore(customPanel, numberPad);
+
+        btnSave.onclick = () => {
+            document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+            s.selectedNumber = 'witch_save'; s.selectedNumbersArr = [];
+            btnSave.classList.add('action-selected'); btnPoison.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+            numberPad.classList.add('hidden');
+            btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
+            nightInstruction.textContent = "請選擇你要使用的藥水：";
+        };
+        btnPoison.onclick = () => {
+            document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+            s.selectedNumber = null; s.selectedNumbersArr = [];
+            btnPoison.classList.add('action-selected'); btnSave.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+            numberPad.classList.remove('hidden');
+            btnConfirmAction.classList.add('hidden');
+            if (s.currentStage === 'awaken_witch') {
+                s.awakenWitchStep = 'poison_target'; nightInstruction.textContent = "請選擇你要毒殺的號碼：";
+            } else {
+                nightInstruction.textContent = "請選擇你要毒殺的號碼：";
+            }
+            btnOptionalSkip.textContent = "返回重選"; btnOptionalSkip.classList.remove('hidden');
+        };
+        btnSkip.onclick = () => {
+            document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+            s.selectedNumber = 'skip'; s.selectedNumbersArr = [];
+            btnSkip.classList.add('action-selected'); btnSave.classList.remove('action-selected'); btnPoison.classList.remove('action-selected');
+            numberPad.classList.add('hidden');
+            btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
+            nightInstruction.textContent = "請選擇你要使用的藥水：";
+        };
+
+    } else if (s.currentStage === 'hunter') {
+        nightRoleTitle.textContent = "🎯 獵人行動";
+        nightInstruction.innerHTML = "請確認你今晚的開槍狀態：";
+        numberPad.classList.add('hidden');
+        actionPad.classList.remove('hidden');
+
+        calculateNightDeaths();
+        const hSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'hunter'));
+        let canShoot = !(s.witchPoisonTarget === hSeat || s.chainKilled.includes(hSeat));
+
+        let statusBox = document.createElement('div');
+        statusBox.style = `padding: 20px; background-color: #24345e; border-radius: 8px; width: 100%; text-align: center; border: 2px solid ${canShoot ? '#00ff88' : '#e94560'}; margin: 20px 0;`;
+
+        let statusP = document.createElement('p');
+        statusP.style = "font-size: 18px; margin: 0;"; statusP.textContent = "若今晚倒牌，你的狀態為：";
+        statusBox.appendChild(statusP);
+
+        let valP = document.createElement('p');
+        valP.style = "font-size: 32px; font-weight: bold; margin: 10px 0 0 0;";
+        if (!canShoot) {
+            valP.textContent = "🚫 不能開槍"; valP.style.color = "#e94560";
+        } else {
+            valP.textContent = "🔫 可以開槍"; valP.style.color = "#00ff88";
+        }
+        statusBox.appendChild(valP);
+        actionPad.appendChild(statusBox);
+
+        btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "了解並閉眼";
+
+    } else if (['seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'real_fox', 'psychic', 'wolf_witch', 'gargoyle', 'machine_wolf', 'awaken_seer'].includes(s.currentStage)) {
+        let name = getStageVoiceName(s.currentStage, s.currentSubLabel);
+        let baseRole = s.currentStage.replace('_A', '').replace('_B', '');
+        nightRoleTitle.textContent = `${s.ROLE_DICT[baseRole]?.icon || '🎭'} ${name}行動`;
+
+        let instText = "請選擇你要查驗的對象：";
+        if (s.currentStage === 'machine_wolf') instText = "請選擇你要學習的對象：";
+
+        nightInstruction.innerHTML = instText;
+        btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden');
+
+    } else if (s.currentStage === 'diviner') {
+        nightRoleTitle.textContent = "🔮 占卜師行動";
+        nightInstruction.textContent = "請選擇你要標記的號碼 (當晚狼隊只能刀此號及其左右兩位)：";
         btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden');
     } else if (s.currentStage === 'thief') {
         nightRoleTitle.textContent = "🦹 盜賊行動"; nightInstruction.textContent = "請從兩張底牌中選擇一張 (若有狼陣營必須選狼)：";
@@ -239,25 +393,25 @@ export function runNextNightRole() {
         let hasWolf = s.spareCards.some(r => wolfFaction.includes(r));
         s.spareCards.forEach(role => {
             const b = document.createElement('button'); b.className = 'num-btn'; b.innerHTML = `${s.ROLE_DICT[role].icon} ${s.ROLE_DICT[role].name}`; b.style.width = '120px';
-            if (hasWolf && !wolfFaction.includes(role)) { b.disabled = true; b.style.opacity = '0.3'; } 
-            else { b.onclick = () => { document.querySelectorAll('#action-pad .num-btn').forEach(btn=>btn.classList.remove('selected')); b.classList.add('selected'); s.thiefChosenRole = role; btnConfirmAction.classList.remove('hidden'); }; }
+            if (hasWolf && !wolfFaction.includes(role)) { b.disabled = true; b.style.opacity = '0.3'; }
+            else { b.onclick = () => { document.querySelectorAll('#action-pad .num-btn').forEach(btn => btn.classList.remove('selected')); b.classList.add('selected'); s.thiefChosenRole = role; btnConfirmAction.classList.remove('hidden'); }; }
             actionPad.appendChild(b);
         });
         actionPad.classList.remove('hidden');
     } else if (s.currentStage === 'cupid') {
         nightRoleTitle.textContent = "👼 邱比特行動"; nightInstruction.textContent = "請選擇兩名玩家成為情侶 (可選自己)：";
-    } else if (['half_blood', 'wild_child', 'awaken_lonely_girl', 'awaken_idiot', 'crow', 'ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker'].includes(s.currentStage)) {
+    } else if (['half_blood', 'wild_child', 'awaken_lonely_girl', 'awaken_idiot', 'crow', 'ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker'].includes(s.currentStage)) {
         let baseKey = s.currentStage.replace('_couple', '');
         nightRoleTitle.textContent = `${s.ROLE_DICT[baseKey].icon} ${s.ROLE_DICT[baseKey].name}行動`;
-        if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker'].includes(s.currentStage)) { 
-            nightInstruction.textContent = "請選擇你的目標對象 (必須選擇)："; 
-            if (s.currentStage === 'ghost_bride_couple') nightInstruction.textContent = "請選擇你們的證婚人 (必須選擇)："; 
-        } else { 
-            nightInstruction.textContent = "請選擇你的目標對象 (或跳過)："; btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden'); 
+        if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker'].includes(s.currentStage)) {
+            nightInstruction.textContent = "請選擇你的目標對象 (必須選擇)：";
+            if (s.currentStage === 'ghost_bride_couple') nightInstruction.textContent = "請選擇你們的證婚人 (必須選擇)：";
+        } else {
+            nightInstruction.textContent = "請選擇你的目標對象 (或跳過)："; btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden');
         }
     } else if (s.currentStage === 'ghost_bride_witness') {
-        nightRoleTitle.textContent = "🕊️ 證婚人確認"; 
-        let gb = Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='ghost_bride');
+        nightRoleTitle.textContent = "🕊️ 證婚人確認";
+        let gb = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_bride');
         nightInstruction.innerHTML = `鬼魅新娘是：<span style='color:#e94560;'>${gb}號</span><br>新郎是：<span style='color:#e94560;'>${s.ghostBrideGroom}號</span>`;
         numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認並閉眼";
     } else if (s.currentStage === 'hidden_wolf') {
@@ -269,72 +423,96 @@ export function runNextNightRole() {
         let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['eclipse_maid', 'hidden_wolf'].includes(s.playerRoles[k]));
         let hasLG = Object.values(s.playerRoles).includes('little_girl');
         if (hasLG) wSeats.push(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'little_girl'));
-        wSeats.sort((a,b)=>a-b);
+        wSeats.sort((a, b) => a - b);
         let wText = wSeats.map(id => {
             let tag = '';
             if (id === s.initialThiefSeat?.toString()) tag = (s.playerRoles[id] === 'wolf_king' || s.playerRoles[id] === 'awaken_wolf_king') ? '(盜賊狼王)' : '(盜賊)';
             else if (s.playerRoles[id] !== 'wolf' && s.playerRoles[id] !== 'little_girl') tag = `(${s.ROLE_DICT[s.playerRoles[id]].name})`;
             return `${id}號${tag}`;
         }).join(', ');
-        let crowText = s.wolfCrowMark ? `<br><span style="color:#fca311;">⚠️ 已被標記，只能刀 ${s.wolfCrowMark}號 及左右兩號</span>` : '';
+        let dmText = s.divinerMark ? `<br><span style="color:#fca311;">⚠️ 占卜師已發動技能，只能刀 ${s.divinerMark}號 及左右兩號</span>` : '';
         nightRoleTitle.textContent = hasLG ? "🐺 狼隊與小女孩行動" : "🐺 狼人行動";
-        nightInstruction.innerHTML = `請點擊擊殺目標號碼 (或空刀)：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${hasLG ? '【隱藏】' : wText}</span>${crowText}`;
+
         if (Object.values(s.playerRoles).includes('seed_wolf')) {
-            numberPad.classList.add('hidden'); actionPad.innerHTML = `
-                <button class="primary-btn" id="btn-sw-kill">一般刀人</button><button class="special-btn" id="btn-sw-infect">發動感染</button><button class="secondary-btn" id="btn-sw-skip">空刀 (不擊殺)</button>`;
-            actionPad.classList.remove('hidden');
-            const showBackBtn = () => { actionPad.classList.add('hidden'); numberPad.classList.remove('hidden'); btnOptionalSkip.textContent = "返回選單"; btnOptionalSkip.classList.remove('hidden'); };
-            document.getElementById('btn-sw-kill').onclick = () => { s.isSeedWolfInfecting = false; showBackBtn(); };
-            document.getElementById('btn-sw-infect').onclick = () => { s.isSeedWolfInfecting = true; showBackBtn(); };
-            document.getElementById('btn-sw-skip').onclick = () => { s.wolfKillTarget = null; btnConfirmAction.click(); };
-        } else { btnOptionalSkip.textContent = "空刀 (不擊殺)"; btnOptionalSkip.classList.remove('hidden'); }
-    } else if (s.currentStage === 'witch' || s.currentStage === 'awaken_witch') {
-        let titleName = s.currentStage === 'awaken_witch' ? '覺醒女巫' : '女巫';
-        nightRoleTitle.textContent = `🧪 ${titleName}行動`; numberPad.classList.add('hidden');
-        let target = s.isSeedWolfInfecting ? null : (s.wolfKillTarget ? getActualTarget(parseInt(s.wolfKillTarget)) : null);
-        document.getElementById('witch-actions').classList.remove('hidden');
-        if (!target) {
-            document.getElementById('witch-info').textContent = `昨晚倒牌的是：【 無 】`;
-            document.getElementById('btn-witch-save').disabled = true; document.getElementById('btn-witch-save').style.opacity = "0.5";
+            nightInstruction.innerHTML = "請選擇行動模式：";
+            numberPad.classList.add('hidden');
+
+            let customPanel = document.createElement('div');
+            customPanel.id = 'custom-action-panel';
+            customPanel.style = "display: flex; gap: 10px; width: 100%; justify-content: center; margin-bottom: 15px;";
+
+            let btnKill = document.createElement('button'); btnKill.className = 'primary-btn'; btnKill.textContent = "一般刀人";
+            let btnInfect = document.createElement('button'); btnInfect.className = 'special-btn'; btnInfect.textContent = "發動感染";
+            let btnSkip = document.createElement('button'); btnSkip.className = 'secondary-btn'; btnSkip.textContent = "空刀 (不擊殺)";
+
+            customPanel.appendChild(btnKill); customPanel.appendChild(btnInfect); customPanel.appendChild(btnSkip);
+            numberPad.parentNode.insertBefore(customPanel, numberPad);
+
+            btnKill.onclick = () => {
+                s.isSeedWolfInfecting = false; document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selectedNumber = null;
+                btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+                numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
+                nightInstruction.innerHTML = `請選擇擊殺目標：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${hasLG ? '【隱藏】' : wText}</span>${dmText}`;
+            };
+            btnInfect.onclick = () => {
+                s.isSeedWolfInfecting = true; document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selectedNumber = null;
+                btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+                numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
+                nightInstruction.innerHTML = `請選擇要感染的目標：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${hasLG ? '【隱藏】' : wText}</span>${dmText}`;
+            };
+            btnSkip.onclick = () => {
+                s.isSeedWolfInfecting = false; document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selectedNumber = 'skip';
+                btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected');
+                numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
+                nightInstruction.innerHTML = "請選擇行動模式：";
+            };
         } else {
-            document.getElementById('witch-info').textContent = `昨晚倒牌的是：【 ${target} 號 】`;
-            const witchSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'witch' || s.playerRoles[k] === 'awaken_witch');
-            const rule = document.getElementById('setting-witch-rule').checked ? 'can_save' : 'cannot_save';
-            if (target === getActualTarget(parseInt(witchSeat)) && rule === 'cannot_save') {
-                document.getElementById('btn-witch-save').disabled = true; document.getElementById('btn-witch-save').textContent = "解藥 (不可自救)"; document.getElementById('btn-witch-save').style.opacity = "0.5";
-            } else {
-                document.getElementById('btn-witch-save').disabled = false; document.getElementById('btn-witch-save').textContent = "解藥 (救)"; document.getElementById('btn-witch-save').style.opacity = "1";
-            }
-        }
-    } else if (s.currentStage === 'hunter') {
-        nightRoleTitle.textContent = "🎯 獵人行動"; nightInstruction.textContent = "請確認你今晚的開槍狀態：";
-        numberPad.classList.add('hidden'); document.getElementById('hunter-status').classList.remove('hidden');
-        btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "了解並閉眼";
-        
-        // 預先計算夜晚死亡，提前判斷獵人是否被毒或殉情
-        calculateNightDeaths();
-        const hSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'hunter'));
-        if (s.witchPoisonTarget === hSeat || s.chainKilled.includes(hSeat)) {
-            document.getElementById('hunter-status-text').textContent = "🚫 不能開槍"; document.getElementById('hunter-status-text').style.color = "#e94560";
-        } else {
-            document.getElementById('hunter-status-text').textContent = "🔫 可以開槍"; document.getElementById('hunter-status-text').style.color = "#00ff88";
+            nightInstruction.innerHTML = `請點擊擊殺目標號碼 (或空刀)：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${hasLG ? '【隱藏】' : wText}</span>${dmText}`;
+            btnOptionalSkip.textContent = "空刀 (不擊殺)"; btnOptionalSkip.classList.remove('hidden');
         }
     } else if (s.currentStage.startsWith('notify_')) {
         let seat = parseInt(s.currentStage.split('_').pop());
-        nightRoleTitle.textContent = `${seat}號確認狀態`; nightInstruction.textContent = "請點擊下方按鈕確認狀態：";
-        numberPad.classList.add('hidden'); actionPad.innerHTML = `<button class="primary-btn" id="btn-view-status" style="width:200px;">查看狀態</button>`; actionPad.classList.remove('hidden');
-        document.getElementById('btn-view-status').onclick = () => {
-            actionPad.classList.add('hidden'); let msgs = [];
-            if (s.cupidLovers.includes(seat)) msgs.push("你是情侶 💕");
-            if (s.merchantTarget === seat && !wolfFaction.includes(s.playerRoles[seat])) msgs.push(`你是幸運兒 🎁`);
-            if (s.awakenWitchAssistant === seat) msgs.push(`你是女巫的協助者`);
-            if (s.seedWolfTarget === seat) msgs.push(`你被種狼感染成了狼人！🐺`);
-            if (s.awakenGargoyleTarget === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`);
-            if (s.currentStage.includes('bride') && s.ghostBrideGroom === seat) msgs.push(`你是鬼魅新娘的新郎 🤵`);
-            
-            document.getElementById('skill-result-text').innerHTML = msgs.length ? msgs.join('<br>') : "無特殊狀態";
-            document.getElementById('skill-result').classList.remove('hidden');
-            btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "了解並閉眼";
+        let notifyType = s.currentStage.substring(0, s.currentStage.lastIndexOf('_'));
+
+        nightRoleTitle.textContent = `${seat}號確認狀態`;
+        nightInstruction.textContent = "請點擊下方按鈕確認狀態：";
+        numberPad.classList.add('hidden');
+        actionPad.classList.remove('hidden');
+
+        let btnView = document.createElement('button');
+        btnView.className = 'primary-btn';
+        btnView.style.width = '200px';
+        btnView.textContent = "查看狀態";
+        actionPad.appendChild(btnView);
+
+        btnView.onclick = () => {
+            actionPad.innerHTML = '';
+            let msgs = [];
+
+            // 依據不同時機點的確認環節，推入專屬狀態
+            if (notifyType === 'notify_groom' && s.ghostBrideGroom === seat) msgs.push(`你是鬼魅新娘的新郎 🤵`);
+            if (notifyType === 'notify_witness' && s.ghostBrideWitness === seat) msgs.push(`你是證婚人 🕊️`);
+            if (notifyType === 'notify_luckyboy' && s.merchantTarget === seat && !wolfFaction.includes(s.playerRoles[seat])) msgs.push(`你是幸運兒 🎁`);
+            if (notifyType === 'notify_assistant' && s.awakenWitchAssistant === seat) msgs.push(`你是女巫的協助者`);
+
+            // General 狀態 (共用)
+            if (notifyType === 'notify_general') {
+                if (s.cupidLovers.includes(seat)) msgs.push("你是情侶 💕");
+                if (s.seedWolfTarget === seat) msgs.push(`你被種狼感染成了狼人！🐺`);
+                if (s.awakenGargoyleTarget === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`);
+            }
+
+            let resBox = document.createElement('div');
+            resBox.style = "padding: 20px; background-color: #24345e; border-radius: 8px; width: 100%; text-align: center; border: 2px solid #00ff88; margin: 20px 0;";
+            let txt = document.createElement('p');
+            txt.style = "font-size: 24px; font-weight: bold; margin: 0;";
+            txt.innerHTML = msgs.length ? msgs.join('<br>') : "無特殊狀態";
+            txt.style.color = msgs.length ? "#fca311" : "#00ff88";
+            resBox.appendChild(txt);
+            actionPad.appendChild(resBox);
+
+            btnConfirmAction.classList.remove('hidden');
+            btnConfirmAction.textContent = "了解並閉眼";
         };
     } else {
         btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden');
@@ -348,37 +526,34 @@ export function runNextNightRole() {
 }
 
 // ==========================================
-// 4. DOMContentLoaded 頁面初始化與按鈕綁定
+// 4. DOMContentLoaded 頁面初始化與按鈕監聽
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 綁定 DOM
     const style = document.createElement('style');
-    style.innerHTML = `.action-selected { background-color: #e94560 !important; color: white !important; border: 2px solid #fff !important; transform: scale(1.05); }`;
+    style.innerHTML = `.action-selected { background-color: #51c9c1 !important; color: white !important; border: 2px solid #fff !important; transform: scale(1.05); }`;
     document.head.appendChild(style);
     document.querySelector('#screen-start h1').textContent = '🐺 狼人殺 第一天法官';
 
     const countSelect = document.getElementById('setting-player-count');
     const settingBoard = document.getElementById('setting-board');
-    
+
     const screenStart = document.getElementById('screen-start');
     const screenSetup = document.getElementById('screen-setup');
     const screenNight = document.getElementById('screen-night');
     const screenSheriff = document.getElementById('screen-sheriff');
     const screenDay = document.getElementById('screen-day');
-    
+
     const roleSetupGrid = document.getElementById('role-setup-grid');
     const btnGoSetup = document.getElementById('btn-go-setup');
     const btnBackStart = document.getElementById('btn-back-start');
     const btnStartNight = document.getElementById('btn-start-night');
-    
+
     const btnConfirmAction = document.getElementById('btn-confirm-action');
     const btnOptionalSkip = document.getElementById('btn-optional-skip');
     const btnShowJudge = document.getElementById('btn-show-judge');
     const btnReset = document.getElementById('btn-reset');
     const lockModal = document.getElementById('lock-modal');
     const roleModal = document.getElementById('role-modal');
-    
-    // ✅ 補上在拆分過程中漏掉的警長按鈕宣告
     const btnFinishSheriff = document.getElementById('btn-finish-sheriff');
 
     const judgeModal = document.getElementById('judge-modal');
@@ -386,18 +561,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const judgePlayerStatus = document.getElementById('judge-player-status');
     const judgeNightLog = document.getElementById('judge-night-log');
 
-    // 烏鴉按鈕 UI 配置
+    const actionPad = document.getElementById('action-pad');
+    const numberPad = document.getElementById('number-pad');
+    const nightInstruction = document.getElementById('night-instruction');
+
     const actionContainer = document.createElement('div');
     actionContainer.style = 'display:flex; justify-content:center; gap:10px; margin-bottom:10px;';
     btnShowJudge.parentNode.insertBefore(actionContainer, btnShowJudge);
     actionContainer.appendChild(btnShowJudge);
-    
+
     const btnShowCrow = document.createElement('button');
     btnShowCrow.id = 'btn-show-crow'; btnShowCrow.className = 'text-btn hidden';
     btnShowCrow.style = 'border: 1px solid #4b5563;'; btnShowCrow.textContent = '🐦‍⬛ 查看烏鴉詛咒';
     actionContainer.appendChild(btnShowCrow);
     btnShowJudge.style.marginBottom = '0';
-    
+
     const crowPanel = document.createElement('div');
     crowPanel.id = 'crow-record-panel'; crowPanel.className = 'hidden';
     crowPanel.style = 'background:#24345e; padding:15px; border-radius:8px; margin-bottom:15px; text-align:left;';
@@ -412,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
         crowPanel.classList.toggle('hidden');
     };
 
-    // 讀取外部 JSON
     fetch('data.json')
         .then(res => res.json())
         .then(data => {
@@ -428,12 +605,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             countSelect.addEventListener('change', updateBoards);
             updateBoards();
-        })
-        .catch(err => {
-            console.error(err); alert("資料載入失敗！請確保您是透過網頁伺服器開啟 (因同源政策不支援 file:// 直接讀取 JSON)。");
         });
 
-    // 身份設定視窗
     function openRoleModal() {
         const modalRoleOptions = document.getElementById('modal-role-options');
         modalRoleOptions.innerHTML = '';
@@ -457,17 +630,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let container = document.getElementById('random-role-ui');
         if (s.currentViewingSeat > s.totalPlayers) {
             container.innerHTML = `<h3 style="color:#00ff88;">✅ 所有玩家確認完畢</h3>`;
-            btnStartNight.classList.remove('hidden');
-            return;
+            btnStartNight.classList.remove('hidden'); return;
         }
         let dispRole = s.playerRoles[s.currentViewingSeat];
         container.innerHTML = `
             <button id="btn-view-role" class="num-btn" style="width:100%; padding:30px; font-size:22px;">點擊查看 ${s.currentViewingSeat} 號 身分</button>
             <div id="view-role-result" class="hidden" style="background:#24345e; padding:30px; border-radius:12px; width:100%; border:2px solid #fca311;">
                 <p style="margin:0; color:#a2a8d3; font-size:18px;">你的身分是：</p>
-                <p style="font-size:40px; margin:10px 0; font-weight:bold; color:#fca311;">
-                    ${s.ROLE_DICT[dispRole].icon} ${s.ROLE_DICT[dispRole].name}
-                </p>
+                <p style="font-size:40px; margin:10px 0; font-weight:bold; color:#fca311;">${s.ROLE_DICT[dispRole].icon} ${s.ROLE_DICT[dispRole].name}</p>
             </div>
             <button id="btn-next-view" class="primary-btn hidden" style="margin-top:10px;">確認並換下一位</button>
         `;
@@ -484,10 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
         s.currentBoard = s.BOARD_CONFIGS[s.totalPlayers].find(b => b.id === settingBoard.value);
         s.playerRoles = {}; s.playerStatus = {};
         s.isRandomMode = document.getElementById('setting-random-role').checked;
-        
+
         let pTag = document.querySelector('#screen-setup p');
         if (s.isRandomMode) {
-            roleSetupGrid.classList.add('hidden'); if(pTag) pTag.classList.add('hidden'); btnStartNight.classList.add('hidden');
+            roleSetupGrid.classList.add('hidden'); if (pTag) pTag.classList.add('hidden'); btnStartNight.classList.add('hidden');
             if (!document.getElementById('random-role-ui')) {
                 let rrDiv = document.createElement('div'); rrDiv.id = 'random-role-ui';
                 rrDiv.style = "margin-top:20px; display:flex; flex-direction:column; gap:15px; align-items:center;";
@@ -495,18 +665,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             document.getElementById('random-role-ui').classList.remove('hidden');
             let rolesArr = [];
-            for (let r in s.currentBoard.roles) { 
+            for (let r in s.currentBoard.roles) {
                 if (r === 'seer_A' || r === 'seer_B') { rolesArr.push(r); continue; }
-                for (let i=0; i<s.currentBoard.roles[r]; i++) rolesArr.push(r); 
+                for (let i = 0; i < s.currentBoard.roles[r]; i++) rolesArr.push(r);
             }
             rolesArr.sort(() => Math.random() - 0.5);
             for (let i = 1; i <= s.totalPlayers; i++) {
-                s.playerRoles[i] = rolesArr[i-1];
+                s.playerRoles[i] = rolesArr[i - 1];
                 s.playerStatus[i] = { poisoned: false, injured: false, isWhiteCatFlipped: false, isVWK: false };
             }
             s.currentViewingSeat = 1; renderRandomRoleView();
         } else {
-            roleSetupGrid.classList.remove('hidden'); if(pTag) pTag.classList.remove('hidden'); btnStartNight.classList.remove('hidden');
+            roleSetupGrid.classList.remove('hidden'); if (pTag) pTag.classList.remove('hidden'); btnStartNight.classList.remove('hidden');
             if (document.getElementById('random-role-ui')) document.getElementById('random-role-ui').classList.add('hidden');
             roleSetupGrid.innerHTML = '';
             for (let i = 1; i <= s.totalPlayers; i++) {
@@ -531,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let errorMsg = "⚠️ 職業配置錯誤！\n\n"; let isMatch = true; s.discardedRoles = [];
 
             if (s.currentBoard.id === '12_thief_cupid') {
-                s.spareCards = []; let tempBoard = {...s.currentBoard.roles};
+                s.spareCards = []; let tempBoard = { ...s.currentBoard.roles };
                 for (let i = 1; i <= 12; i++) tempBoard[s.playerRoles[i]]--;
                 for (let r in tempBoard) { while (tempBoard[r] > 0) { s.spareCards.push(r); tempBoard[r]--; } }
                 if (s.spareCards.filter(r => wolfFaction.includes(r)).length === 2) { alert("底牌為雙狼，此局必須重開！"); return btnReset.click(); }
@@ -546,7 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s.currentBoard.id === '12_shadow' && !s.isRandomMode) {
             let sA = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'seer_A');
             let sB = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'seer_B');
-            if (Math.random() > 0.5) { s.playerRoles[sA] = 'seer'; s.playerRoles[sB] = 'shadow_seer'; } 
+            if (Math.random() > 0.5) { s.playerRoles[sA] = 'seer'; s.playerRoles[sB] = 'shadow_seer'; }
             else { s.playerRoles[sA] = 'shadow_seer'; s.playerRoles[sB] = 'seer'; }
         }
 
@@ -558,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['eclipse_maid', 'hidden_wolf'].includes(s.playerRoles[k]));
         if (wSeats.length > 0) s.phantomKnownWolf = wSeats[Math.floor(Math.random() * wSeats.length)];
-        
+
         let thiefKey = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'thief');
         s.initialThiefSeat = thiefKey ? parseInt(thiefKey) : null;
 
@@ -568,54 +738,82 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-cancel-lock').addEventListener('click', () => lockModal.classList.add('hidden'));
     document.getElementById('btn-confirm-lock').addEventListener('click', () => {
         lockModal.classList.add('hidden'); screenSetup.classList.add('hidden'); screenNight.classList.remove('hidden');
-        document.getElementById('number-pad').classList.add('hidden');
+        numberPad.classList.add('hidden');
         document.getElementById('night-role-title').textContent = "🐺 黑夜降臨";
-        document.getElementById('night-instruction').textContent = "請大家閉上眼睛...";
+        nightInstruction.textContent = "請大家閉上眼睛...";
         speak("天黑請閉眼。", runNextNightRole);
     });
 
-    // 核心動作綁定
+    // ==========================================
+    // 5. 核心確認結算按鈕監聽
+    // ==========================================
     btnConfirmAction.addEventListener('click', () => {
+
         if (s.currentRoleFeared) {
             let roleLog = getStageVoiceName(s.currentStage, s.currentSubLabel);
             if (s.currentStage === 'seer' && s.playerRoles[s.currentActorSeat] === 'shadow_seer') roleLog = '燈影預言家';
             s.nightActionLog.push(`【${roleLog}】被恐懼，跳過技能`);
-            btnConfirmAction.classList.add('hidden'); speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請閉眼。`, runNextNightRole); return;
-        }
-        if (['wolf_brother_meet', 'wolf_gun_confirm', 'wolf_meet', 'lovers_meet', 'hidden_wolf', 'curse_fox', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.currentStage) || s.currentStage.startsWith('notify_') || s.currentStage === 'bear') {
-            btnConfirmAction.classList.add('hidden'); document.getElementById('skill-result').classList.add('hidden'); document.getElementById('action-pad').classList.add('hidden');
-            if (s.currentStage === 'wolf_meet') s.nightActionLog.push(`狼人互相確認身分，首夜不刀人`);
-            if (s.currentStage === 'hidden_wolf') s.nightActionLog.push(`隱狼確認了狼隊友`);
-            let v = getStageVoiceName(s.currentStage, s.currentSubLabel);
-            if (s.currentStage === 'wolf_meet' && Object.values(s.playerRoles).includes('little_girl')) v = "狼隊和小女孩";
-            speak(`${v}請閉眼。`, runNextNightRole); return;
+
+            btnConfirmAction.classList.add('hidden');
+            actionPad.innerHTML = ''; actionPad.classList.add('hidden');
+            nightInstruction.textContent = "請閉眼等待...";
+            speak(`${getStageVoiceName(s.currentStage, s.currentSubLabel)}請閉眼。`, runNextNightRole);
+            return;
         }
 
-        const needsResultRoles = ['seer', 'diviner', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'wolf_witch', 'machine_wolf'];
+        if (['wolf_brother_meet', 'wolf_gun_confirm', 'wolf_meet', 'lovers_meet', 'hidden_wolf', 'curse_fox', 'ghost_bride_witness', 'awaken_dreamwalker_result', 'hunter'].includes(s.currentStage) || s.currentStage.startsWith('notify_') || s.currentStage === 'bear') {
+            btnConfirmAction.classList.add('hidden');
+            actionPad.innerHTML = ''; actionPad.classList.add('hidden');
+            nightInstruction.textContent = "請閉眼等待...";
+
+            if (s.currentStage === 'wolf_meet') s.nightActionLog.push(`【狼人】互相確認身分，首夜不刀人`);
+            if (s.currentStage === 'hidden_wolf') s.nightActionLog.push(`【隱狼】確認了狼隊友`);
+            let v = getStageVoiceName(s.currentStage, s.currentSubLabel);
+            if (s.currentStage === 'wolf_meet' && Object.values(s.playerRoles).includes('little_girl')) v = "狼隊和小女孩";
+
+            speak(`${v}請閉眼。`, runNextNightRole);
+            return;
+        }
+
+        const needsResultRoles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'wolf_witch', 'machine_wolf'];
         if (needsResultRoles.includes(s.currentStage) && s.selectedNumber !== 'skip' && !s.isShowingResult) {
-            let isVWKTurn = (s.currentStage === 'variable_wolf_king'); 
-            document.getElementById('number-pad').classList.add('hidden'); document.getElementById('skill-result').classList.remove('hidden');
-            btnConfirmAction.textContent = "了解並閉眼"; document.getElementById('btn-optional-skip').classList.add('hidden');
-            
-            let txt = document.getElementById('skill-result-text'); let lbl = document.getElementById('skill-result-label');
+            numberPad.classList.add('hidden');
+            actionPad.innerHTML = '';
+            actionPad.classList.remove('hidden');
+            btnConfirmAction.textContent = "了解並閉眼";
+            btnOptionalSkip.classList.add('hidden');
+
+            let resultBox = document.createElement('div');
+            resultBox.style = "padding: 20px; background-color: #24345e; border-radius: 8px; width: 100%; text-align: center; border: 2px solid #fca311; margin: 20px 0;";
+            let lbl = document.createElement('p');
+            lbl.style = "font-size: 18px; margin: 0; color: #fff;"; lbl.textContent = "該名玩家的查驗結果為：";
+            let txt = document.createElement('p');
+            txt.style = "font-size: 32px; font-weight: bold; margin: 10px 0 0 0;";
+
+            let logName = getStageVoiceName(s.currentStage, s.currentSubLabel);
+
             if (s.currentStage === 'awaken_seer') {
                 lbl.textContent = "兩名玩家的陣營為：";
-                s.awakenSeerTargets = [ applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[0]), s.currentActorSeat), applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[1]), s.currentActorSeat) ];
+                s.awakenSeerTargets = [applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[0]), s.currentActorSeat), applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[1]), s.currentActorSeat)];
                 let isEvil = evilRoles.includes(s.playerRoles[s.awakenSeerTargets[0]]) || evilRoles.includes(s.playerRoles[s.awakenSeerTargets[1]]);
-                if (isEvil && !['hidden_wolf', 'ghost_bride'].includes(s.playerRoles[s.awakenSeerTargets[0]]) && !['hidden_wolf', 'ghost_bride'].includes(s.playerRoles[s.awakenSeerTargets[1]])) { txt.textContent = "🐺 疑似狼人"; txt.style.color = "#e94560"; } 
+                if (isEvil && !['hidden_wolf', 'ghost_bride'].includes(s.playerRoles[s.awakenSeerTargets[0]]) && !['hidden_wolf', 'ghost_bride'].includes(s.playerRoles[s.awakenSeerTargets[1]])) { txt.textContent = "🐺 疑似狼人"; txt.style.color = "#e94560"; }
                 else { txt.textContent = "🧑‍🌾 雙好人"; txt.style.color = "#00ff88"; }
+                s.nightActionLog.push(`【${logName}】查驗了 ${s.awakenSeerTargets[0]}號 和 ${s.awakenSeerTargets[1]}號`);
             } else if (s.currentStage === 'real_fox') {
                 lbl.textContent = "查驗範圍的陣營為：";
                 let t = parseInt(s.selectedNumber); let p1 = t - 1 < 1 ? s.totalPlayers : t - 1; let p2 = t + 1 > s.totalPlayers ? 1 : t + 1;
                 let hW = wolfFaction.includes(s.playerRoles[t]) || wolfFaction.includes(s.playerRoles[p1]) || wolfFaction.includes(s.playerRoles[p2]);
                 if (hW) { txt.textContent = "🐺 有狼人"; txt.style.color = "#e94560"; } else { txt.textContent = "🧑‍🌾 無狼人"; txt.style.color = "#00ff88"; }
+                s.nightActionLog.push(`【${logName}】查驗了 ${t}號 範圍`);
             } else {
                 let actualTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat);
-                if (['seer', 'diviner'].includes(s.currentStage)) {
+                s.nightActionLog.push(`【${logName}】查驗了 ${actualTarget}號`);
+
+                if (['seer'].includes(s.currentStage)) {
                     s.seerTarget = actualTarget; let targetRole = s.playerRoles[actualTarget];
                     let isEvil = evilRoles.includes(targetRole) || s.playerStatus[actualTarget]?.isVWK;
                     if (['hidden_wolf', 'wolf_brother_little', 'ghost_bride'].includes(targetRole)) isEvil = false;
-                    if (s.playerRoles[s.currentActorSeat] === 'shadow_seer') isEvil = !isEvil; 
+                    if (s.playerRoles[s.currentActorSeat] === 'shadow_seer') isEvil = !isEvil;
                     if (isEvil) { txt.textContent = "🐺 狼人 (壞人)"; txt.style.color = "#e94560"; } else { txt.textContent = "🧑‍🌾 好人"; txt.style.color = "#00ff88"; }
                 } else if (s.currentStage === 'machine_wolf') {
                     s.machineWolfTarget = actualTarget; let r = s.playerRoles[actualTarget];
@@ -627,70 +825,95 @@ document.addEventListener('DOMContentLoaded', () => {
                     txt.textContent = `${s.ROLE_DICT[displayRole].icon} ${s.ROLE_DICT[displayRole].name}`; txt.style.color = "#fca311";
                 }
             }
+            resultBox.appendChild(lbl); resultBox.appendChild(txt); actionPad.appendChild(resultBox);
             s.isShowingResult = true; return;
         }
 
-        // 進行 Action Log 的推演
-        btnConfirmAction.classList.add('hidden'); document.getElementById('btn-optional-skip').classList.add('hidden'); document.getElementById('number-pad').classList.add('hidden'); document.getElementById('skill-result').classList.add('hidden');
-        
-        if (s.currentStage === 'wolf_crow') { s.wolfCrowMark = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.wolfCrowMark ? `狼鴉之爪標記了 ${s.wolfCrowMark}號` : `狼鴉之爪未標記`); }
-        else if (s.currentStage === 'thief') { s.playerRoles[Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'thief')] = s.thiefChosenRole; s.discardedRoles = s.spareCards.filter(r => r !== s.thiefChosenRole); s.nightActionLog.push(`盜賊選擇 ${s.ROLE_DICT[s.thiefChosenRole].name}`); buildNightQueue(); }
-        else if (s.currentStage === 'cupid') { s.cupidLovers = [...s.selectedNumbersArr]; s.nightActionLog.push(`邱比特連接了 ${s.cupidLovers.join('和')}號`); }
+        btnConfirmAction.classList.add('hidden');
+        btnOptionalSkip.classList.add('hidden');
+        numberPad.classList.add('hidden');
+
+        let customPanel = document.getElementById('custom-action-panel');
+        if (customPanel) customPanel.remove();
+        actionPad.innerHTML = '';
+        actionPad.classList.add('hidden');
+        nightInstruction.textContent = "請閉眼等待...";
+
+        if (needsResultRoles.includes(s.currentStage) && s.selectedNumber === 'skip') { s.nightActionLog.push(`【${getStageVoiceName(s.currentStage, s.currentSubLabel)}】跳過技能`); }
+        else if (s.currentStage === 'diviner') { s.divinerMark = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.divinerMark ? `【占卜師】標記了 ${s.divinerMark}號` : `【占卜師】未發動技能`); }
+        else if (s.currentStage === 'thief') { s.playerRoles[Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'thief')] = s.thiefChosenRole; s.discardedRoles = s.spareCards.filter(r => r !== s.thiefChosenRole); s.nightActionLog.push(`【盜賊】選擇了 ${s.ROLE_DICT[s.thiefChosenRole].name}`); buildNightQueue(); }
+        else if (s.currentStage === 'cupid') { s.cupidLovers = [...s.selectedNumbersArr]; s.nightActionLog.push(`【邱比特】連接了 ${s.cupidLovers.join('和')}號`); }
         else if (['half_blood', 'wild_child', 'awaken_lonely_girl'].includes(s.currentStage)) {
             let t = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber));
             if (s.currentStage === 'half_blood') s.halfBloodTarget = t; if (s.currentStage === 'wild_child') s.wildChildTarget = t; if (s.currentStage === 'awaken_lonely_girl') s.lonelyGirlTarget = t;
-            s.nightActionLog.push(t ? `${s.ROLE_DICT[s.currentStage].name}選擇了 ${t}號` : `${s.ROLE_DICT[s.currentStage].name}未選擇`);
+            s.nightActionLog.push(t ? `【${s.ROLE_DICT[s.currentStage].name}】選擇了 ${t}號` : `【${s.ROLE_DICT[s.currentStage].name}】未選擇`);
         }
-        else if (s.currentStage === 'ghost_bride') { s.ghostBrideGroom = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`鬼魅新娘選擇了 ${s.ghostBrideGroom}號為新郎`); }
-        else if (s.currentStage === 'ghost_bride_couple') { s.ghostBrideWitness = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`鬼魅新娘與新郎選擇了 ${s.ghostBrideWitness}號為證婚人`); }
-        else if (s.currentStage === 'awaken_dreamwalker') { s.awakenDreamwalkerTarget = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`覺醒攝夢人指定了 ${s.awakenDreamwalkerTarget}號為夢語者`); }
-        else if (s.currentStage === 'time_wolf') { s.timeWolfTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.timeWolfTarget ? `蝕時狼妃封鎖了 ${s.timeWolfTarget}號` : `蝕時狼妃未封鎖`); }
-        else if (s.currentStage === 'awaken_idiot') { s.awakenIdiotTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.awakenIdiotTarget ? `覺醒白痴守護了 ${s.awakenIdiotTarget}號` : `覺醒白痴未守護`); }
-        else if (s.currentStage === 'crow') { s.crowTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.crowTarget ? `烏鴉詛咒了 ${s.crowTarget}號` : `烏鴉未詛咒`); }
+        else if (s.currentStage === 'ghost_bride') { s.ghostBrideGroom = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`【鬼魅新娘】選擇了 ${s.ghostBrideGroom}號為新郎`); }
+        else if (s.currentStage === 'ghost_bride_couple') { s.ghostBrideWitness = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`【鬼魅新娘與新郎】選擇了 ${s.ghostBrideWitness}號為證婚人`); }
+        else if (s.currentStage === 'awaken_dreamwalker') { s.awakenDreamwalkerTarget = getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(`【覺醒攝夢人】指定了 ${s.awakenDreamwalkerTarget}號為夢語者`); }
+        else if (s.currentStage === 'time_wolf') { s.timeWolfTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.timeWolfTarget ? `【蝕時狼妃】封鎖了 ${s.timeWolfTarget}號` : `【蝕時狼妃】未封鎖`); }
+        else if (s.currentStage === 'awaken_idiot') { s.awakenIdiotTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.awakenIdiotTarget ? `【覺醒白痴】守護了 ${s.awakenIdiotTarget}號` : `【覺醒白痴】未守護`); }
+        else if (s.currentStage === 'crow') { s.crowTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.crowTarget ? `【烏鴉】詛咒了 ${s.crowTarget}號` : `【烏鴉】未詛咒`); }
         else if (['magician', 'trickster', 'wolf_sorcerer'].includes(s.currentStage)) {
             let swap = (s.selectedNumber === 'skip') ? [] : [...s.selectedNumbersArr];
             if (s.currentStage === 'magician') s.magicianSwap = swap; if (s.currentStage === 'trickster') s.tricksterSwap = swap; if (s.currentStage === 'wolf_sorcerer') s.wolfSorcererSwap = swap;
-            s.nightActionLog.push(swap.length ? `${s.ROLE_DICT[s.currentStage].name}交換了 ${swap[0]}號 和 ${swap[1]}號` : `${s.ROLE_DICT[s.currentStage].name}未交換`);
+            s.nightActionLog.push(swap.length ? `【${s.ROLE_DICT[s.currentStage].name}】交換了 ${swap[0]}號 和 ${swap[1]}號` : `【${s.ROLE_DICT[s.currentStage].name}】未交換`);
         }
-        else if (s.currentStage === 'phantom') { s.phantomTargets = (s.selectedNumber === 'skip') ? [] : [getActualTarget(s.selectedNumbersArr[0]), getActualTarget(s.selectedNumbersArr[1])]; }
-        else if (s.currentStage === 'nightmare') { s.nightmareTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.nightmareTarget ? `夢魘恐懼了 ${s.nightmareTarget}號` : `夢魘未恐懼`); }
-        else if (s.currentStage === 'guard') { s.guardTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.guardTarget ? `守衛守護了 ${s.guardTarget}號` : `守衛空守`); }
-        else if (s.currentStage === 'dreamwalker') { s.dreamTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(`攝夢人攝夢了 ${s.dreamTarget}號`); }
-        else if (s.currentStage === 'awaken_wolf_king_gun') { s.awakenWolfGunTarget = (s.selectedNumber === 'skip') ? null : parseInt(s.selectedNumber); }
-        else if (s.currentStage === 'wolf') { 
-            if (s.isSeedWolfInfecting) { s.seedWolfTarget = getActualTarget(parseInt(s.selectedNumber)); s.wolfKillTarget = null; if(s.seedWolfTarget) s.playerRoles[s.seedWolfTarget] = 'wolf'; }
-            else { s.wolfKillTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); }
+        else if (s.currentStage === 'phantom') { s.phantomTargets = (s.selectedNumber === 'skip') ? [] : [getActualTarget(s.selectedNumbersArr[0]), getActualTarget(s.selectedNumbersArr[1])]; s.nightActionLog.push(s.phantomTargets.length ? `【尋香魅影】綁定了 ${s.phantomTargets.join('和')}號` : `【尋香魅影】未綁定`); }
+        else if (s.currentStage === 'nightmare') { s.nightmareTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.nightmareTarget ? `【夢魘】恐懼了 ${s.nightmareTarget}號` : `【夢魘】未恐懼`); }
+        else if (s.currentStage === 'guard') { s.guardTarget = applyTimeWolfReflection((s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(s.guardTarget ? `【守衛】守護了 ${s.guardTarget}號` : `【守衛】空守`); }
+        else if (s.currentStage === 'dreamwalker') { s.dreamTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat); s.nightActionLog.push(`【攝夢人】攝夢了 ${s.dreamTarget}號`); }
+        else if (s.currentStage === 'awaken_wolf_king_gun') { s.awakenWolfGunTarget = (s.selectedNumber === 'skip') ? null : parseInt(s.selectedNumber); s.nightActionLog.push(s.awakenWolfGunTarget ? `【覺醒狼王】把槍給了 ${s.awakenWolfGunTarget}號` : `【覺醒狼王】未給槍`); }
+        else if (s.currentStage === 'wolf') {
+            if (s.isSeedWolfInfecting) {
+                s.seedWolfTarget = getActualTarget(parseInt(s.selectedNumber)); s.wolfKillTarget = null; if (s.seedWolfTarget) s.playerRoles[s.seedWolfTarget] = 'wolf';
+                s.nightActionLog.push(s.seedWolfTarget ? `【種狼】感染了 ${s.seedWolfTarget}號` : `【種狼】空感染`);
+            } else {
+                s.wolfKillTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber));
+                let lgLog = Object.values(s.playerRoles).includes('little_girl') ? '與小女孩' : '';
+                s.nightActionLog.push(s.wolfKillTarget ? `【狼人${lgLog}】擊殺了 ${s.wolfKillTarget}號` : `【狼人${lgLog}】空刀`);
+            }
         }
-        else if (s.currentStage === 'big_bad_wolf') { s.bigBadWolfKillTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.bigBadWolfKillTarget ? `大野狼擊殺了 ${s.bigBadWolfKillTarget}號` : `大野狼空刀`); }
-        else if (s.currentStage === 'alchemist_fog') { s.alchemistFogTargets = (s.selectedNumber === 'skip') ? [] : [...s.selectedNumbersArr]; s.nightActionLog.push(s.alchemistFogTargets.length ? `煉金魔女對 ${s.alchemistFogTargets.join(', ')}號 施放未名之霧` : `煉金未放霧`); }
-        else if (s.currentStage === 'awaken_gargoyle') { s.awakenGargoyleTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); }
-        else if (s.currentStage === 'witch') {
-            if (s.selectedNumber === 'skip') { s.witchPoisonTarget = null; } else if (s.selectedNumber === 'witch_save') { s.witchSaved = true; } else if (typeof s.selectedNumber === 'number') { s.witchPoisonTarget = applyTimeWolfReflection(getActualTarget(s.selectedNumber), s.currentActorSeat); }
-            document.getElementById('witch-actions').classList.add('hidden');
+        else if (s.currentStage === 'big_bad_wolf') { s.bigBadWolfKillTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.bigBadWolfKillTarget ? `【大野狼】擊殺了 ${s.bigBadWolfKillTarget}號` : `【大野狼】空刀`); }
+        else if (s.currentStage === 'alchemist') { s.alchemistFogTargets = (s.selectedNumber === 'skip') ? [] : [...s.selectedNumbersArr]; s.nightActionLog.push(s.alchemistFogTargets.length ? `【煉金魔女】對 ${s.alchemistFogTargets.join(', ')}號 施放未名之霧` : `【煉金魔女】未放霧`); }
+        else if (s.currentStage === 'awaken_gargoyle') { s.awakenGargoyleTarget = (s.selectedNumber === 'skip') ? null : getActualTarget(parseInt(s.selectedNumber)); s.nightActionLog.push(s.awakenGargoyleTarget ? `【覺醒石像鬼】轉化了 ${s.awakenGargoyleTarget}號` : `【覺醒石像鬼】未轉化`); }
+        else if (s.currentStage === 'witch' || s.currentStage === 'awaken_witch') {
+            let logName = s.currentStage === 'awaken_witch' ? '覺醒女巫' : '女巫';
+            if (s.selectedNumber === 'skip') { s.witchPoisonTarget = null; s.nightActionLog.push(`【${logName}】未發動技能`); }
+            else if (s.selectedNumber === 'witch_save') { s.witchSaved = true; s.nightActionLog.push(`【${logName}】使用了救藥`); }
+            else if (s.selectedNumber && !isNaN(s.selectedNumber)) {
+                s.witchPoisonTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat);
+                s.nightActionLog.push(`【${logName}】對 ${s.witchPoisonTarget}號 使用了毒藥`);
+            }
         }
 
-        s.nightActionLog.push(`完成 ${s.ROLE_DICT[s.currentStage]?.name || s.currentStage} 的操作`);
         let v = getStageVoiceName(s.currentStage, s.currentSubLabel);
         if (s.currentStage === 'wolf' && Object.values(s.playerRoles).includes('little_girl')) v = "狼隊和小女孩";
         speak(`${v}請閉眼。`, runNextNightRole);
     });
 
     btnOptionalSkip.addEventListener('click', () => {
-        if (s.currentStage === 'wolf' && document.getElementById('btn-optional-skip').textContent === "返回選單") {
-            resetSelections(); document.getElementById('number-pad').classList.add('hidden'); document.getElementById('action-pad').classList.remove('hidden'); 
-            document.getElementById('btn-optional-skip').classList.add('hidden'); btnConfirmAction.classList.add('hidden'); s.isSeedWolfInfecting = false; return;
+        if (s.currentStage === 'wolf' && btnOptionalSkip.textContent === "返回選單") {
+            resetSelections(); numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
+            btnOptionalSkip.classList.add('hidden'); btnConfirmAction.classList.add('hidden'); s.isSeedWolfInfecting = false; return;
         }
-        resetSelections(); document.getElementById('btn-optional-skip').classList.add('action-selected'); s.selectedNumber = 'skip'; btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
+        if ((s.currentStage === 'witch' || s.currentStage === 'awaken_witch') && btnOptionalSkip.textContent === "返回重選") {
+            resetSelections(); numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
+            btnOptionalSkip.classList.add('hidden'); btnConfirmAction.classList.add('hidden'); s.awakenWitchStep = null;
+            nightInstruction.textContent = "請選擇你要使用的藥水：";
+            return;
+        }
+
+        resetSelections();
+        btnOptionalSkip.classList.add('action-selected');
+        s.selectedNumber = 'skip';
+        btnConfirmAction.classList.remove('hidden');
+        btnConfirmAction.textContent = "確認";
         if (s.currentStage === 'awaken_witch') s.awakenWitchStep = null;
     });
 
-    // 警長與天亮結算
-    btnFinishSheriff.addEventListener('click', () => {
-        screenSheriff.classList.add('hidden'); 
-        showDayResult();
-    });
+    btnFinishSheriff.addEventListener('click', () => { screenSheriff.classList.add('hidden'); showDayResult(); });
 
-    // 查看法官紀錄
     btnShowJudge.addEventListener('click', () => {
         let statusHtml = '';
         for (let i = 1; i <= s.totalPlayers; i++) {
@@ -721,7 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (s.ghostBrideGroom === i) statusStrs.push("🤵 新郎");
             if (s.ghostBrideWitness === i) statusStrs.push("🕊️ 證婚人");
             if (s.rustSwordInfectedTarget === i) statusStrs.push("🦠 傷口感染");
-            
+
             let statusBadge = statusStrs.length > 0 ? `<span style="color:#fca311;">(${statusStrs.join(', ')})</span>` : '';
             let thiefTag = (i === s.initialThiefSeat) ? '(盜賊)' : '';
             statusHtml += `<div style="margin-bottom:5px;"><b>${i}號</b> ${s.ROLE_DICT[role]?.icon}${s.ROLE_DICT[role]?.name}${thiefTag} ${statusBadge}</div>`;
@@ -733,11 +956,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnCloseJudge.addEventListener('click', () => judgeModal.classList.add('hidden'));
 
-    // Reset logic
     btnReset.addEventListener('click', () => {
         s.nightQueue = []; s.currentStage = null; s.wolfKillTarget = null; s.witchPoisonTarget = null; s.witchSaved = false;
         s.guardTarget = null; s.dreamTarget = null; s.magicianSwap = []; s.tricksterSwap = []; s.wolfSorcererSwap = []; s.nightmareTarget = null; s.gargoyleTarget = null;
-        s.beautyTarget = null; s.machineWolfTarget = null; s.phantomTargets = []; s.awakenSeerTargets = []; s.awakenBeautyTarget = null; s.wolfCrowMark = null;
+        s.beautyTarget = null; s.machineWolfTarget = null; s.phantomTargets = []; s.awakenSeerTargets = []; s.awakenBeautyTarget = null; s.divinerMark = null;
         s.phantomKnownWolf = null; s.selectedNumber = null; s.currentEditingSeat = null; s.finalKilled = []; s.dayShootersQueue = [];
         s.ghostRiderReflected = false; s.nightActionLog = []; s.pufferfishTriggered = false; s.whiteCatFlippedLastNight = false;
         s.spareCards = []; s.discardedRoles = []; s.initialThiefSeat = null; s.thiefChosenRole = null; s.cupidLovers = []; s.merchantTarget = null; s.merchantItem = null;
@@ -745,7 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
         s.halfBloodTarget = null; s.wildChildTarget = null; s.lonelyGirlTarget = null; s.timeWolfTarget = null; s.awakenIdiotTarget = null; s.crowTarget = null;
         s.seedWolfTarget = null; s.isSeedWolfInfecting = false; s.awakenGargoyleTarget = null; s.awakenDreamwalkerTarget = null; s.ghostBrideGroom = null; s.ghostBrideWitness = null;
         s.primaryKilled = []; s.chainKilled = []; s.currentSubLabel = null; s.isFakeWake = false; s.currentRoleFeared = false; s.rustSwordInfectedTarget = null; s.bigBadWolfKillTarget = null;
-        
+
         let tCalc = document.getElementById('trickster-calc'); if (tCalc) tCalc.remove();
         document.getElementById('crow-record-panel').classList.add('hidden');
         screenDay.classList.add('hidden'); screenStart.classList.remove('hidden');

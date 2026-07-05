@@ -32,6 +32,7 @@
             "name": "狼美人",
             "icon": "💋",
             "wakeOrder": [
+                210,
                 270
             ]
         },
@@ -46,17 +47,23 @@
             "name": "狼兄",
             "icon": "🐺🐺",
             "wakeOrder": [
+                80,
                 210
             ]
         },
         "wolf_brother_little": {
             "name": "狼弟",
-            "icon": "🐶"
+            "icon": "🐶",
+            "wakeOrder": [
+                80,
+                210
+            ]
         },
         "awaken_wolf_king": {
             "name": "覺醒狼王",
             "icon": "👑✨",
             "wakeOrder": [
+                210,
                 230,
                 235
             ]
@@ -72,21 +79,20 @@
             "name": "狼巫",
             "icon": "🧙‍♀️",
             "wakeOrder": [
+                210,
                 260
             ]
         },
         "wolf_crow": {
             "name": "狼鴉之爪",
-            "icon": "🦅",
-            "wakeOrder": [
-                205
-            ]
+            "icon": "🦅"
         },
         "awaken_wolf_beauty": {
             "name": "覺醒狼美人",
             "icon": "💋✨",
             "wakeOrder": [
-                190
+                190,
+                210
             ]
         },
         "night_mentor": {
@@ -135,7 +141,8 @@
             "name": "蝕時狼妃",
             "icon": "⏳",
             "wakeOrder": [
-                200
+                200,
+                210
             ]
         },
         "night_noble": {
@@ -149,6 +156,7 @@
             "name": "大野狼",
             "icon": "🐺",
             "wakeOrder": [
+                210,
                 300
             ]
         },
@@ -170,7 +178,7 @@
             "name": "石像鬼",
             "icon": "🦇",
             "wakeOrder": [
-                250
+                340
             ]
         },
         "nightmare": {
@@ -203,7 +211,7 @@
             "name": "燈影預言家",
             "icon": "🏮",
             "wakeOrder": [
-                310
+                311
             ]
         },
         "seer": {
@@ -224,7 +232,7 @@
             "name": "預言家B",
             "icon": "👁️",
             "wakeOrder": [
-                310
+                311
             ]
         },
         "witch": {
@@ -315,7 +323,8 @@
             "icon": "🧪✨",
             "wakeOrder": [
                 290,
-                292
+                292,
+                295
             ]
         },
         "dancer": {
@@ -367,7 +376,8 @@
             "name": "覺醒攝夢人",
             "icon": "💤✨",
             "wakeOrder": [
-                170
+                170,
+                360
             ]
         },
         "awaken_idiot": {
@@ -386,7 +396,10 @@
         },
         "little_girl": {
             "name": "小女孩",
-            "icon": "👧"
+            "icon": "👧",
+            "wakeOrder": [
+                210
+            ]
         },
         "rust_sword_knight": {
             "name": "鏽劍騎士",
@@ -396,7 +409,7 @@
             "name": "占卜師",
             "icon": "🔮",
             "wakeOrder": [
-                310
+                75
             ]
         },
         "real_fox": {
@@ -417,7 +430,8 @@
             "name": "邱比特",
             "icon": "👼",
             "wakeOrder": [
-                20
+                20,
+                70
             ]
         },
         "ghost_bride": {
@@ -425,7 +439,8 @@
             "icon": "👰‍♀️",
             "wakeOrder": [
                 60,
-                65
+                65,
+                69
             ]
         },
         "wild_child": {
@@ -460,14 +475,16 @@
             "name": "黑市商人",
             "icon": "🛍️",
             "wakeOrder": [
-                280
+                280,
+                285
             ]
         },
         "miracle_merchant": {
             "name": "奇蹟商人",
             "icon": "🎁",
             "wakeOrder": [
-                280
+                280,
+                285
             ]
         },
         "fox": {
@@ -763,7 +780,7 @@
                     "seer_A": 1,
                     "seer_B": 1,
                     "witch": 1,
-                    "guard: ": 1,
+                    "guard": 1,
                     "knight": 1
                 }
             },
@@ -1015,7 +1032,7 @@
                     "villager": 4,
                     "high_villager": 1,
                     "witch": 1,
-                    "bear: ": 1,
+                    "bear": 1,
                     "rust_sword_knight": 1,
                     "real_fox": 1
                 }

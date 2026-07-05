@@ -10,7 +10,6 @@
 
 <body>
     <div class="container">
-        <!-- 畫面一：起始畫面與設定 -->
         <div id="screen-start" class="screen">
             <h1>🐺 狼人殺 語音法官</h1>
             <div class="game-settings">
@@ -43,7 +42,6 @@
             <button id="btn-go-setup" class="primary-btn">下一步：錄入身分</button>
         </div>
 
-        <!-- 畫面二：身分錄入 -->
         <div id="screen-setup" class="screen hidden">
             <h2>📝 錄入玩家身分</h2>
             <p style="color: #a2a8d3; font-size: 14px; margin-bottom: 15px;">點擊號碼牌設定身分，設定後將自動屏蔽隱藏。進入黑夜前系統會校驗配置是否正確。</p>
@@ -54,82 +52,43 @@
             </div>
         </div>
 
-        <!-- 畫面三：黑夜行動 -->
         <div id="screen-night" class="screen hidden">
             <h2 id="night-role-title">角色名稱</h2>
             <p id="night-instruction" style="color: #a2a8d3;">請依照語音指示行動...</p>
 
             <div id="number-pad" class="grid-container hidden"></div>
 
-            <!-- 新增：獨立的操作面板 (用於盜賊選牌、商人給禮物、協助者同意) -->
-            <div id="action-pad" class="hidden"
-                style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:15px;"></div>
+            <div id="action-pad" class="hidden" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:15px; width:100%;"></div>
 
             <button id="btn-optional-skip" class="secondary-btn hidden" style="margin-top: 10px;">跳過</button>
-
-            <!-- 查驗結果通用面板 -->
-            <div id="skill-result" class="hidden"
-                style="margin: 20px 0; padding: 20px; background-color: #24345e; border-radius: 8px;">
-                <p id="skill-result-label" style="font-size: 18px; margin: 0;">該名玩家的查驗結果為：</p>
-                <p id="skill-result-text" style="font-size: 32px; font-weight: bold; margin: 10px 0 0 0;"></p>
-            </div>
-
-            <!-- 女巫專用 -->
-            <div id="witch-actions" class="hidden">
-                <p id="witch-info" style="color: #ff7b93; font-size: 20px; font-weight: bold;">昨晚倒牌的是：【 X 號 】</p>
-                <div class="flex-btn-group">
-                    <button id="btn-witch-save" class="secondary-btn">解藥 (救)</button>
-                    <button id="btn-witch-poison" class="special-btn">毒藥 (毒)</button>
-                    <button id="btn-witch-skip" class="text-btn">不使用</button>
-                </div>
-            </div>
-
-            <div id="hunter-status" class="hidden"
-                style="margin: 20px 0; padding: 20px; background-color: #24345e; border-radius: 8px;">
-                <p style="font-size: 18px; margin: 0;">若今晚倒牌，你的狀態為：</p>
-                <p id="hunter-status-text" style="font-size: 32px; font-weight: bold; margin: 10px 0 0 0;"></p>
-            </div>
-
             <button id="btn-confirm-action" class="primary-btn hidden" style="margin-top: 20px;">確認</button>
         </div>
 
-        <!-- 畫面四：上警環節 -->
         <div id="screen-sheriff" class="screen hidden">
             <h2>📢 上警環節</h2>
             <p style="color: #a2a8d3; margin-bottom: 20px;">請要競選警長的玩家舉手，並進行發言與投票。</p>
             <button id="btn-finish-sheriff" class="primary-btn">警長選舉結束，公布昨晚死訊</button>
         </div>
 
-        <!-- 畫面五：白天結算與開槍面板 -->
         <div id="screen-day" class="screen hidden">
             <h2>🌞 天亮了</h2>
 
-            <!-- 煉金魔女專用呼叫按鈕 -->
-            <div id="alchemist-call-section" class="hidden" style="margin-bottom: 20px;">
-                <button id="btn-call-alch" class="special-btn"
-                    style="width: 100%; padding: 15px; font-size: 18px;">呼叫煉金魔女 (使用法老之蛇)</button>
-            </div>
+            <div id="alchemist-call-section" class="hidden" style="margin-bottom: 20px;"></div>
 
             <div id="day-result-content">
                 <p id="day-result" style="font-size: 24px; font-weight: bold; margin: 20px 0;"></p>
-                <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋
-                    查看法官紀錄</button>
+                <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋 查看法官紀錄</button>
 
-                <div id="day-skill-section" class="hidden"
-                    style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <p id="day-skill-notice"
-                        style="color: #fca311; font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號
-                        】玩家，請問是否發動技能？</p>
+                <div id="day-skill-section" class="hidden" style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p id="day-skill-notice" style="color: #fca311; font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號 】玩家，請問是否發動技能？</p>
                     <div id="day-skill-pad" class="grid-container"></div>
                     <button id="btn-day-skill-skip" class="text-btn" style="margin-top: 10px;">放棄發動技能</button>
-                    <button id="btn-day-skill-confirm" class="primary-btn hidden"
-                        style="margin-top: 10px;">確認發動</button>
+                    <button id="btn-day-skill-confirm" class="primary-btn hidden" style="margin-top: 10px;">確認發動</button>
                 </div>
                 <button id="btn-reset" class="secondary-btn">重新開始新局</button>
             </div>
         </div>
 
-        <!-- ================= 彈出視窗區域 ================= -->
         <div id="role-modal" class="modal hidden">
             <div class="modal-content">
                 <h3 id="modal-seat-title">設定 X 號身分</h3>
@@ -150,17 +109,12 @@
             </div>
         </div>
 
-        <!-- 法官視角彈窗 -->
         <div id="judge-modal" class="modal hidden">
             <div class="modal-content" style="max-width: 500px; text-align: left;">
                 <h3 style="margin-top:0;">📜 法官紀錄面板</h3>
-                <div id="judge-player-status"
-                    style="max-height: 30vh; overflow-y: auto; margin-bottom: 10px; background: #24345e; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.6;">
-                </div>
+                <div id="judge-player-status" style="max-height: 30vh; overflow-y: auto; margin-bottom: 10px; background: #24345e; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.6;"></div>
                 <h4 style="margin: 10px 0 5px 0;">🌙 夜晚操作紀錄</h4>
-                <div id="judge-night-log"
-                    style="max-height: 25vh; overflow-y: auto; background: #24345e; padding: 10px; border-radius: 8px; color: #a2a8d3; font-size: 14px; line-height: 1.6;">
-                </div>
+                <div id="judge-night-log" style="max-height: 25vh; overflow-y: auto; background: #24345e; padding: 10px; border-radius: 8px; color: #a2a8d3; font-size: 14px; line-height: 1.6;"></div>
                 <button id="btn-close-judge" class="primary-btn" style="margin-top: 15px;">關閉</button>
             </div>
         </div>

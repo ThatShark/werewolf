@@ -1,4 +1,3 @@
-// js/night.js
 import { s, wolfFaction, evilRoles, getActualTarget, applyTimeWolfReflection, getStageVoiceName, speak } from './core.js';
 import { runNextNightRole } from './main.js';
 
@@ -9,7 +8,9 @@ export function resetSelections() {
         if (el) el.classList.remove('action-selected');
     });
     const actionPad = document.getElementById('action-pad');
-    actionPad.innerHTML = ''; actionPad.classList.add('hidden');
+    if (actionPad) {
+        actionPad.innerHTML = ''; actionPad.classList.add('hidden');
+    }
     s.selectedNumber = null;
     s.selectedNumbersArr = [];
 }
@@ -28,17 +29,22 @@ export function createNumberPad() {
         let isDisabled = false;
         if (s.currentStage === 'wolf') {
             if (['white_wolf_king', 'ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty'].includes(s.playerRoles[i])) isDisabled = true;
-            if (s.wolfCrowMark) {
-                let wcm = parseInt(s.wolfCrowMark);
-                let p1 = wcm - 1 < 1 ? s.totalPlayers : wcm - 1;
-                let p2 = wcm + 1 > s.totalPlayers ? 1 : wcm + 1;
-                if (i !== wcm && i !== p1 && i !== p2) isDisabled = true;
+            if (s.divinerMark) {
+                let dm = parseInt(s.divinerMark);
+                let p1 = dm - 1 < 1 ? s.totalPlayers : dm - 1;
+                let p2 = dm + 1 > s.totalPlayers ? 1 : dm + 1;
+                if (i !== dm && i !== p1 && i !== p2) isDisabled = true;
             }
         }
         if (i === actualCurrentActorSeat) {
-            if (['wolf_crow', 'witch', 'awaken_witch', 'dreamwalker', 'nightmare', 'gargoyle', 'machine_wolf', 'black_market_select', 'miracle_merchant_select', 'crow', 'real_fox', 'awaken_dreamwalker', 'ghost_bride', 'ghost_bride_couple'].includes(s.currentStage)) isDisabled = true;
-            if (['seer', 'shadow_seer', 'awaken_seer', 'diviner'].includes(s.currentStage)) isDisabled = true; 
-            if (s.currentStage === 'wolf_beauty' || (s.currentStage === 'bear' && s.playerStatus[i].isVWK)) isDisabled = true; 
+            const cannotSelectSelf = [
+                'witch', 'awaken_witch', 'dreamwalker', 'nightmare', 
+                'gargoyle', 'machine_wolf', 'black_market_select', 'miracle_merchant_select', 
+                'crow', 'awaken_dreamwalker', 'ghost_bride', 'ghost_bride_couple',
+                'seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'wolf_witch', 'psychic', 'wolf_beauty'
+            ];
+            if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
+            if (s.currentStage === 'bear' && s.playerStatus[i].isVWK) isDisabled = true; 
         }
         if (s.currentStage === 'awaken_wolf_king_gun' && s.playerRoles[i] !== 'wolf') isDisabled = true;
         if (s.currentStage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='ghost_bride')) || i === s.ghostBrideGroom)) isDisabled = true;

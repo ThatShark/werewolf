@@ -46,7 +46,7 @@ body {
 }
 
 .num-btn.selected {
-    background-color: #e94560;
+    background-color: #51c9c1;
     border-color: #fff;
     transform: scale(1.1);
 }
