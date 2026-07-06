@@ -36,21 +36,24 @@ export function createNumberPad() {
                 let p2 = dm + 1 > s.totalPlayers ? 1 : dm + 1;
                 if (i !== dm && i !== p1 && i !== p2) isDisabled = true;
             }
+            if (s.alchemistFogTargets && s.alchemistFogTargets.length > 0) {
+                if (!s.alchemistFogTargets.includes(i.toString())) isDisabled = true;
+            }
         }
         if (i === actualCurrentActorSeat) {
             const cannotSelectSelf = [
                 'witch', 'awaken_witch', 'dreamwalker', 'nightmare', 
                 'gargoyle', 'machine_wolf', 'black_market', 'miracle_merchant', 
                 'crow', 'awaken_dreamwalker', 'ghost_bride', 'ghost_bride_couple',
-                'seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'wolf_witch', 'psychic', 'wolf_beauty'
+                'seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'wolf_witch', 'psychic', 'wolf_beauty', 'bear'
             ];
             if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
-            if (s.currentStage === 'bear' && s.playerStatus[i].isVWK) isDisabled = true; 
         }
-        if (s.currentStage === 'awaken_wolf_king_gun' && s.playerRoles[i] !== 'wolf') isDisabled = true;
+        
+        if (s.currentStage === 'awaken_wolf_king_gun' && (s.playerRoles[i] !== 'wolf' || i === actualCurrentActorSeat)) isDisabled = true;
+        
         if (s.currentStage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='ghost_bride')) || i === s.ghostBrideGroom)) isDisabled = true;
         
-        // 奇蹟商人的查驗和毒不能對自己，盾可以對自己
         if (s.currentStage === 'lucky_boy_action' && ['seer', 'poison'].includes(s.merchantItem) && i === actualCurrentActorSeat) isDisabled = true;
 
         if (s.currentStage === 'awaken_gargoyle') {
@@ -84,8 +87,8 @@ export function createNumberPad() {
                 btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
                 return;
             }
-            if (['magician', 'trickster', 'wolf_sorcerer', 'phantom', 'awaken_seer', 'cupid'].includes(s.currentStage)) {
-                let maxSelect = 2;
+            if (['magician', 'trickster', 'wolf_sorcerer', 'phantom', 'awaken_seer', 'cupid', 'alchemist'].includes(s.currentStage)) {
+                let maxSelect = s.currentStage === 'alchemist' ? 3 : 2;
                 if (s.selectedNumber === 'skip') { s.selectedNumber = null; document.getElementById('btn-optional-skip').classList.remove('action-selected'); }
                 if (s.selectedNumbersArr.includes(i)) {
                     s.selectedNumbersArr = s.selectedNumbersArr.filter(n => n !== i); btn.classList.remove('selected');

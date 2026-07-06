@@ -667,33 +667,6 @@
                 }
             },
             {
-                "id": "12_brothers",
-                "name": "狼兄弟黑市 (2小狼/狼兄/狼弟｜4民｜預/女/守｜黑市商人)",
-                "roles": {
-                    "wolf": 2,
-                    "wolf_brother": 1,
-                    "wolf_brother_little": 1,
-                    "villager": 4,
-                    "seer": 1,
-                    "witch": 1,
-                    "guard": 1,
-                    "black_market": 1
-                }
-            },
-            {
-                "id": "12_miracle",
-                "name": "覺醒狼王奇商 (3小狼/覺醒狼王｜4民｜預/女/攝｜奇蹟商人)",
-                "roles": {
-                    "wolf": 3,
-                    "awaken_wolf_king": 1,
-                    "villager": 4,
-                    "seer": 1,
-                    "witch": 1,
-                    "dreamwalker": 1,
-                    "miracle_merchant": 1
-                }
-            },
-            {
                 "id": "12_dream",
                 "name": "狼王攝夢人 (3小狼/狼王｜4民｜預/女/獵/攝)",
                 "roles": {
@@ -835,6 +808,33 @@
                     "hunter": 1,
                     "guard": 1,
                     "psychic": 1
+                }
+            },
+            {
+                "id": "12_brothers",
+                "name": "狼兄弟黑市 (2小狼/狼兄/狼弟｜4民｜預/女/守｜黑市商人)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_brother": 1,
+                    "wolf_brother_little": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "black_market": 1
+                }
+            },
+            {
+                "id": "12_miracle",
+                "name": "覺醒狼王奇商 (3小狼/覺醒狼王｜4民｜預/女/攝｜奇蹟商人)",
+                "roles": {
+                    "wolf": 3,
+                    "awaken_wolf_king": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "dreamwalker": 1,
+                    "miracle_merchant": 1
                 }
             },
             {

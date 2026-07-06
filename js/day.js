@@ -56,6 +56,7 @@ export function calculateNightDeaths() {
     if (actualWitchPoison) {
         let target = parseInt(actualWitchPoison);
         let targetRole = s.playerRoles[target];
+        // 百變狼王攝夢人不會被毒
         if (targetRole === 'dreamwalker' && s.playerStatus[target].isVWK) { }
         else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target)) { }
         else if (targetRole === 'old_hooligan') s.playerStatus[target].poisoned = true;
@@ -141,13 +142,20 @@ export function proceedDayResultRender() {
     let bearRoarText = "";
     let bearSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'bear');
     if (bearSeat && !s.finalKilled.includes(parseInt(bearSeat))) {
-        let bSeat = parseInt(bearSeat);
-        let left = bSeat - 1; while(left !== bSeat) { if(left < 1) left = s.totalPlayers; if(!s.finalKilled.includes(left)) break; left--; }
-        let right = bSeat + 1; while(right !== bSeat) { if(right > s.totalPlayers) right = 1; if(!s.finalKilled.includes(right)) break; right++; }
-        
-        let hasWolf = wolfFaction.includes(s.playerRoles[left]) || wolfFaction.includes(s.playerRoles[right]);
-        if (s.playerStatus[bearSeat]?.isVWK) hasWolf = !hasWolf; 
-        bearRoarText = hasWolf ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
+        if (s.seedWolfTarget === parseInt(bearSeat)) {
+            bearRoarText = "🐻 熊沒有咆哮。<br><br>";
+        } else {
+            let bSeat = parseInt(bearSeat);
+            let left = bSeat - 1; while(left !== bSeat) { if(left < 1) left = s.totalPlayers; if(!s.finalKilled.includes(left)) break; left--; }
+            let right = bSeat + 1; while(right !== bSeat) { if(right > s.totalPlayers) right = 1; if(!s.finalKilled.includes(right)) break; right++; }
+            
+            let hasWolf = wolfFaction.includes(s.playerRoles[left]) || wolfFaction.includes(s.playerRoles[right]);
+            if (s.playerStatus[bearSeat]?.isVWK) {
+                if (s.vwkCharmTarget) hasWolf = wolfFaction.includes(s.playerRoles[s.vwkCharmTarget]);
+                hasWolf = !hasWolf; // 被動結果相反
+            }
+            bearRoarText = hasWolf ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
+        }
     }
 
     let extraText = "";
@@ -161,7 +169,9 @@ export function proceedDayResultRender() {
         s.beautyTarget = null; 
     }
     let hvSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'high_villager');
-    if (hvSeat) extraText += `<span style="color:#fca311;">👑 高級平民是 ${hvSeat} 號玩家！</span><br><br>`;
+    if (hvSeat && s.seedWolfTarget !== parseInt(hvSeat)) {
+        extraText += `<span style="color:#fca311;">👑 高級平民是 ${hvSeat} 號玩家！</span><br><br>`;
+    }
 
     if (s.finalKilled.length === 0) {
         document.getElementById('day-result').innerHTML = bearRoarText + extraText + "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
