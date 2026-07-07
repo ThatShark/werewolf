@@ -1,4 +1,3 @@
-// js/day.js
 import { s, wolfFaction, evilRoles, findNearestWolf } from './core.js';
 
 export function calculateNightDeaths() {
@@ -47,7 +46,15 @@ export function calculateNightDeaths() {
 
         let diesToWolf = false;
         if (['ghost_rider', 'curse_fox'].includes(targetRole) || isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target)) { }
-        else if ((isSaved && isGuarded) || (!isSaved && !isGuarded)) { s.primaryKilled.push(target); diesToWolf = true; }
+        else if (isSaved && isGuarded) {
+            s.primaryKilled.push(target);
+            diesToWolf = true;
+            s.playerStatus[target].deathReason = "奶穿";
+        } else if (!isSaved && !isGuarded) {
+            s.primaryKilled.push(target);
+            diesToWolf = true;
+            s.playerStatus[target].deathReason = (s.bigBadWolfKillTarget === target) ? "大野狼擊殺" : "狼刀";
+        }
 
         if (diesToWolf && targetRole === 'pufferfish') s.pufferfishTriggered = true;
         if (diesToWolf && targetRole === 'rust_sword_knight') s.rustSwordInfectedTarget = findNearestWolf(target, -1);
@@ -56,11 +63,13 @@ export function calculateNightDeaths() {
     if (actualWitchPoison) {
         let target = parseInt(actualWitchPoison);
         let targetRole = s.playerRoles[target];
-        // 百變狼王攝夢人不會被毒
         if (targetRole === 'dreamwalker' && s.playerStatus[target].isVWK) { }
         else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target)) { }
         else if (targetRole === 'old_hooligan') s.playerStatus[target].poisoned = true;
-        else if (!s.primaryKilled.includes(target)) s.primaryKilled.push(target);
+        else if (!s.primaryKilled.includes(target)) {
+            s.primaryKilled.push(target);
+            s.playerStatus[target].deathReason = "毒殺";
+        }
     }
 
     let awbSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_wolf_beauty');
@@ -96,6 +105,7 @@ export function calculateNightDeaths() {
         let merchSeat = Object.keys(s.playerRoles).find(k => ['black_market', 'miracle_merchant'].includes(s.playerRoles[k]));
         if (merchSeat && !s.finalKilled.includes(parseInt(merchSeat))) {
             s.primaryKilled.push(parseInt(merchSeat)); s.finalKilled.push(parseInt(merchSeat));
+            s.playerStatus[parseInt(merchSeat)].deathReason = "給狼技能反噬";
         }
     }
 }
@@ -108,30 +118,31 @@ export function handleChainDeaths() {
     [dwSeat, vwkDreamSeat].forEach(seat => {
         if (seat && s.finalKilled.includes(parseInt(seat)) && s.dreamTarget && !s.finalKilled.includes(s.dreamTarget)) {
             s.chainKilled.push(s.dreamTarget); s.finalKilled.push(s.dreamTarget); changed = true;
+            s.playerStatus[s.dreamTarget].deathReason = "連帶死亡(被攝夢)";
         }
     });
 
     if (s.phantomTargets.length === 2) {
         let [p1, p2] = s.phantomTargets;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { s.chainKilled.push(p2); s.finalKilled.push(p2); s.phantomTargets = []; changed = true; } 
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { s.chainKilled.push(p1); s.finalKilled.push(p1); s.phantomTargets = []; changed = true; }
+        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { s.chainKilled.push(p2); s.finalKilled.push(p2); s.phantomTargets = []; s.playerStatus[p2].deathReason = "連帶死亡(尋香綁定)"; changed = true; } 
+        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { s.chainKilled.push(p1); s.finalKilled.push(p1); s.phantomTargets = []; s.playerStatus[p1].deathReason = "連帶死亡(尋香綁定)"; changed = true; }
     }
     
     if (s.cupidLovers.length === 2) {
         let [p1, p2] = s.cupidLovers;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { s.chainKilled.push(p2); s.finalKilled.push(p2); s.cupidLovers = []; changed = true; } 
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { s.chainKilled.push(p1); s.finalKilled.push(p1); s.cupidLovers = []; changed = true; }
+        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { s.chainKilled.push(p2); s.finalKilled.push(p2); s.cupidLovers = []; s.playerStatus[p2].deathReason = "連帶死亡(情侶殉情)"; changed = true; } 
+        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { s.chainKilled.push(p1); s.finalKilled.push(p1); s.cupidLovers = []; s.playerStatus[p1].deathReason = "連帶死亡(情侶殉情)"; changed = true; }
     }
 
     if (s.ghostBrideGroom && s.ghostBrideWitness) {
         let gSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_bride'));
-        if (s.finalKilled.includes(gSeat) && !s.finalKilled.includes(s.ghostBrideGroom)) { s.chainKilled.push(s.ghostBrideGroom); s.finalKilled.push(s.ghostBrideGroom); changed = true; } 
-        else if (s.finalKilled.includes(s.ghostBrideGroom) && !s.finalKilled.includes(gSeat)) { s.chainKilled.push(gSeat); s.finalKilled.push(gSeat); changed = true; }
+        if (s.finalKilled.includes(gSeat) && !s.finalKilled.includes(s.ghostBrideGroom)) { s.chainKilled.push(s.ghostBrideGroom); s.finalKilled.push(s.ghostBrideGroom); s.playerStatus[s.ghostBrideGroom].deathReason = "連帶死亡(新郎殉情)"; changed = true; } 
+        else if (s.finalKilled.includes(s.ghostBrideGroom) && !s.finalKilled.includes(gSeat)) { s.chainKilled.push(gSeat); s.finalKilled.push(gSeat); s.playerStatus[gSeat].deathReason = "連帶死亡(新郎死亡)"; changed = true; }
     }
 
     let adSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_dreamwalker');
     if (adSeat && s.finalKilled.includes(parseInt(adSeat)) && s.awakenDreamwalkerTarget && !s.finalKilled.includes(s.awakenDreamwalkerTarget)) {
-        s.chainKilled.push(s.awakenDreamwalkerTarget); s.finalKilled.push(s.awakenDreamwalkerTarget); changed = true;
+        s.chainKilled.push(s.awakenDreamwalkerTarget); s.finalKilled.push(s.awakenDreamwalkerTarget); s.playerStatus[s.awakenDreamwalkerTarget].deathReason = "連帶死亡(夢語者)"; changed = true;
     }
 
     if (changed) handleChainDeaths(); 
@@ -152,7 +163,7 @@ export function proceedDayResultRender() {
             let hasWolf = wolfFaction.includes(s.playerRoles[left]) || wolfFaction.includes(s.playerRoles[right]);
             if (s.playerStatus[bearSeat]?.isVWK) {
                 if (s.vwkCharmTarget) hasWolf = wolfFaction.includes(s.playerRoles[s.vwkCharmTarget]);
-                hasWolf = !hasWolf; // 被動結果相反
+                hasWolf = !hasWolf; 
             }
             bearRoarText = hasWolf ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
         }
@@ -212,6 +223,8 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     }
 
     s.finalKilled.push(seat);
+    s.playerStatus[seat].deathReason = isShot ? "白天開槍/技能擊殺" : "連帶死亡(情侶/魅惑/尋香/夢語者)";
+
     if (canShoot) {
         if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
             s.dayShootersQueue.push({ seat, role });

@@ -1,4 +1,3 @@
-// js/core.js
 export const s = {
     totalPlayers: 12, currentBoard: null, playerRoles: {}, playerStatus: {},
     isRandomMode: false, currentViewingSeat: 1, nightQueue: [], currentStage: null, 
@@ -10,7 +9,7 @@ export const s = {
     phantomTargets: [], awakenSeerTargets: [], awakenBeautyTarget: null, phantomKnownWolf: null, 
     spareCards: [], discardedRoles: [], initialThiefSeat: null, thiefChosenRole: null, cupidLovers: [], 
     merchantTarget: null, merchantItem: null, merchantType: null, awakenWitchStep: null, awakenWitchAssistant: null, 
-    awakenWitchAssistantAgreed: null, vwkCharmTarget: null,
+    awakenWitchAssistantAgreed: null, vwkCharmTarget: null, actedPlayers: [],
     alchemistFogTargets: [], alchemistSnakeUsed: false, vwkSeat: null, awakenWolfGunTarget: null,
     halfBloodTarget: null, wildChildTarget: null, lonelyGirlTarget: null, timeWolfTarget: null, 
     awakenIdiotTarget: null, crowTarget: null, seedWolfTarget: null, isSeedWolfInfecting: false, 

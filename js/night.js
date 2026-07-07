@@ -1,6 +1,4 @@
-// js/night.js
-import { s, wolfFaction, evilRoles, getActualTarget, applyTimeWolfReflection, getStageVoiceName, speak } from './core.js';
-import { runNextNightRole } from './main.js';
+import { s, wolfFaction, getActualTarget, applyTimeWolfReflection } from './core.js';
 
 export function resetSelections() {
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
@@ -19,8 +17,15 @@ export function resetSelections() {
 export function createNumberPad() {
     const numberPad = document.getElementById('number-pad');
     numberPad.innerHTML = '';
+    
+    // 找出當前行動的玩家座位
     let actualCurrentActorSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === s.currentStage || s.playerRoles[k] === 'awaken_' + s.currentStage) || -1);
     if (s.currentActorSeat) actualCurrentActorSeat = parseInt(s.currentActorSeat);
+    
+    // 修復覺醒狼王分槍時，找不到對應座位導致能點自己的Bug
+    if (s.currentStage === 'awaken_wolf_king_gun') {
+        actualCurrentActorSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_wolf_king'));
+    }
 
     for (let i = 1; i <= s.totalPlayers; i++) {
         const btn = document.createElement('button');
@@ -37,7 +42,7 @@ export function createNumberPad() {
                 if (i !== dm && i !== p1 && i !== p2) isDisabled = true;
             }
             if (s.alchemistFogTargets && s.alchemistFogTargets.length > 0) {
-                if (!s.alchemistFogTargets.includes(i.toString())) isDisabled = true;
+                if (!s.alchemistFogTargets.includes(i.toString()) && !s.alchemistFogTargets.includes(i)) isDisabled = true;
             }
         }
         if (i === actualCurrentActorSeat) {
@@ -50,7 +55,7 @@ export function createNumberPad() {
             if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
         }
         
-        if (s.currentStage === 'awaken_wolf_king_gun' && (s.playerRoles[i] !== 'wolf' || i === actualCurrentActorSeat)) isDisabled = true;
+        if (s.currentStage === 'awaken_wolf_king_gun' && (!wolfFaction.includes(s.playerRoles[i]) || i === actualCurrentActorSeat)) isDisabled = true;
         
         if (s.currentStage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.playerRoles).find(k=>s.playerRoles[k]==='ghost_bride')) || i === s.ghostBrideGroom)) isDisabled = true;
         
@@ -71,14 +76,15 @@ export function createNumberPad() {
         }
         
         btn.addEventListener('click', () => {
+            // 解除熊的按鈕封鎖，讓百變狼王可以順利魅惑對象
             if (s.currentRoleFeared || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.currentStage) || s.currentStage.startsWith('notify_')) return;
 
             const btnConfirmAction = document.getElementById('btn-confirm-action');
             if (s.currentStage === 'awaken_witch' && s.awakenWitchStep === 'poison_target') {
                 resetSelections(); btn.classList.add('selected');
+                s.selectedNumber = i;
                 s.witchPoisonTarget = applyTimeWolfReflection(getActualTarget(parseInt(i)), s.currentActorSeat);
-                s.awakenWitchStep = 'assistant_target';
-                document.getElementById('night-instruction').textContent = "請選擇你要指派的協助者：";
+                btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "下一步";
                 return;
             }
             if (s.currentStage === 'awaken_witch' && s.awakenWitchStep === 'assistant_target') {
