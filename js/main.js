@@ -1,6 +1,20 @@
+// js/main.js
 import { s, getStageVoiceName, getActualTarget, applyTimeWolfReflection, wolfFaction, evilRoles, speak } from './core.js';
 import { createNumberPad, resetSelections } from './night.js';
 import { calculateNightDeaths, proceedDayResultRender, handleChainDeaths } from './day.js';
+
+export function generateSpeechOrder(candidatesArray) {
+    let pool = candidatesArray ? [...candidatesArray] : [];
+    if (!candidatesArray) {
+        for (let i = 1; i <= s.totalPlayers; i++) {
+            if (!s.finalKilled.includes(i)) pool.push(i);
+        }
+    }
+    if (pool.length === 0) return "無人發言";
+    let startPlayer = pool[Math.floor(Math.random() * pool.length)];
+    let direction = Math.random() > 0.5 ? "順序 (號碼遞增)" : "逆序 (號碼遞減)";
+    return `請從 【 ${startPlayer} 號 】 玩家開始<br>以 【 ${direction} 】 進行發言。`;
+}
 
 function buildNightQueue() {
     s.nightQueue = [];
@@ -124,9 +138,12 @@ export function showDayResult() {
     const dayResultContent = document.getElementById('day-result-content');
 
     if (alchSeat && !s.alchemistSnakeUsed && !s.primaryKilled.includes(parseInt(alchSeat))) {
+        let orderHtml = s.speechOrderText ? `<div style="background:#16213e; padding:10px; border-radius:6px; margin: 15px 0;"><span style="color:#00ff88; font-size:18px; font-weight:bold;">🗣️ 發言順序：<br>${s.speechOrderText}</span></div>` : "";
+        
         alchemistCallSection.innerHTML = `
             <div style="background:#24345e; padding:20px; border-radius:8px; margin-bottom: 20px;">
                 <h3 style="color:#fca311; margin-top:0;">🗣️ 白天發言階段</h3>
+                ${orderHtml}
                 <p style="color:#a2a8d3;">請所有玩家進行發言。發言結束後，法官將公佈昨晚被狼刀的對象，並由煉金魔女決定是否使用法老之蛇。</p>
                 <button id="btn-end-speech" class="primary-btn" style="margin-top:15px;">發言結束，公佈狼刀</button>
             </div>
@@ -210,7 +227,9 @@ export function runNextNightRole() {
             if (document.getElementById('setting-sheriff').checked) {
                 document.getElementById('screen-night').classList.add('hidden');
                 document.getElementById('screen-sheriff').classList.remove('hidden');
+                initSheriffScreen(); 
             } else {
+                s.speechOrderText = generateSpeechOrder(null); 
                 showDayResult();
             }
         });
@@ -241,7 +260,6 @@ export function runNextNightRole() {
     let actorSeat = s.currentActorSeat || Object.keys(s.playerRoles).find(k => s.playerRoles[k] === s.currentStage || s.playerRoles[k] === 'awaken_' + s.currentStage);
     let isVWKTurn = actorSeat && s.playerStatus[actorSeat]?.isVWK;
 
-    // 修復：神職被種狼感染時，UI全禁用，播放睜眼語音後等3-5秒，自動播放閉眼語音並跳過回合
     if (s.seedWolfTarget === parseInt(actorSeat)) {
         let name = getStageVoiceName(s.currentStage, s.currentSubLabel);
         let baseRole = s.currentStage.replace('_A', '').replace('_B', '');
@@ -256,7 +274,7 @@ export function runNextNightRole() {
                 speak(`${name}請閉眼。`, runNextNightRole);
             }, 3000 + Math.random() * 2000);
         });
-        return; // 中斷後續的常規渲染與語音
+        return;
     }
 
     if (isVWKTurn) {
@@ -594,7 +612,7 @@ export function runNextNightRole() {
             return `${id}號${tag}`;
         }).join(', ');
         let dmText = s.divinerMark ? `<br><span style="color:#fca311;">⚠️ 占卜師已發動技能，只能刀 ${s.divinerMark}號 及左右兩號</span>` : '';
-        let alchText = s.alchemistFogTargets.length > 0 ? `<br><span style="color:#fca311;">⚠️ 煉金魔女已施放迷霧，只能從 ${s.alchemistFogTargets.join(', ')} 號中擊殺</span>` : '';
+        let alchText = s.alchemistFogTargets.length > 0 ? `<br><span style="color:#fca311;">⚠️ 煉金魔女已施放迷霧，只能從 ${s.alchemistFogTargets.sort().join(', ')} 號中擊殺</span>` : '';
         nightRoleTitle.textContent = hasLG ? "🐺 狼隊與小女孩行動" : "🐺 狼人行動";
 
         if (Object.values(s.playerRoles).includes('seed_wolf')) {
@@ -697,6 +715,50 @@ export function runNextNightRole() {
     speak(`${voiceName}請睜眼。`);
 }
 
+function initSheriffScreen() {
+    document.getElementById('sheriff-setup-section').classList.remove('hidden');
+    document.getElementById('sheriff-action-section').classList.add('hidden');
+    document.getElementById('sheriff-result-section').classList.add('hidden');
+    
+    const btnStart = document.getElementById('btn-start-sheriff-speech');
+    const btnNoSheriff = document.getElementById('btn-no-sheriff-candidates');
+    btnStart.classList.add('hidden');
+    btnNoSheriff.classList.remove('hidden');
+
+    const pad = document.getElementById('sheriff-numpad');
+    pad.innerHTML = '';
+    s.sheriffCandidates = [];
+    
+    for (let i = 1; i <= s.totalPlayers; i++) {
+        let btn = document.createElement('button');
+        btn.className = 'num-btn';
+        btn.textContent = i;
+        btn.onclick = () => {
+            if (s.sheriffCandidates.includes(i)) {
+                s.sheriffCandidates = s.sheriffCandidates.filter(x => x !== i);
+                btn.classList.remove('selected');
+            } else {
+                s.sheriffCandidates.push(i);
+                btn.classList.add('selected');
+            }
+            
+            if (s.sheriffCandidates.length === 0) {
+                btnStart.classList.add('hidden');
+                btnNoSheriff.classList.remove('hidden');
+            } else if (s.sheriffCandidates.length === 1) {
+                btnStart.classList.remove('hidden');
+                btnStart.textContent = "僅一人上警 (自動當選並結算)";
+                btnNoSheriff.classList.add('hidden');
+            } else {
+                btnStart.classList.remove('hidden');
+                btnStart.textContent = "確認競選名單並開始發言";
+                btnNoSheriff.classList.add('hidden');
+            }
+        };
+        pad.appendChild(btn);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const style = document.createElement('style');
     style.innerHTML = `.action-selected { background-color: #51c9c1 !important; color: white !important; border: 2px solid #fff !important; transform: scale(1.05); }`;
@@ -722,7 +784,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnReset = document.getElementById('btn-reset');
     const lockModal = document.getElementById('lock-modal');
     const roleModal = document.getElementById('role-modal');
-    const btnFinishSheriff = document.getElementById('btn-finish-sheriff');
+
+    document.getElementById('btn-start-sheriff-speech').addEventListener('click', () => {
+        if (s.sheriffCandidates.length === 1) {
+            s.speechOrderText = null; 
+            document.getElementById('screen-sheriff').classList.add('hidden');
+            showDayResult();
+        } else {
+            document.getElementById('sheriff-setup-section').classList.add('hidden');
+            document.getElementById('sheriff-action-section').classList.remove('hidden');
+            document.getElementById('sheriff-speech-order').innerHTML = generateSpeechOrder(s.sheriffCandidates);
+        }
+    });
+
+    document.getElementById('btn-no-sheriff-candidates').addEventListener('click', () => {
+        s.speechOrderText = generateSpeechOrder(null); 
+        document.getElementById('screen-sheriff').classList.add('hidden');
+        showDayResult();
+    });
+
+    document.getElementById('btn-finish-sheriff').addEventListener('click', () => {
+        document.getElementById('sheriff-action-section').classList.add('hidden');
+        document.getElementById('sheriff-result-section').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-sheriff-wolf-blow').addEventListener('click', () => {
+        s.speechOrderText = null; 
+        screenSheriff.classList.add('hidden');
+        showDayResult();
+    });
+
+    document.getElementById('btn-sheriff-elected').addEventListener('click', () => {
+        s.speechOrderText = null; 
+        screenSheriff.classList.add('hidden');
+        showDayResult();
+    });
+
+    document.getElementById('btn-sheriff-not-elected').addEventListener('click', () => {
+        s.speechOrderText = generateSpeechOrder(null); 
+        screenSheriff.classList.add('hidden');
+        showDayResult();
+    });
 
     const judgeModal = document.getElementById('judge-modal');
     const btnCloseJudge = document.getElementById('btn-close-judge');
@@ -1162,8 +1264,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s.currentStage === 'awaken_witch') s.awakenWitchStep = null;
     });
 
-    btnFinishSheriff.addEventListener('click', () => { screenSheriff.classList.add('hidden'); showDayResult(); });
-
     btnShowJudge.addEventListener('click', () => {
         let statusHtml = '';
         for (let i = 1; i <= s.totalPlayers; i++) {
@@ -1226,6 +1326,8 @@ document.addEventListener('DOMContentLoaded', () => {
         s.halfBloodTarget = null; s.wildChildTarget = null; s.lonelyGirlTarget = null; s.timeWolfTarget = null; s.awakenIdiotTarget = null; s.crowTarget = null;
         s.seedWolfTarget = null; s.isSeedWolfInfecting = false; s.awakenGargoyleTarget = null; s.awakenDreamwalkerTarget = null; s.ghostBrideGroom = null; s.ghostBrideWitness = null;
         s.primaryKilled = []; s.chainKilled = []; s.currentSubLabel = null; s.isFakeWake = false; s.currentRoleFeared = false; s.rustSwordInfectedTarget = null; s.bigBadWolfKillTarget = null;
+        
+        s.sheriffCandidates = []; s.speechOrderText = null;
 
         let tCalc = document.getElementById('trickster-calc'); if (tCalc) tCalc.remove();
         document.getElementById('crow-record-panel').classList.add('hidden');

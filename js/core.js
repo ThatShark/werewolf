@@ -16,6 +16,7 @@ export const s = {
     awakenGargoyleTarget: null, awakenDreamwalkerTarget: null, ghostBrideGroom: null, ghostBrideWitness: null,
     whiteCatFlippedLastNight: false, pufferfishTriggered: false, rustSwordInfectedTarget: null, 
     primaryKilled: [], chainKilled: [], finalKilled: [], dayShootersQueue: [], ghostRiderReflected: false,
+    sheriffCandidates: [], speechOrderText: null, // 新增：用於記錄上警候選人與白天發言順序文字
     ROLE_DICT: {}, BOARD_CONFIGS: {}
 };
 

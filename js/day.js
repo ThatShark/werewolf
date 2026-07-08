@@ -184,11 +184,12 @@ export function proceedDayResultRender() {
         extraText += `<span style="color:#fca311;">👑 高級平民是 ${hvSeat} 號玩家！</span><br><br>`;
     }
 
+    let htmlOutput = bearRoarText + extraText;
     if (s.finalKilled.length === 0) {
-        document.getElementById('day-result').innerHTML = bearRoarText + extraText + "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
+        htmlOutput += "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
     } else {
         s.finalKilled.sort((a, b) => a - b);
-        document.getElementById('day-result').innerHTML = bearRoarText + extraText + `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.finalKilled.join(' 號、')} 號</span>`;
+        htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.finalKilled.join(' 號、')} 號</span>`;
 
         s.dayShootersQueue = [];
         s.finalKilled.forEach(seat => {
@@ -204,10 +205,16 @@ export function proceedDayResultRender() {
                 }
             }
         });
-
-        if (s.dayShootersQueue.length > 0) processNextShooter();
-        else triggerTricksterVoteSection();
     }
+
+    if (s.speechOrderText) {
+        htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speechOrderText}</span>`;
+    }
+
+    document.getElementById('day-result').innerHTML = htmlOutput;
+
+    if (s.dayShootersQueue.length > 0) processNextShooter();
+    else triggerTricksterVoteSection();
 }
 
 export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
@@ -274,7 +281,7 @@ export function processNextShooter() {
 
     const finishShooterTurn = () => {
         s.finalKilled.sort((a, b) => a - b);
-        let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.finalKilled.join(' 號、')} 號</span>`;
+        let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.finalKilled.join(' 號、')} 號</span>` + (s.speechOrderText ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speechOrderText}</span>` : "");
         document.getElementById('day-result').innerHTML = dayResultStr;
         s.dayShootersQueue.shift(); processNextShooter(); 
     };

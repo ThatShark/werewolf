@@ -56,7 +56,7 @@
 
         <div id="screen-night" class="screen hidden">
             <h2 id="night-role-title">角色名稱</h2>
-            <p id="night-instruction" style="color: #a2a8d3;">請依照語音指示行動...</p>
+            <p id="night-instruction" style="color: #a2a8d3;"></p>
 
             <div id="number-pad" class="grid-container hidden"></div>
 
@@ -68,8 +68,33 @@
 
         <div id="screen-sheriff" class="screen hidden">
             <h2>📢 上警環節</h2>
-            <p style="color: #a2a8d3; margin-bottom: 20px;">請要競選警長的玩家舉手，並進行發言與投票。</p>
-            <button id="btn-finish-sheriff" class="primary-btn">警長選舉結束，公布昨晚死訊</button>
+            
+            <div id="sheriff-setup-section">
+                <p style="color: #a2a8d3; margin-bottom: 20px;">請點擊參與警長競選的玩家編號：</p>
+                <div id="sheriff-numpad" class="grid-container"></div>
+                <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <button id="btn-start-sheriff-speech" class="primary-btn hidden">確認競選名單並開始發言</button>
+                    <button id="btn-no-sheriff-candidates" class="secondary-btn">無人競選 (警徽流失)</button>
+                </div>
+            </div>
+
+            <div id="sheriff-action-section" class="hidden">
+                <h3 style="color:#fca311;">🗣️ 警長競選發言</h3>
+                <p id="sheriff-speech-order" style="font-size: 24px; font-weight: bold; margin: 20px 0; color: #00ff88; line-height: 1.5;"></p>
+                <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <button id="btn-finish-sheriff" class="primary-btn">警長競選結束 (開始投票)</button>
+                    <button id="btn-sheriff-wolf-blow" class="secondary-btn" style="border: 1px solid #e94560;">🐺 狼人自爆 (跳過競選)</button>
+                </div>
+            </div>
+
+            <div id="sheriff-result-section" class="hidden">
+                <h3 style="color:#fca311;">🎖️ 警長選舉結果</h3>
+                <p style="color: #a2a8d3; margin-bottom: 20px; font-size: 18px;">請問是否有順利選出警長？</p>
+                <div style="display:flex; flex-direction: column; gap: 10px;">
+                    <button id="btn-sheriff-elected" class="primary-btn">✅ 有選出警長</button>
+                    <button id="btn-sheriff-not-elected" class="secondary-btn">❌ 沒有選出警長 (警徽流失)</button>
+                </div>
+            </div>
         </div>
 
         <div id="screen-day" class="screen hidden">
@@ -78,7 +103,7 @@
             <div id="alchemist-call-section" class="hidden" style="margin-bottom: 20px;"></div>
 
             <div id="day-result-content">
-                <p id="day-result" style="font-size: 24px; font-weight: bold; margin: 20px 0;"></p>
+                <p id="day-result" style="font-size: 24px; font-weight: bold; margin: 20px 0; line-height: 1.5;"></p>
                 <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋 查看法官紀錄</button>
 
                 <div id="day-skill-section" class="hidden" style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
