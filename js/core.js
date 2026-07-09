@@ -1,26 +1,32 @@
 export const s = {
     totalPlayers: 12, currentBoard: null, playerRoles: {}, playerStatus: {},
-    isRandomMode: false, currentViewingSeat: 1, nightQueue: [], currentStage: null, 
-    currentActorSeat: null, currentSubLabel: null, selectedNumber: null, selectedNumbersArr: [], 
+    isRandomMode: false, currentViewingSeat: 1, nightQueue: [], currentStage: null,
+    currentActorSeat: null, currentSubLabel: null, selectedNumber: null, selectedNumbersArr: [],
     isShowingResult: false, currentRoleFeared: false, isFakeWake: false, nightActionLog: [],
-    magicianSwap: [], tricksterSwap: [], wolfSorcererSwap: [], nightmareTarget: null, gargoyleTarget: null, 
-    beautyTarget: null, dreamTarget: null, guardTarget: null, wolfKillTarget: null, witchPoisonTarget: null, 
-    witchSaved: false, seerTarget: null, bigBadWolfKillTarget: null, wolfCrowMark: null, machineWolfTarget: null, 
-    phantomTargets: [], awakenSeerTargets: [], awakenBeautyTarget: null, phantomKnownWolf: null, 
-    spareCards: [], discardedRoles: [], initialThiefSeat: null, thiefChosenRole: null, cupidLovers: [], 
-    merchantTarget: null, merchantItem: null, merchantType: null, awakenWitchStep: null, awakenWitchAssistant: null, 
+    magicianSwap: [], tricksterSwap: [], wolfSorcererSwap: [], nightmareTarget: null, gargoyleTarget: null,
+    beautyTarget: null, dreamTarget: null, guardTarget: null, wolfKillTarget: null, witchPoisonTarget: null,
+    witchSaved: false, seerTarget: null, bigBadWolfKillTarget: null, wolfCrowMark: null, machineWolfTarget: null,
+    phantomTargets: [], awakenSeerTargets: [], awakenBeautyTarget: null, phantomKnownWolf: null,
+    spareCards: [], discardedRoles: [], initialThiefSeat: null, thiefChosenRole: null, cupidLovers: [],
+    merchantTarget: null, merchantItem: null, merchantType: null, awakenWitchStep: null, awakenWitchAssistant: null,
     awakenWitchAssistantAgreed: null, vwkCharmTarget: null, actedPlayers: [],
     alchemistFogTargets: [], alchemistSnakeUsed: false, vwkSeat: null, awakenWolfGunTarget: null,
-    halfBloodTarget: null, wildChildTarget: null, lonelyGirlTarget: null, timeWolfTarget: null, 
-    awakenIdiotTarget: null, crowTarget: null, seedWolfTarget: null, isSeedWolfInfecting: false, 
+    halfBloodTarget: null, wildChildTarget: null, lonelyGirlTarget: null, timeWolfTarget: null,
+    awakenIdiotTarget: null, crowTarget: null, seedWolfTarget: null, isSeedWolfInfecting: false,
     awakenGargoyleTarget: null, awakenDreamwalkerTarget: null, ghostBrideGroom: null, ghostBrideWitness: null,
-    whiteCatFlippedLastNight: false, pufferfishTriggered: false, rustSwordInfectedTarget: null, 
+    whiteCatFlippedLastNight: false, pufferfishTriggered: false, rustSwordInfectedTarget: null,
     primaryKilled: [], chainKilled: [], finalKilled: [], dayShootersQueue: [], ghostRiderReflected: false,
-    sheriffCandidates: [], speechOrderText: null, // 新增：用於記錄上警候選人與白天發言順序文字
-    ROLE_DICT: {}, BOARD_CONFIGS: {}
+    sheriffCandidates: [], speechOrderText: null, ROLE_DICT: {}, BOARD_CONFIGS: {}, shadowSeerSeat: null, awakenGargoyleTargetA: null, awakenGargoyleTargetB: null, pleasantGoatGuard: null, pleasantGoatAntiTheft: null, greyWolfStolenPlayer: null, greyWolfStolenSkill: null, greyWolfGuess: null,
 };
 
-export const wolfFaction = ['wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon', 'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'mask_wolf', 'wolf_witch', 'wolf_crow', 'awaken_wolf_beauty', 'night_mentor', 'eclipse_maid', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'big_bad_wolf', 'seed_wolf', 'big_grey_wolf', 'hidden_wolf'];
+export const wolfFaction = [
+    'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon',
+    'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'mask_wolf', 'wolf_witch',
+    'wolf_crow', 'awaken_wolf_beauty', 'night_mentor', 'eclipse_maid', 'night_noble',
+    'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'awaken_gargoyle_A',
+    'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_grey_wolf', 'hidden_wolf',
+    'grey_wolf', 'little_grey_wolf'
+];
 export const evilRoles = [...wolfFaction, 'gargoyle', 'nightmare', 'machine_wolf'];
 
 export function speak(text, callback) {
