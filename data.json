@@ -7,6 +7,13 @@
                 210
             ]
         },
+        "little_gray_wolf": {
+            "name": "小灰灰",
+            "icon": "🐺",
+            "wakeOrder": [
+                210
+            ]
+        },
         "wolf_king": {
             "name": "狼王",
             "icon": "👑",
@@ -36,6 +43,13 @@
                 270
             ]
         },
+        "nightmare": {
+            "name": "夢魘",
+            "icon": "🌑",
+            "wakeOrder": [
+                140
+            ]
+        },
         "blood_moon": {
             "name": "血月使徒",
             "icon": "🩸",
@@ -48,13 +62,6 @@
             "icon": "🦇",
             "wakeOrder": [
                 340
-            ]
-        },
-        "nightmare": {
-            "name": "夢魘",
-            "icon": "🌑",
-            "wakeOrder": [
-                140
             ]
         },
         "machine_wolf": {
@@ -80,6 +87,13 @@
                 210
             ]
         },
+        "hidden_wolf": {
+            "name": "隱狼",
+            "icon": "🐺😶‍🌫️",
+            "wakeOrder": [
+                90
+            ]
+        },
         "awaken_wolf_king": {
             "name": "覺醒狼王",
             "icon": "👑✨",
@@ -89,24 +103,12 @@
                 235
             ]
         },
-        "mask_wolf": {
-            "name": "假面",
-            "icon": "🎭",
+        "phantom": {
+            "name": "尋香魅影",
+            "icon": "🌸",
             "wakeOrder": [
-                210
+                130
             ]
-        },
-        "wolf_witch": {
-            "name": "狼巫",
-            "icon": "🧙‍♀️",
-            "wakeOrder": [
-                210,
-                260
-            ]
-        },
-        "wolf_crow": {
-            "name": "狼鴉之爪",
-            "icon": "🦅"
         },
         "awaken_wolf_beauty": {
             "name": "覺醒狼美人",
@@ -114,27 +116,6 @@
             "wakeOrder": [
                 190,
                 210
-            ]
-        },
-        "night_mentor": {
-            "name": "寂夜導師",
-            "icon": "🌙",
-            "wakeOrder": [
-                210
-            ]
-        },
-        "eclipse_maid": {
-            "name": "蝕日侍女",
-            "icon": "🌑",
-            "wakeOrder": [
-                210
-            ]
-        },
-        "hidden_wolf": {
-            "name": "隱狼",
-            "icon": "🐺😶‍🌫️",
-            "wakeOrder": [
-                90
             ]
         },
         "trickster": {
@@ -175,19 +156,30 @@
                 251
             ]
         },
-        "little_gray_wolf": {
-            "name": "小灰灰",
-            "icon": "🐺",
+        "wolf_witch": {
+            "name": "狼巫",
+            "icon": "🧙‍♀️",
+            "wakeOrder": [
+                210,
+                260
+            ]
+        },
+        "wolf_crow": {
+            "name": "狼鴉之爪",
+            "icon": "🦅"
+        },
+        "night_mentor": {
+            "name": "寂夜導師",
+            "icon": "🌙",
             "wakeOrder": [
                 210
             ]
         },
-        "gray_wolf": {
-            "name": "灰太狼",
-            "icon": "🐺🎩",
+        "eclipse_maid": {
+            "name": "蝕日侍女",
+            "icon": "🌑",
             "wakeOrder": [
-                148,
-                325
+                210
             ]
         },
         "time_wolf": {
@@ -195,6 +187,13 @@
             "icon": "⏳",
             "wakeOrder": [
                 200,
+                210
+            ]
+        },
+        "mask_wolf": {
+            "name": "假面",
+            "icon": "🎭",
+            "wakeOrder": [
                 210
             ]
         },
@@ -227,6 +226,14 @@
                 210
             ]
         },
+        "gray_wolf": {
+            "name": "灰太狼",
+            "icon": "🐺🎩",
+            "wakeOrder": [
+                148,
+                325
+            ]
+        },
         "villager": {
             "name": "平民",
             "icon": "🧑‍🌾"
@@ -234,6 +241,10 @@
         "alpaca": {
             "name": "羊駝",
             "icon": "🦙"
+        },
+        "old_hooligan": {
+            "name": "老流氓",
+            "icon": "👴"
         },
         "high_villager": {
             "name": "高級平民",
@@ -260,61 +271,6 @@
                 311
             ]
         },
-        "witch": {
-            "name": "女巫",
-            "icon": "🧪",
-            "wakeOrder": [
-                290
-            ]
-        },
-        "hunter": {
-            "name": "獵人",
-            "icon": "🎯",
-            "wakeOrder": [
-                330
-            ]
-        },
-        "guard": {
-            "name": "守衛",
-            "icon": "🛡️",
-            "wakeOrder": [
-                150
-            ]
-        },
-        "idiot": {
-            "name": "白痴",
-            "icon": "🤡"
-        },
-        "dreamwalker": {
-            "name": "攝夢人",
-            "icon": "💤",
-            "wakeOrder": [
-                170
-            ]
-        },
-        "magician": {
-            "name": "魔術師",
-            "icon": "🎩",
-            "wakeOrder": [
-                110
-            ]
-        },
-        "knight": {
-            "name": "騎士",
-            "icon": "⚔️"
-        },
-        "old_hooligan": {
-            "name": "老流氓",
-            "icon": "👴"
-        },
-        "grave_keeper": {
-            "name": "守墓人",
-            "icon": "🪦"
-        },
-        "demon_hunter": {
-            "name": "獵魔人",
-            "icon": "🏹"
-        },
         "psychic": {
             "name": "通靈師",
             "icon": "🔮",
@@ -329,16 +285,37 @@
                 312
             ]
         },
-        "phantom": {
-            "name": "尋香魅影",
-            "icon": "🌸",
+        "pure_white": {
+            "name": "純白之女",
+            "icon": "🕊️",
             "wakeOrder": [
-                130
+                310
             ]
         },
-        "awaken_hunter": {
-            "name": "覺醒獵人",
-            "icon": "🎯✨"
+        "bear": {
+            "name": "熊",
+            "icon": "🐻"
+        },
+        "little_girl": {
+            "name": "小女孩",
+            "icon": "👧",
+            "wakeOrder": [
+                210
+            ]
+        },
+        "real_fox": {
+            "name": "狐狸",
+            "icon": "🦊",
+            "wakeOrder": [
+                310
+            ]
+        },
+        "witch": {
+            "name": "女巫",
+            "icon": "🧪",
+            "wakeOrder": [
+                290
+            ]
         },
         "awaken_witch": {
             "name": "覺醒女巫",
@@ -349,17 +326,6 @@
                 295
             ]
         },
-        "dancer": {
-            "name": "舞者",
-            "icon": "💃"
-        },
-        "pure_white": {
-            "name": "純白之女",
-            "icon": "🕊️",
-            "wakeOrder": [
-                310
-            ]
-        },
         "alchemist": {
             "name": "煉金魔女",
             "icon": "⚗️",
@@ -367,29 +333,45 @@
                 160
             ]
         },
-        "day_scholar": {
-            "name": "白晝學者",
-            "icon": "☀️"
+        "demon_hunter": {
+            "name": "獵魔人",
+            "icon": "🏹"
+        },
+        "hunter": {
+            "name": "獵人",
+            "icon": "🎯",
+            "wakeOrder": [
+                330
+            ]
+        },
+        "awaken_hunter": {
+            "name": "覺醒獵人",
+            "icon": "🎯✨"
+        },
+        "guard": {
+            "name": "守衛",
+            "icon": "🛡️",
+            "wakeOrder": [
+                150
+            ]
         },
         "light_count": {
             "name": "流光伯爵",
             "icon": "🧛"
         },
-        "bear": {
-            "name": "熊",
-            "icon": "🐻"
+        "pleasant_goat": {
+            "name": "喜羊羊",
+            "icon": "🐏",
+            "wakeOrder": [
+                145
+            ]
         },
-        "pufferfish": {
-            "name": "河豚",
-            "icon": "🐡"
-        },
-        "white_cat": {
-            "name": "白貓",
-            "icon": "🐱"
-        },
-        "sequence_prince": {
-            "name": "定序王子",
-            "icon": "🤴"
+        "dreamwalker": {
+            "name": "攝夢人",
+            "icon": "💤",
+            "wakeOrder": [
+                170
+            ]
         },
         "awaken_dreamwalker": {
             "name": "覺醒攝夢人",
@@ -399,11 +381,58 @@
                 360
             ]
         },
+        "idiot": {
+            "name": "白痴",
+            "icon": "🤡"
+        },
         "awaken_idiot": {
             "name": "覺醒白痴",
             "icon": "🤡✨",
             "wakeOrder": [
                 180
+            ]
+        },
+        "sequence_prince": {
+            "name": "定序王子",
+            "icon": "🤴"
+        },
+        "knight": {
+            "name": "騎士",
+            "icon": "⚔️"
+        },
+        "rust_sword_knight": {
+            "name": "鏽劍騎士",
+            "icon": "🗡️"
+        },
+        "grave_keeper": {
+            "name": "守墓人",
+            "icon": "🪦"
+        },
+        "black_market": {
+            "name": "黑市商人",
+            "icon": "🛍️",
+            "wakeOrder": [
+                280,
+                285
+            ]
+        },
+        "miracle_merchant": {
+            "name": "奇蹟商人",
+            "icon": "🎁",
+            "wakeOrder": [
+                280,
+                285
+            ]
+        },
+        "day_scholar": {
+            "name": "白晝學者",
+            "icon": "☀️"
+        },
+        "magician": {
+            "name": "魔術師",
+            "icon": "🎩",
+            "wakeOrder": [
+                110
             ]
         },
         "crow": {
@@ -413,17 +442,6 @@
                 320
             ]
         },
-        "little_girl": {
-            "name": "小女孩",
-            "icon": "👧",
-            "wakeOrder": [
-                210
-            ]
-        },
-        "rust_sword_knight": {
-            "name": "鏽劍騎士",
-            "icon": "🗡️"
-        },
         "diviner": {
             "name": "占卜師",
             "icon": "🔮",
@@ -431,12 +449,21 @@
                 75
             ]
         },
-        "real_fox": {
-            "name": "狐狸",
-            "icon": "🦊",
-            "wakeOrder": [
-                310
-            ]
+        "fox": {
+            "name": "子狐",
+            "icon": "🦊"
+        },
+        "pufferfish": {
+            "name": "河豚",
+            "icon": "🐡"
+        },
+        "white_cat": {
+            "name": "白貓",
+            "icon": "🐱"
+        },
+        "dancer": {
+            "name": "舞者",
+            "icon": "💃"
         },
         "thief": {
             "name": "盜賊",
@@ -451,6 +478,13 @@
             "wakeOrder": [
                 20,
                 70
+            ]
+        },
+        "curse_fox": {
+            "name": "咒狐",
+            "icon": "🦊",
+            "wakeOrder": [
+                220
             ]
         },
         "ghost_bride": {
@@ -469,20 +503,6 @@
                 40
             ]
         },
-        "awaken_lonely_girl": {
-            "name": "覺醒孤獨少女",
-            "icon": "👧✨",
-            "wakeOrder": [
-                50
-            ]
-        },
-        "curse_fox": {
-            "name": "咒狐",
-            "icon": "🦊",
-            "wakeOrder": [
-                220
-            ]
-        },
         "half_blood": {
             "name": "混血兒",
             "icon": "🩸",
@@ -490,31 +510,11 @@
                 30
             ]
         },
-        "black_market": {
-            "name": "黑市商人",
-            "icon": "🛍️",
+        "awaken_lonely_girl": {
+            "name": "覺醒孤獨少女",
+            "icon": "👧✨",
             "wakeOrder": [
-                280,
-                285
-            ]
-        },
-        "miracle_merchant": {
-            "name": "奇蹟商人",
-            "icon": "🎁",
-            "wakeOrder": [
-                280,
-                285
-            ]
-        },
-        "fox": {
-            "name": "子狐",
-            "icon": "🦊"
-        },
-        "pleasant_goat": {
-            "name": "喜羊羊",
-            "icon": "🐏",
-            "wakeOrder": [
-                145
+                50
             ]
         }
     },
