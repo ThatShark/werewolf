@@ -25,6 +25,7 @@ export function calculateNightDeaths() {
     let actualSeerTarget = s.seerTarget;
     if (seerSeat && parseInt(seerSeat) === s.nightmareTarget) actualSeerTarget = null;
 
+    // 守衛護盾與喜羊羊護盾聯集
     let actualGuard = (guardSeat && parseInt(guardSeat) === s.nightmareTarget) ? null : s.guardTarget;
     let actualDream = (dwSeat && parseInt(dwSeat) === s.nightmareTarget) ? null : s.dreamTarget;
 
@@ -47,7 +48,7 @@ export function calculateNightDeaths() {
     let killList = [actualWolfKill, s.bigBadWolfKillTarget].filter(Boolean).map(x => parseInt(x));
 
     killList.forEach(target => {
-        let isGuarded = (actualGuard === target);
+        let isGuarded = (actualGuard === target) || (s.pleasantGoatGuard === target);
         let isSaved = (target === parseInt(actualWolfKill) && s.witchSaved);
         let isDreamed = (actualDream === target);
         let targetRole = s.playerRoles[target];
@@ -90,12 +91,34 @@ export function calculateNightDeaths() {
         if (!s.primaryKilled.includes(s.awakenBeautyTarget)) s.chainKilled.push(s.awakenBeautyTarget);
         s.awakenBeautyTarget = null;
     }
+    
+    // 8. 灰太狼猜測喜羊羊錯誤直接死亡判定
+    let greyWolfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'grey_wolf');
+    if (greyWolfSeat && s.greyWolfStolenPlayer) {
+        let tSeat = s.greyWolfStolenPlayer;
+        if (s.playerRoles[tSeat] === 'pleasant_goat') {
+            let pgSelfProtected = (s.pleasantGoatGuard === tSeat && s.pleasantGoatAntiTheft === tSeat);
+            if (!pgSelfProtected) {
+                let actualPGSkill = null;
+                if (s.pleasantGoatGuard) actualPGSkill = 'guard';
+                if (s.pleasantGoatAntiTheft) actualPGSkill = 'anti_theft';
+                
+                // 猜測錯誤且喜羊羊非空過技能時出局
+                if (actualPGSkill !== null && s.greyWolfGuess !== actualPGSkill) {
+                    if (!s.primaryKilled.includes(parseInt(greyWolfSeat))) {
+                        s.primaryKilled.push(parseInt(greyWolfSeat));
+                        s.playerStatus[greyWolfSeat].deathReason = "猜測喜羊羊錯誤";
+                    }
+                }
+            }
+        }
+    }
 
     // 更新最終死亡清單，並結算連帶死亡 (攝夢、情侶等)
     s.finalKilled = [...s.primaryKilled, ...s.chainKilled];
     handleChainDeaths();
 
-    // 8. 結算狼美人魅惑死
+    // 9. 結算狼美人魅惑死
     let beautySeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'wolf_beauty');
     let vwkBeautySeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'bear') ? s.vwkSeat : null;
 
@@ -109,7 +132,7 @@ export function calculateNightDeaths() {
         }
     });
 
-    // 9. 結算白貓翻牌免死
+    // 10. 結算白貓翻牌免死
     let wcSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'white_cat');
     if (wcSeat && s.finalKilled.includes(parseInt(wcSeat)) && !s.playerStatus[wcSeat].isWhiteCatFlipped) {
         s.primaryKilled = s.primaryKilled.filter(k => k !== parseInt(wcSeat));
@@ -119,7 +142,7 @@ export function calculateNightDeaths() {
         s.whiteCatFlippedLastNight = true;
     }
 
-    // 10. 商人反噬機制
+    // 11. 商人反噬機制
     if (s.merchantTarget && wolfFaction.includes(s.playerRoles[s.merchantTarget])) {
         let merchSeat = Object.keys(s.playerRoles).find(k => ['black_market', 'miracle_merchant'].includes(s.playerRoles[k]));
         if (merchSeat && !s.finalKilled.includes(parseInt(merchSeat))) {
@@ -131,7 +154,6 @@ export function calculateNightDeaths() {
 
 /**
  * 遞迴處理連帶死亡鏈 (Chain Deaths)
- * 當有任何連帶關係人死亡時，觸發相關鏈結者殉情或死亡，並持續遞迴檢查直到沒有新死亡為止
  */
 export function handleChainDeaths() {
     let changed = false;
@@ -198,7 +220,6 @@ export function handleChainDeaths() {
         changed = true;
     }
 
-    // 如果本輪有新的連帶死亡者，則繼續遞迴檢查，直到狀態完全穩定
     if (changed) handleChainDeaths();
 }
 
@@ -212,7 +233,6 @@ export function proceedDayResultRender() {
     let bearSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'bear');
     let mwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'machine_wolf');
 
-    // 內部輔助函式：判定某座位在熊眼中是否算作狼人 (學到好人技能的機械狼不視為狼)
     const isSeatWolfForBear = (seatId) => {
         if (!seatId || s.finalKilled.includes(seatId)) return false;
         let role = s.playerRoles[seatId];
@@ -223,7 +243,6 @@ export function proceedDayResultRender() {
         return wolfFaction.includes(role);
     };
 
-    // 內部輔助函式：獲取某玩家在活人環形隊伍中的左右鄰居
     const getAdjacent = (seat) => {
         let left = seat - 1; 
         while (left !== seat) { 
@@ -242,13 +261,11 @@ export function proceedDayResultRender() {
 
     let bearDidRoar = false;
 
-    // 1. 檢查原生熊是否咆哮 (若被種狼感染則不咆哮)
     if (bearSeat && !s.finalKilled.includes(parseInt(bearSeat))) {
         if (s.seedWolfTarget !== parseInt(bearSeat)) {
             let { left, right } = getAdjacent(parseInt(bearSeat));
             let hasWolf = isSeatWolfForBear(left) || isSeatWolfForBear(right);
             
-            // 如果這隻熊其實是「百變狼王」假冒的，且發動了魅惑，咆哮結果顛倒
             if (s.playerStatus[bearSeat]?.isVWK) {
                 if (s.vwkCharmTarget) hasWolf = isSeatWolfForBear(s.vwkCharmTarget);
                 hasWolf = !hasWolf;
@@ -257,18 +274,15 @@ export function proceedDayResultRender() {
         }
     }
 
-    // 2. 檢查學了熊技能的機械狼是否引發咆哮
     if (mwSeat && !s.finalKilled.includes(parseInt(mwSeat)) && s.machineWolfTarget && s.playerRoles[s.machineWolfTarget] === 'bear') {
         let { left, right } = getAdjacent(parseInt(mwSeat));
         if (isSeatWolfForBear(left) || isSeatWolfForBear(right)) bearDidRoar = true;
     }
 
-    // 組裝熊咆哮文字
     if (bearSeat || (mwSeat && s.machineWolfTarget && s.playerRoles[s.machineWolfTarget] === 'bear')) {
         bearRoarText = bearDidRoar ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
     }
 
-    // 3. 處理其餘特殊白天提示文字 (白貓、河豚、高級平民)
     let extraText = "";
     if (s.whiteCatFlippedLastNight) {
         let wcSeat = Object.keys(s.playerRoles).find(k => k === 'white_cat');
@@ -291,39 +305,44 @@ export function proceedDayResultRender() {
 
     let htmlOutput = bearRoarText + extraText;
     
-    // 4. 輸出昨晚死訊
     if (s.finalKilled.length === 0) {
         htmlOutput += "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
     } else {
         s.finalKilled.sort((a, b) => a - b);
         htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.finalKilled.join(' 號、')} 號</span>`;
 
-        // 5. 建立夜晚死者的白天技能/開槍佇列 (排查毒殺、恐懼等無法開槍之狀態)
+        // 5. 建立夜晚死者的白天技能/開槍佇列 (排查被灰太狼偷竊、毒殺、恐懼等狀態)
         s.dayShootersQueue = [];
         s.finalKilled.forEach(seat => {
             let role = s.playerRoles[seat];
             if (s.primaryKilled.includes(seat)) {
+                let isStolen = (s.greyWolfStolenPlayer === seat && s.greyWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+
                 if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK)) {
-                    if (s.nightmareTarget !== seat) s.dayShootersQueue.push({ seat, role });
+                    if (s.nightmareTarget !== seat && !isStolen) s.dayShootersQueue.push({ seat, role });
                 } else if (['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
-                    if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat) {
+                    if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat && !(role === 'hunter' && isStolen)) {
                         s.dayShootersQueue.push({ seat, role });
-                        // 覺醒狼王若自己保留雙槍，會塞入兩次開槍機會
                         if (role === 'awaken_wolf_king' && s.awakenWolfGunTarget === null) s.dayShootersQueue.push({ seat, role });
+                    }
+                }
+
+                // 灰太狼若偷到獵槍且未被毒殺/恐懼，也能開槍
+                if (role === 'grey_wolf' && s.greyWolfStolenSkill === 'hunter') {
+                    if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat) {
+                        s.dayShootersQueue.push({ seat, role: 'hunter' });
                     }
                 }
             }
         });
     }
 
-    // 附加發言順序
     if (s.speechOrderText) {
         htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speechOrderText}</span>`;
     }
 
     document.getElementById('day-result').innerHTML = htmlOutput;
 
-    // 觸發後續流程：有槍先開槍，沒槍進詭術師換票或結束
     if (s.dayShootersQueue.length > 0) processNextShooter();
     else triggerTricksterVoteSection();
 }
@@ -336,11 +355,10 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     let role = s.playerRoles[seat];
     
     // 特殊防禦機制
-    if (isShot && role === 'old_hooligan') { s.playerStatus[seat].injured = true; return; } // 老流氓中槍負傷不死
-    if (isShot && role === 'ghost_rider') return; // 惡靈騎士白天中槍不死
-    if (role === 'white_cat' && !s.playerStatus[seat].isWhiteCatFlipped) { s.playerStatus[seat].isWhiteCatFlipped = true; return; } // 白貓翻牌免死
+    if (isShot && role === 'old_hooligan') { s.playerStatus[seat].injured = true; return; } 
+    if (isShot && role === 'ghost_rider') return; 
+    if (role === 'white_cat' && !s.playerStatus[seat].isWhiteCatFlipped) { s.playerStatus[seat].isWhiteCatFlipped = true; return; } 
 
-    // 覺醒狼美人白天死亡時，若有魅惑目標，轉移死亡並令自己免死
     if (role === 'awaken_wolf_beauty' && s.awakenBeautyTarget && !s.finalKilled.includes(s.awakenBeautyTarget)) {
         let subTarget = s.awakenBeautyTarget; s.awakenBeautyTarget = null;
         killPlayerDuringDay(subTarget, false, false); 
@@ -348,17 +366,23 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     }
 
     s.finalKilled.push(seat);
-    s.playerStatus[seat].deathReason = isShot ? "白天開槍/技能擊殺" : "連帶死亡(情侶/魅惑/尋香/夢語者)";
+    s.playerStatus[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡(情侶/魅惑/尋香/夢語者)";
 
-    // 如果允許開槍，且死亡者具備翻牌開槍技能，塞入開槍佇列
     if (canShoot) {
+        let isStolen = (s.greyWolfStolenPlayer === seat && s.greyWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+        
         if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
-            s.dayShootersQueue.push({ seat, role });
-            if (role === 'awaken_wolf_king' && s.awakenWolfGunTarget === null) s.dayShootersQueue.push({ seat, role });
+            if (!(role === 'hunter' && isStolen)) {
+                s.dayShootersQueue.push({ seat, role });
+                if (role === 'awaken_wolf_king' && s.awakenWolfGunTarget === null) s.dayShootersQueue.push({ seat, role });
+            }
+        }
+
+        if (role === 'grey_wolf' && s.greyWolfStolenSkill === 'hunter') {
+            s.dayShootersQueue.push({ seat, role: 'hunter' });
         }
     }
 
-    // 白天連帶死亡即時觸發 (狼美人、攝夢人、尋香、情侶、新郎、覺醒攝夢)
     let vwkBeautySeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'bear') ? s.vwkSeat : null;
     if ((role === 'wolf_beauty' || seat === vwkBeautySeat) && s.beautyTarget && s.playerRoles[s.beautyTarget] !== 'old_hooligan' && !s.finalKilled.includes(s.beautyTarget) && !s.pufferfishTriggered) {
         killPlayerDuringDay(s.beautyTarget, false, false);
@@ -386,9 +410,6 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     }
 }
 
-/**
- * 處理開槍/技能發動隊列 (處理白天多個角色同時開槍或技能排隊)
- */
 export function processNextShooter() {
     if (s.dayShootersQueue.length === 0) {
         document.getElementById('day-skill-section').classList.add('hidden');
@@ -405,16 +426,14 @@ export function processNextShooter() {
     let pad = document.getElementById('day-skill-pad'); 
     pad.innerHTML = '';
 
-    // 白天技能結算完畢後的共用回調
     const finishShooterTurn = () => {
         s.finalKilled.sort((a, b) => a - b);
         let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.finalKilled.join(' 號、')} 號</span>` + (s.speechOrderText ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speechOrderText}</span>` : "");
         document.getElementById('day-result').innerHTML = dayResultStr;
         s.dayShootersQueue.shift(); 
-        processNextShooter(); // 遞迴呼叫下一位
+        processNextShooter(); 
     };
 
-    // 針對「覺醒獵人」特殊開槍規則 (自動追蹤擊殺最近的狼人，分為順序與逆序)
     if (currentShooter.role === 'awaken_hunter') {
         pad.innerHTML = `
             <button class="num-btn" id="btn-hunter-asc" style="grid-column: span 2; font-size: 18px;">順序 (號碼遞增)</button>
@@ -427,7 +446,6 @@ export function processNextShooter() {
         return;
     }
 
-    // 一般獵人/狼王/獲槍者的開槍目標盤
     let selectedDayTarget = null;
     for (let i = 1; i <= s.totalPlayers; i++) {
         const btn = document.createElement('button');
@@ -452,14 +470,10 @@ export function processNextShooter() {
     };
 }
 
-/**
- * 觸發並注入白天投票階段的「詭術師換票結算控制面板」
- */
 export function triggerTricksterVoteSection() {
     const dayResultContent = document.getElementById('day-result-content');
     const btnReset = document.getElementById('btn-reset');
     
-    // 如果本局有詭術師，且面板尚未建立，則建立換票結果計算器
     if (Object.values(s.playerRoles).includes('trickster') && document.getElementById('trickster-calc') === null) {
         let tricksterDiv = document.createElement('div'); tricksterDiv.id = 'trickster-calc';
         tricksterDiv.style = "background:#24345e; padding:15px; border-radius:8px; margin-bottom:20px;";
@@ -480,7 +494,6 @@ export function triggerTricksterVoteSection() {
                 let triSwap = [...s.tricksterSwap].sort().join(',');
                 let effectiveTrickster = s.tricksterSwap;
                 
-                // 魔術師與詭術師若對相同組合發動換人，則效果抵銷
                 if (s.magicianSwap.length && s.tricksterSwap.length && magSwap === triSwap) effectiveTrickster = [];
                 
                 let exiled = i; 

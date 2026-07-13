@@ -58,10 +58,9 @@ export function createNumberPad() {
         // ==========================================
         if (i === actualCurrentActorSeat) {
             const cannotSelectSelf = [
-                'witch', 'awaken_witch', 'dreamwalker', 'nightmare',
-                'gargoyle', 'machine_wolf', 'black_market', 'miracle_merchant',
-                'crow', 'awaken_dreamwalker', 'ghost_bride', 'ghost_bride_couple',
-                'seer', 'shadow_seer', 'seer_A', 'seer_B', 'pure_white', 'wolf_witch', 'psychic', 'wolf_beauty', 'bear', 'half_blood', 'awaken_lonely_girl'
+                'witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow',
+                'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'grey_wolf_steal',
+                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple'                
             ];
             if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
         }

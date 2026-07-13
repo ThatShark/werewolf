@@ -114,14 +114,14 @@ export const s = {
     // ==========================================================================
     // 8. 其他擴展板子專用變數
     // ==========================================================================
-    pleasantGoatGuard: null,
-    pleasantGoatAntiTheft: null,
-    greyWolfStolenPlayer: null,
-    greyWolfStolenSkill: null,
-    greyWolfGuess: null,
+    pleasantGoatGuard: null,          // 喜羊羊守護的目標
+    pleasantGoatAntiTheft: null,      // 喜羊羊防盜的目標
+    greyWolfStolenPlayer: null,       // 灰太狼偷取的玩家對象
+    greyWolfStolenSkill: null,        // 灰太狼偷取到的技能
+    greyWolfGuess: null,              // 灰太狼偷取喜羊羊時的猜測 (guard / anti_theft)
 };
 
-// 狼人陣營與邪惡陣營定義
+// 狼人陣營與邪惡陣營定義 (灰太狼與小灰灰均屬邪惡陣營)
 export const wolfFaction = [
     'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon',
     'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'mask_wolf', 'wolf_witch',
@@ -156,6 +156,8 @@ export function getStageVoiceName(stage, subLabel) {
     if (stage === 'ghost_bride_couple') return '鬼魅新娘與新郎';
     if (stage === 'ghost_bride_witness') return '證婚人';
     if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人';
+    if (stage === 'pleasant_goat') return '喜羊羊';
+    if (stage === 'grey_wolf_steal' || stage === 'grey_wolf_action') return '灰太狼';
     if (stage.startsWith('notify_')) return `${stage.split('_').pop()}號`;
     return s.ROLE_DICT[stage]?.name || stage;
 }

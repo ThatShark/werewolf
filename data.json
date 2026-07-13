@@ -187,7 +187,7 @@
             "icon": "🐺🎩",
             "wakeOrder": [
                 148,
-                335
+                325
             ]
         },
         "time_wolf": {
@@ -238,13 +238,6 @@
         "high_villager": {
             "name": "高級平民",
             "icon": "👑"
-        },
-        "shadow_seer": {
-            "name": "燈影預言家",
-            "icon": "🏮",
-            "wakeOrder": [
-                311
-            ]
         },
         "seer": {
             "name": "預言家",
@@ -1175,6 +1168,19 @@
                 }
             },
             {
+                "id": "12_green_grass",
+                "name": "青青草原 (3小灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊)",
+                "roles": {
+                    "little_grey_wolf": 3,
+                    "grey_wolf": 1,
+                    "alpaca": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "pleasant_goat": 1
+                }
+            },
+            {
                 "id": "12_thief_cupid",
                 "name": "盜賊邱比特 (2小狼/狼王｜5民｜預/女/獵/白｜盜賊/邱比特)",
                 "roles": {
@@ -1241,19 +1247,6 @@
                     "hunter": 1,
                     "guard": 1,
                     "ghost_bride": 1
-                }
-            },
-            {
-                "id": "12_green_grass",
-                "name": "青青草原 (3小灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊) [測試中]",
-                "roles": {
-                    "little_grey_wolf": 3,
-                    "grey_wolf": 1,
-                    "alpaca": 4,
-                    "seer": 1,
-                    "witch": 1,
-                    "hunter": 1,
-                    "pleasant_goat": 1
                 }
             }
         ]
