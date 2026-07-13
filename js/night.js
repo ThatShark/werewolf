@@ -22,9 +22,14 @@ export function createNumberPad() {
     let actualCurrentActorSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === s.currentStage || s.playerRoles[k] === 'awaken_' + s.currentStage) || -1);
     if (s.currentActorSeat) actualCurrentActorSeat = parseInt(s.currentActorSeat);
 
-    // 修正: 覺醒狼王分槍時，需要正確抓取自己的座位以防自選
+    // 覺醒狼王分槍時，需要正確抓取自己的座位以防自選
     if (s.currentStage === 'awaken_wolf_king_gun') {
         actualCurrentActorSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_wolf_king'));
+    }
+
+    // 強制將灰太狼的階段對應到他的真實角色名稱
+    if (s.currentStage === 'gray_wolf_steal' || s.currentStage === 'gray_wolf_action') {
+        actualCurrentActorSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'gray_wolf'));
     }
 
     for (let i = 1; i <= s.totalPlayers; i++) {
@@ -59,7 +64,7 @@ export function createNumberPad() {
         if (i === actualCurrentActorSeat) {
             const cannotSelectSelf = [
                 'witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow',
-                'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf',
+                'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal',
                 'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple'                
             ];
             if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
