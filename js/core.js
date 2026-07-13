@@ -116,9 +116,9 @@ export const s = {
     // ==========================================================================
     pleasantGoatGuard: null,          // 喜羊羊守護的目標
     pleasantGoatAntiTheft: null,      // 喜羊羊防盜的目標
-    greyWolfStolenPlayer: null,       // 灰太狼偷取的玩家對象
-    greyWolfStolenSkill: null,        // 灰太狼偷取到的技能
-    greyWolfGuess: null,              // 灰太狼偷取喜羊羊時的猜測 (guard / anti_theft)
+    grayWolfStolenPlayer: null,       // 灰太狼偷取的玩家對象
+    grayWolfStolenSkill: null,        // 灰太狼偷取到的技能
+    grayWolfGuess: null,              // 灰太狼偷取喜羊羊時的猜測 (guard / anti_theft)
 };
 
 // 狼人陣營與邪惡陣營定義 (灰太狼與小灰灰均屬邪惡陣營)
@@ -127,8 +127,8 @@ export const wolfFaction = [
     'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'mask_wolf', 'wolf_witch',
     'wolf_crow', 'awaken_wolf_beauty', 'night_mentor', 'eclipse_maid', 'night_noble',
     'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'awaken_gargoyle_A',
-    'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_grey_wolf', 'hidden_wolf',
-    'grey_wolf', 'little_grey_wolf'
+    'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'hidden_wolf',
+    'gray_wolf', 'little_gray_wolf'
 ];
 export const evilRoles = [...wolfFaction, 'gargoyle', 'nightmare', 'machine_wolf'];
 
@@ -157,7 +157,7 @@ export function getStageVoiceName(stage, subLabel) {
     if (stage === 'ghost_bride_witness') return '證婚人';
     if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人';
     if (stage === 'pleasant_goat') return '喜羊羊';
-    if (stage === 'grey_wolf_steal' || stage === 'grey_wolf_action') return '灰太狼';
+    if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '灰太狼';
     if (stage.startsWith('notify_')) return `${stage.split('_').pop()}號`;
     return s.ROLE_DICT[stage]?.name || stage;
 }

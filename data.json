@@ -175,14 +175,14 @@
                 251
             ]
         },
-        "little_grey_wolf": {
+        "little_gray_wolf": {
             "name": "小灰灰",
             "icon": "🐺",
             "wakeOrder": [
                 210
             ]
         },
-        "grey_wolf": {
+        "gray_wolf": {
             "name": "灰太狼",
             "icon": "🐺🎩",
             "wakeOrder": [
@@ -220,7 +220,7 @@
                 210
             ]
         },
-        "big_grey_wolf": {
+        "big_gray_wolf": {
             "name": "大灰狼",
             "icon": "🐺",
             "wakeOrder": [
@@ -1124,11 +1124,11 @@
                 }
             },
             {
-                "id": "12_big_grey_wolf",
+                "id": "12_big_gray_wolf",
                 "name": "大灰狼 (3小狼/大灰狼｜4民｜預/女/獵/占卜師)",
                 "roles": {
                     "wolf": 3,
-                    "big_grey_wolf": 1,
+                    "big_gray_wolf": 1,
                     "villager": 4,
                     "seer": 1,
                     "witch": 1,
@@ -1171,8 +1171,8 @@
                 "id": "12_green_grass",
                 "name": "青青草原 (3小灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊)",
                 "roles": {
-                    "little_grey_wolf": 3,
-                    "grey_wolf": 1,
+                    "little_gray_wolf": 3,
+                    "gray_wolf": 1,
                     "alpaca": 4,
                     "seer": 1,
                     "witch": 1,

@@ -93,9 +93,9 @@ export function calculateNightDeaths() {
     }
     
     // 8. 灰太狼猜測喜羊羊錯誤直接死亡判定
-    let greyWolfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'grey_wolf');
-    if (greyWolfSeat && s.greyWolfStolenPlayer) {
-        let tSeat = s.greyWolfStolenPlayer;
+    let grayWolfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'gray_wolf');
+    if (grayWolfSeat && s.grayWolfStolenPlayer) {
+        let tSeat = s.grayWolfStolenPlayer;
         if (s.playerRoles[tSeat] === 'pleasant_goat') {
             let pgSelfProtected = (s.pleasantGoatGuard === tSeat && s.pleasantGoatAntiTheft === tSeat);
             if (!pgSelfProtected) {
@@ -104,10 +104,10 @@ export function calculateNightDeaths() {
                 if (s.pleasantGoatAntiTheft) actualPGSkill = 'anti_theft';
                 
                 // 猜測錯誤且喜羊羊非空過技能時出局
-                if (actualPGSkill !== null && s.greyWolfGuess !== actualPGSkill) {
-                    if (!s.primaryKilled.includes(parseInt(greyWolfSeat))) {
-                        s.primaryKilled.push(parseInt(greyWolfSeat));
-                        s.playerStatus[greyWolfSeat].deathReason = "猜測喜羊羊錯誤";
+                if (actualPGSkill !== null && s.grayWolfGuess !== actualPGSkill) {
+                    if (!s.primaryKilled.includes(parseInt(grayWolfSeat))) {
+                        s.primaryKilled.push(parseInt(grayWolfSeat));
+                        s.playerStatus[grayWolfSeat].deathReason = "猜測喜羊羊錯誤";
                     }
                 }
             }
@@ -316,7 +316,7 @@ export function proceedDayResultRender() {
         s.finalKilled.forEach(seat => {
             let role = s.playerRoles[seat];
             if (s.primaryKilled.includes(seat)) {
-                let isStolen = (s.greyWolfStolenPlayer === seat && s.greyWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+                let isStolen = (s.grayWolfStolenPlayer === seat && s.grayWolfStolenPlayer !== s.pleasantGoatAntiTheft);
 
                 if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK)) {
                     if (s.nightmareTarget !== seat && !isStolen) s.dayShootersQueue.push({ seat, role });
@@ -328,7 +328,7 @@ export function proceedDayResultRender() {
                 }
 
                 // 灰太狼若偷到獵槍且未被毒殺/恐懼，也能開槍
-                if (role === 'grey_wolf' && s.greyWolfStolenSkill === 'hunter') {
+                if (role === 'gray_wolf' && s.grayWolfStolenSkill === 'hunter') {
                     if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat) {
                         s.dayShootersQueue.push({ seat, role: 'hunter' });
                     }
@@ -369,7 +369,7 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     s.playerStatus[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡(情侶/魅惑/尋香/夢語者)";
 
     if (canShoot) {
-        let isStolen = (s.greyWolfStolenPlayer === seat && s.greyWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+        let isStolen = (s.grayWolfStolenPlayer === seat && s.grayWolfStolenPlayer !== s.pleasantGoatAntiTheft);
         
         if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
             if (!(role === 'hunter' && isStolen)) {
@@ -378,7 +378,7 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
             }
         }
 
-        if (role === 'grey_wolf' && s.greyWolfStolenSkill === 'hunter') {
+        if (role === 'gray_wolf' && s.grayWolfStolenSkill === 'hunter') {
             s.dayShootersQueue.push({ seat, role: 'hunter' });
         }
     }
