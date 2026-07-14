@@ -71,7 +71,6 @@ export const s = {
     awakenDreamwalkerTarget: null,    // 覺醒攝夢人指定的夢語者
     rustSwordInfectedTarget: null,    // 鏽劍騎士感染的狼人目標
     awakenWolfGunTarget: null,        // 覺醒狼王分槍目標
-    wolfCrowMark: null,               // 狼鴉之爪標記
     ghostBrideGroom: null,            // 鬼魅新娘-新郎
     ghostBrideWitness: null,          // 鬼魅新娘-證婚人
 
@@ -121,16 +120,17 @@ export const s = {
     grayWolfGuess: null,              // 灰太狼偷取喜羊羊時的猜測 (guard / anti_theft)
 };
 
-// 狼人陣營與邪惡陣營定義 (灰太狼與小灰灰均屬邪惡陣營)
+// 狼人陣營與邪惡陣營定義
 export const wolfFaction = [
     'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon',
-    'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'mask_wolf', 'wolf_witch',
-    'wolf_crow', 'awaken_wolf_beauty', 'night_mentor', 'eclipse_maid', 'night_noble',
-    'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'awaken_gargoyle_A',
-    'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'hidden_wolf',
-    'gray_wolf', 'little_gray_wolf'
+    'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'wolf_witch',
+    'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer',
+    'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B',
+    'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf'
 ];
-export const evilRoles = [...wolfFaction, 'gargoyle', 'nightmare', 'machine_wolf'];
+export const evilRoles = [...wolfFaction, 'nightmare', 'hidden_wolf', 'gargoyle', 'machine_wolf',
+    'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant'
+];
 
 /** 法官語音播報 */
 export function speak(text, callback) {

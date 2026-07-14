@@ -143,7 +143,7 @@ export function calculateNightDeaths() {
     }
 
     // 11. 商人反噬機制
-    if (s.merchantTarget && wolfFaction.includes(s.playerRoles[s.merchantTarget])) {
+    if (s.merchantTarget && evilRoles.includes(s.playerRoles[s.merchantTarget])) {
         let merchSeat = Object.keys(s.playerRoles).find(k => ['black_market', 'miracle_merchant'].includes(s.playerRoles[k]));
         if (merchSeat && !s.finalKilled.includes(parseInt(merchSeat))) {
             s.primaryKilled.push(parseInt(merchSeat)); s.finalKilled.push(parseInt(merchSeat));
@@ -240,7 +240,7 @@ export function proceedDayResultRender() {
             let learnedRole = s.playerRoles[s.machineWolfTarget];
             if (!evilRoles.includes(learnedRole)) return false; 
         }
-        return wolfFaction.includes(role);
+        return evilRoles.includes(role);
     };
 
     const getAdjacent = (seat) => {

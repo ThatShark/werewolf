@@ -262,7 +262,7 @@ export function runNextNightRole() {
         return;
     }
 
-    if (s.currentStage === 'lucky_boy_action' && (!s.merchantTarget || wolfFaction.includes(s.playerRoles[s.merchantTarget]))) return runNextNightRole();
+    if (s.currentStage === 'lucky_boy_action' && (!s.merchantTarget || evilRoles.includes(s.playerRoles[s.merchantTarget]))) return runNextNightRole();
     if (s.currentStage === 'awaken_witch_assistant_action' && (!s.awakenWitchAssistant || !s.witchPoisonTarget)) return runNextNightRole();
     if (s.currentStage === 'awaken_dreamwalker_result' && !s.awakenDreamwalkerTarget) return runNextNightRole();
 
@@ -310,7 +310,7 @@ export function runNextNightRole() {
         s.currentRoleFeared = true;
         let roleName = getStageVoiceName(s.currentStage, s.currentSubLabel);
         if (s.currentStage === 'wolf') {
-            let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['eclipse_maid', 'hidden_wolf', 'gray_wolf'].includes(s.playerRoles[k]));
+            let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]));
             let hasLG = Object.values(s.playerRoles).includes('little_girl');
             if (hasLG) wSeats.push(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'little_girl'));
             wSeats.sort((a, b) => a - b);
@@ -348,7 +348,7 @@ export function runNextNightRole() {
             nightInstruction.innerHTML = `這對鬼魅夫妻是：<br><span style='color:#e94560; font-size: 24px; font-weight:bold;'>${couple[0]}號 與 ${couple[1]}號</span><br><span style='color:#a2a8d3; font-size: 14px;'>(你不知道誰是新娘誰是新郎)</span>`;
         } else if (s.currentStage === 'hidden_wolf') {
             nightRoleTitle.textContent = "🐺😶‍🌫️ 隱狼確認";
-            let w = Object.keys(s.playerRoles).filter(k => (wolfFaction.includes(s.playerRoles[k]) || ['gargoyle', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.playerRoles[k])) && s.playerRoles[k] !== 'hidden_wolf');
+            let w = Object.keys(s.playerRoles).filter(k => evilRoles.includes(s.playerRoles[k]) && s.playerRoles[k] !== 'hidden_wolf');
             nightInstruction.innerHTML = `狼人陣營同伴是：<br><span style="color:#e94560;">${w.length ? w.join(', ') + ' 號' : '無'}</span>`;
         } else {
             if (s.currentStage === 'lovers_meet') nightRoleTitle.textContent = "💕 情侶相認";
@@ -739,7 +739,7 @@ export function runNextNightRole() {
         nightInstruction.innerHTML += "請選擇要使用未明之霧的目標 (請選擇 3 名不同玩家，或跳過)：";
         btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden');
     } else if (s.currentStage === 'wolf') {
-        let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['eclipse_maid', 'hidden_wolf', 'gray_wolf'].includes(s.playerRoles[k]));
+        let wSeats = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]));
         let hasLG = Object.values(s.playerRoles).includes('little_girl');
         if (hasLG) wSeats.push(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'little_girl'));
         wSeats.sort((a, b) => a - b);
@@ -816,7 +816,7 @@ export function runNextNightRole() {
             if (notifyType === 'notify_groom' && s.ghostBrideGroom === seat) msgs.push(`你是鬼魅新娘的新郎 🤵`);
             if (notifyType === 'notify_witness' && s.ghostBrideWitness === seat) msgs.push(`你是證婚人 🕊️`);
             
-            if (notifyType === 'notify_luckyboy' && s.merchantTarget === seat && !wolfFaction.includes(s.playerRoles[seat])) {
+            if (notifyType === 'notify_luckyboy' && s.merchantTarget === seat && !evilRoles.includes(s.playerRoles[seat])) {
                 msgs.push(`你是幸運兒 🎁`);
             }
             if (notifyType === 'notify_assistant' && s.awakenWitchAssistant === seat) msgs.push(`你是女巫的協助者`);
@@ -1183,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (p) s.actedPlayers.push(parseInt(p));
             }
             if (s.currentStage === 'wolf' && !s.isSeedWolfInfecting) {
-                let ws = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]) && !['hidden_wolf', 'gray_wolf'].includes(s.playerRoles[k]));
+                let ws = Object.keys(s.playerRoles).filter(k => wolfFaction.includes(s.playerRoles[k]));
                 ws.forEach(x => s.actedPlayers.push(parseInt(x)));
             }
         }

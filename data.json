@@ -47,7 +47,8 @@
             "name": "夢魘",
             "icon": "🌑",
             "wakeOrder": [
-                140
+                140,
+                210
             ]
         },
         "blood_moon": {
@@ -83,8 +84,7 @@
             "name": "狼弟",
             "icon": "🐶",
             "wakeOrder": [
-                80,
-                210
+                80
             ]
         },
         "hidden_wolf": {
@@ -122,14 +122,16 @@
             "name": "詭術師",
             "icon": "🃏",
             "wakeOrder": [
-                100
+                100,
+                210
             ]
         },
         "wolf_sorcerer": {
             "name": "狼術師",
             "icon": "🧙‍♂️",
             "wakeOrder": [
-                120
+                120,
+                210
             ]
         },
         "awaken_gargoyle": {
@@ -172,14 +174,13 @@
             "name": "寂夜導師",
             "icon": "🌙",
             "wakeOrder": [
-                210
             ]
         },
         "eclipse_maid": {
             "name": "蝕日侍女",
             "icon": "🌑",
             "wakeOrder": [
-                210
+                201
             ]
         },
         "time_wolf": {
@@ -194,14 +195,12 @@
             "name": "假面",
             "icon": "🎭",
             "wakeOrder": [
-                210
             ]
         },
         "night_noble": {
             "name": "夜之貴族",
             "icon": "🧛‍♂️",
             "wakeOrder": [
-                210
             ]
         },
         "big_bad_wolf": {
@@ -232,6 +231,12 @@
             "wakeOrder": [
                 148,
                 325
+            ]
+        },
+        "wolf_servant": {
+            "name": "狼僕",
+            "icon": "🐺🤵",
+            "wakeOrder": [
             ]
         },
         "villager": {
@@ -427,6 +432,10 @@
         "day_scholar": {
             "name": "白晝學者",
             "icon": "☀️"
+        },
+        "butler": {
+            "name": "管家",
+            "icon": "👨‍💼"
         },
         "magician": {
             "name": "魔術師",
@@ -1169,7 +1178,7 @@
             },
             {
                 "id": "12_green_grass",
-                "name": "青青草原 (3小灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊)",
+                "name": "青青草原 (3小灰灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊)",
                 "roles": {
                     "little_gray_wolf": 3,
                     "gray_wolf": 1,
@@ -1178,6 +1187,19 @@
                     "witch": 1,
                     "hunter": 1,
                     "pleasant_goat": 1
+                }
+            },
+            {
+                "id": "12_tea",
+                "name": "管家狼僕 (3小狼/狼僕｜4民｜預/女/守/管家)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_servant": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "butler": 1
                 }
             },
             {
