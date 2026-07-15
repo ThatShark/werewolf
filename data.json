@@ -1133,6 +1133,19 @@
                 }
             },
             {
+                "id": "12_seed_wolf_2",
+                "name": "種狼II (3小狼/種狼｜4民｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 3,
+                    "seed_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            },
+            {
                 "id": "12_big_gray_wolf",
                 "name": "大灰狼 (3小狼/大灰狼｜4民｜預/女/獵/占卜師)",
                 "roles": {
