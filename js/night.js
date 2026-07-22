@@ -44,7 +44,7 @@ export function createNumberPad() {
         // ==========================================
         if (s.currentStage === 'wolf') {
             // 大狼不可自刀
-            if (['white_wolf_king', 'ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty'].includes(s.playerRoles[i])) isDisabled = true;
+            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty'].includes(s.playerRoles[i])) isDisabled = true;
             // 占卜師標記限制
             if (s.divinerMark) {
                 let dm = parseInt(s.divinerMark);
