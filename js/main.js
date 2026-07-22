@@ -1256,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lbl.textContent = "兩名玩家的陣營為：";
                 s.awakenSeerTargets = [applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[0]), s.currentActorSeat), applyTimeWolfReflection(getActualTarget(s.selectedNumbersArr[1]), s.currentActorSeat)];
                 let isEvil = evilRoles.includes(s.playerRoles[s.awakenSeerTargets[0]]) || evilRoles.includes(s.playerRoles[s.awakenSeerTargets[1]]);
-                if (isEvil && !['hidden_wolf', 'wolf_brother_little'].includes(s.playerRoles[s.awakenSeerTargets[0]]) && !['hidden_wolf', 'wolf_brother_little'].includes(s.playerRoles[s.awakenSeerTargets[1]])) { txt.textContent = "🐺 疑似狼人"; txt.style.color = "#e94560"; }
+                if (isEvil && !['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(s.playerRoles[s.awakenSeerTargets[0]]) && !['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(s.playerRoles[s.awakenSeerTargets[1]])) { txt.textContent = "🐺 疑似狼人"; txt.style.color = "#e94560"; }
                 else { txt.textContent = "🧑‍🌾 雙好人"; txt.style.color = "#00ff88"; }
                 s.nightActionLog.push(`【${logName}】查驗了 ${s.awakenSeerTargets[0]}號 和 ${s.awakenSeerTargets[1]}號`);
             } else if (s.currentStage === 'real_fox') {
@@ -1272,14 +1272,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 s.nightActionLog.push(`【幸運兒(${s.merchantTarget}號)】查驗了 ${actualTarget}號`);
                 let targetRole = s.playerRoles[actualTarget];
                 let isEvil = evilRoles.includes(targetRole) || s.playerStatus[actualTarget]?.isVWK;
-                if (['hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
+                if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
                 if (isEvil) { txt.textContent = "🐺 狼人 (壞人)"; txt.style.color = "#e94560"; } else { txt.textContent = "🧑‍🌾 好人"; txt.style.color = "#00ff88"; }
             } else if (s.currentStage === 'gray_wolf_action') {
                 let actualTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat);
                 s.nightActionLog.push(`【灰太狼(偷取預言家)】查驗了 ${actualTarget}號`);
                 let targetRole = s.playerRoles[actualTarget];
                 let isEvil = evilRoles.includes(targetRole) || s.playerStatus[actualTarget]?.isVWK;
-                if (['hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
+                if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
                 if (isEvil) { txt.textContent = "🐺 狼人 (壞人)"; txt.style.color = "#e94560"; } else { txt.textContent = "🧑‍🌾 好人"; txt.style.color = "#00ff88"; }
             } else {
                 let actualTarget = applyTimeWolfReflection(getActualTarget(parseInt(s.selectedNumber)), s.currentActorSeat);
@@ -1292,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         txt.style.color = "#fca311";
                     } else {
                         let isEvil = evilRoles.includes(targetRole) || s.playerStatus[actualTarget]?.isVWK;
-                        if (['hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
+                        if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(targetRole)) isEvil = false;
                         if (targetRole === 'machine_wolf' && s.machineWolfTarget) { let learnedRole = s.playerRoles[s.machineWolfTarget]; if (!evilRoles.includes(learnedRole)) isEvil = false; }
                         if (s.currentBoard.id === '12_shadow' && parseInt(actorSeat) === s.shadowSeerSeat) isEvil = !isEvil;
                         

@@ -122,7 +122,7 @@ export const s = {
 
 // 狼人陣營與邪惡陣營定義
 export const wolfFaction = [
-    'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon',
+    'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon', 'snow_wolf',
     'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'wolf_witch',
     'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer',
     'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B',
@@ -156,7 +156,6 @@ export function getStageVoiceName(stage, subLabel) {
     if (stage === 'ghost_bride_couple') return '鬼魅新娘與新郎';
     if (stage === 'ghost_bride_witness') return '證婚人';
     if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人';
-    if (stage === 'pleasant_goat') return '喜羊羊';
     if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '灰太狼';
     if (stage.startsWith('notify_')) return `${stage.split('_').pop()}號`;
     return s.ROLE_DICT[stage]?.name || stage;

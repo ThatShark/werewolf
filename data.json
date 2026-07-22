@@ -87,6 +87,13 @@
                 80
             ]
         },
+        "snow_wolf": {
+            "name": "雪狼",
+            "icon": "🐺❄️",
+            "wakeOrder": [
+                210
+            ]
+        },
         "hidden_wolf": {
             "name": "隱狼",
             "icon": "🐺😶‍🌫️",
@@ -630,11 +637,11 @@
                 }
             },
             {
-                "id": "10_hidden",
-                "name": "隱狼騎士 (2小狼/隱狼｜3民｜預/女/獵/騎)",
+                "id": "10_snow",
+                "name": "雪狼騎士 (2小狼/雪狼｜3民｜預/女/獵/騎)",
                 "roles": {
                     "wolf": 2,
-                    "hidden_wolf": 1,
+                    "snow_wolf": 1,
                     "villager": 3,
                     "seer": 1,
                     "witch": 1,
