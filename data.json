@@ -663,6 +663,33 @@
                 }
             },
             {
+                "id": "10_dream_official",
+                "name": "夢魘攝夢(官方版) (小狼/狼王/夢魘｜3民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 1,
+                    "wolf_king": 1,
+                    "nightmare": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
+                "id": "10_dream_party",
+                "name": "夢魘攝夢(私版) (2小狼/夢魘｜3民｜預/女/獵/攝)",
+                "roles": {
+                    "wolf": 2,
+                    "nightmare": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "dreamwalker": 1
+                }
+            },
+            {
                 "id": "10_dream",
                 "name": "夢魘攝夢 (2小狼/夢魘｜3民｜預/女/獵/攝)",
                 "roles": {
