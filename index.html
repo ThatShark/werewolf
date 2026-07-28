@@ -24,10 +24,14 @@
                         <option value="12" selected>12 人局</option>
                     </select>
                 </label>
-                <label>
+                <div class="setting-group-label">
                     板子選擇：
-                    <select id="setting-board"></select>
-                </label>
+                    <div class="custom-dropdown" id="board-dropdown">
+                        <div class="dropdown-selected" id="board-selected">載入中...</div>
+                        <div class="dropdown-list hidden" id="board-list"></div>
+                    </div>
+                    <select id="setting-board" class="hidden"></select>
+                </div>
                 <label class="checkbox-label">
                     <input type="checkbox" id="setting-witch-rule">
                     第一天女巫可自救
@@ -60,7 +64,9 @@
 
             <div id="number-pad" class="grid-container hidden"></div>
 
-            <div id="action-pad" class="hidden" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:15px; width:100%;"></div>
+            <div id="action-pad" class="hidden"
+                style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:15px; width:100%;">
+            </div>
 
             <button id="btn-optional-skip" class="secondary-btn hidden" style="margin-top: 10px;">跳過</button>
             <button id="btn-confirm-action" class="primary-btn hidden" style="margin-top: 20px;">確認</button>
@@ -68,7 +74,7 @@
 
         <div id="screen-sheriff" class="screen hidden">
             <h2>📢 上警環節</h2>
-            
+
             <div id="sheriff-setup-section">
                 <p style="color: #a2a8d3; margin-bottom: 20px;">請點擊參與警長競選的玩家編號：</p>
                 <div id="sheriff-numpad" class="grid-container"></div>
@@ -80,10 +86,12 @@
 
             <div id="sheriff-action-section" class="hidden">
                 <h3 style="color:#fca311;">🗣️ 警長競選發言</h3>
-                <p id="sheriff-speech-order" style="font-size: 24px; font-weight: bold; margin: 20px 0; color: #00ff88; line-height: 1.5;"></p>
+                <p id="sheriff-speech-order"
+                    style="font-size: 24px; font-weight: bold; margin: 20px 0; color: #00ff88; line-height: 1.5;"></p>
                 <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <button id="btn-finish-sheriff" class="primary-btn">警長競選結束 (開始投票)</button>
-                    <button id="btn-sheriff-wolf-blow" class="secondary-btn" style="border: 1px solid #e94560;">🐺 狼人自爆 (跳過競選)</button>
+                    <button id="btn-sheriff-wolf-blow" class="secondary-btn" style="border: 1px solid #e94560;">🐺 狼人自爆
+                        (跳過競選)</button>
                 </div>
             </div>
 
@@ -102,12 +110,17 @@
             <div id="alchemist-call-section" class="hidden" style="margin-bottom: 20px;"></div>
             <div id="day-result-content">
                 <p id="day-result" style="font-size: 24px; font-weight: bold; margin: 20px 0; line-height: 1.5;"></p>
-                <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋 查看法官紀錄</button>
-                <div id="day-skill-section" class="hidden" style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <p id="day-skill-notice" style="color: #fca311; font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號 】玩家，請問是否發動技能？</p>
+                <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋
+                    查看法官紀錄</button>
+                <div id="day-skill-section" class="hidden"
+                    style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p id="day-skill-notice"
+                        style="color: #fca311; font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號
+                        】玩家，請問是否發動技能？</p>
                     <div id="day-skill-pad" class="grid-container"></div>
                     <button id="btn-day-skill-skip" class="text-btn" style="margin-top: 10px;">放棄發動技能</button>
-                    <button id="btn-day-skill-confirm" class="primary-btn hidden" style="margin-top: 10px;">確認發動</button>
+                    <button id="btn-day-skill-confirm" class="primary-btn hidden"
+                        style="margin-top: 10px;">確認發動</button>
                 </div>
                 <button id="btn-reset" class="secondary-btn">重新開始新局</button>
             </div>
@@ -136,9 +149,13 @@
         <div id="judge-modal" class="modal hidden">
             <div class="modal-content" style="max-width: 500px; text-align: left;">
                 <h3 style="margin-top:0;">📜 法官紀錄面板</h3>
-                <div id="judge-player-status" style="max-height: 30vh; overflow-y: auto; margin-bottom: 10px; background: #24345e; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.6;"></div>
+                <div id="judge-player-status"
+                    style="max-height: 30vh; overflow-y: auto; margin-bottom: 10px; background: #24345e; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.6;">
+                </div>
                 <h4 style="margin: 10px 0 5px 0;">🌙 夜晚操作紀錄</h4>
-                <div id="judge-night-log" style="max-height: 25vh; overflow-y: auto; background: #24345e; padding: 10px; border-radius: 8px; color: #a2a8d3; font-size: 14px; line-height: 1.6;"></div>
+                <div id="judge-night-log"
+                    style="max-height: 25vh; overflow-y: auto; background: #24345e; padding: 10px; border-radius: 8px; color: #a2a8d3; font-size: 14px; line-height: 1.6;">
+                </div>
                 <button id="btn-close-judge" class="primary-btn" style="margin-top: 15px;">關閉</button>
             </div>
         </div>

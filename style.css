@@ -84,24 +84,89 @@ button {
     gap: 12px;
 }
 
-.game-settings label {
+.game-settings label, .setting-group-label {
     display: flex;
     flex-direction: column;
     font-size: 14px;
-    color: #a2a8d3;
+    color: #d3d8ff;
 }
 
 .game-settings select {
     margin-top: 5px;
     padding: 8px;
     border-radius: 4px;
+    cursor: pointer;
+    background-color: #16213e;
+    color: white; 
+    border: 1px solid #4b5563;
+    font-size: 16px;
+    width: 100%;
+}
+
+/* --- 客製化下拉選單樣式 --- */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.dropdown-selected {
     background-color: #16213e;
     color: white;
     border: 1px solid #4b5563;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
     font-size: 16px;
+    text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.dropdown-selected::after {
+    content: '▼';
+    float: right;
+    font-size: 12px;
+    color: #d3d8ff;
+    margin-top: 2px;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #16213e;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    z-index: 1000;
+    max-height: 250px;
+    overflow-y: auto; /* 超出高度時出現滾動條 */
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    text-align: left;
+}
+
+.dropdown-item {
+    padding: 12px 10px;
+    border-bottom: 1px solid #24345e;
+    cursor: pointer;
+    font-size: 16px;
+    color: #d3d8ff;
+    line-height: 1.5;
+    /* 這裡確保過長的文字會自動換行 */
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover, .dropdown-item.active {
+    background-color: #3162de;
+    color: #fff;
 }
 
 .checkbox-label {
