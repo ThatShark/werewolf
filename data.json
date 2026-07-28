@@ -1279,8 +1279,21 @@
                 }
             },
             {
+                "id": "12_mix",
+                "name": "混血兒 (4小狼｜3民｜預/女/獵/守｜混血兒)",
+                "roles": {
+                    "wolf": 4,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1,
+                    "half_blood": 1
+                }
+            },
+            {
                 "id": "12_awaken_lonely_girl",
-                "name": "覺醒少女 (4小狼｜3民｜預/女/獵/攝｜覺孤)",
+                "name": "覺醒孤獨少女 (4小狼｜3民｜預/女/獵/攝｜覺孤)",
                 "roles": {
                     "wolf": 4,
                     "villager": 3,
@@ -1316,6 +1329,21 @@
                     "hunter": 1,
                     "guard": 1,
                     "ghost_bride": 1
+                }
+            },
+            {
+                "id": "12_snake",
+                "name": "千年之戀 [測試中] (2小狼/蝕日侍女｜3民｜預/女/獵/流光伯爵｜白蛇預言家/許仙尋香魅影)",
+                "roles": {
+                    "wolf": 2,
+                    "eclipse_maid": 1,
+                    "villager": 3,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "light_count": 1,
+                    "snake_seer": 1,
+                    "snake_phantom": 1
                 }
             }
         ]
