@@ -258,6 +258,10 @@
             "name": "老流氓",
             "icon": "👴"
         },
+        "very_good": {
+            "name": "鐵好人",
+            "icon": "🦾"
+        },
         "high_villager": {
             "name": "高級平民",
             "icon": "👑"
@@ -307,6 +311,13 @@
         "bear": {
             "name": "熊",
             "icon": "🐻"
+        },
+        "fool_seer": {
+            "name": "愚言家",
+            "icon": "👁️🤡",
+            "wakeOrder": [
+                310
+            ]
         },
         "little_girl": {
             "name": "小女孩",
@@ -886,20 +897,6 @@
                 }
             },
             {
-                "id": "12_brothers_black_market",
-                "name": "狼兄弟黑市 (2小狼/狼兄/狼弟｜4民｜預/女/守/黑市商人)",
-                "roles": {
-                    "wolf": 2,
-                    "wolf_brother": 1,
-                    "wolf_brother_little": 1,
-                    "villager": 4,
-                    "seer": 1,
-                    "witch": 1,
-                    "guard": 1,
-                    "black_market": 1
-                }
-            },
-            {
                 "id": "12_brothers_guard",
                 "name": "狼兄弟守衛 (2小狼/狼兄/狼弟｜4民｜預/女/獵/守)",
                 "roles": {
@@ -911,6 +908,20 @@
                     "witch": 1,
                     "hunter": 1,
                     "guard": 1
+                }
+            },
+            {
+                "id": "12_brothers_black_market",
+                "name": "狼兄弟黑市 (2小狼/狼兄/狼弟｜4民｜預/女/守/黑市商人)",
+                "roles": {
+                    "wolf": 2,
+                    "wolf_brother": 1,
+                    "wolf_brother_little": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "guard": 1,
+                    "black_market": 1
                 }
             },
             {
@@ -1151,6 +1162,20 @@
                     "witch": 1,
                     "guard": 1,
                     "knight": 1
+                }
+            },
+            {
+                "id": "12_fool",
+                "name": "自曝愚言家 (3小狼/狼王｜3民/鐵好人｜愚言家/女/獵/守)",
+                "roles": {
+                    "wolf": 3,
+                    "wolf_king": 1,
+                    "villager": 3,
+                    "very_good": 1,
+                    "fool_seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
                 }
             },
             {

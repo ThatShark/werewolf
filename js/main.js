@@ -1281,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let needsResultRoles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'wolf_witch', 'machine_wolf'];
+        let needsResultRoles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'machine_wolf'];
         if (s.currentStage === 'lucky_boy_action' && s.merchantItem === 'seer' && s.merchantType !== 'black_market') needsResultRoles.push('lucky_boy_action');
         if (s.currentStage === 'gray_wolf_action' && s.grayWolfStolenSkill === 'seer') needsResultRoles.push('gray_wolf_action');
 

@@ -9,7 +9,7 @@ export function calculateNightDeaths() {
 
     // 定位關鍵角色
     let witchSeat = Object.keys(s.playerRoles).find(k => ['witch', 'awaken_witch'].includes(s.playerRoles[k]));
-    let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'diviner'].includes(s.playerRoles[k]));
+    let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'fool_seer'].includes(s.playerRoles[k]));
     let guardSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'guard');
     let dwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'dreamwalker');
     let awakenIdiotSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_idiot');
