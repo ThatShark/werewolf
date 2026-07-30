@@ -523,6 +523,20 @@
                 69
             ]
         },
+        "snake_seer": {
+            "name": "白蛇預言家",
+            "icon": "🐍👁️",
+            "wakeOrder": [
+                131
+            ]
+        },
+        "snake_phantom": {
+            "name": "許仙尋香魅影",
+            "icon": "🐍🌸",
+            "wakeOrder": [
+                130
+            ]
+        },
         "wild_child": {
             "name": "野孩子",
             "icon": "👶",
@@ -952,7 +966,7 @@
             },
             {
                 "id": "12_awaken_seer",
-                "name": "尋香識命 (3小狼/尋香魅影｜4民｜覺醒預言家/女/獵/守)",
+                "name": "尋香識命[維修中] (3小狼/尋香魅影｜4民｜覺醒預言家/女/獵/守)",
                 "roles": {
                     "wolf": 3,
                     "phantom": 1,

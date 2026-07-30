@@ -65,7 +65,7 @@ export function createNumberPad() {
             const cannotSelectSelf = [
                 'witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'fool_seer', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow',
                 'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal',
-                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple'                
+                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer'               
             ];
             if (cannotSelectSelf.includes(s.currentStage)) isDisabled = true;
         }
@@ -100,7 +100,7 @@ export function createNumberPad() {
 
         // 按鈕點擊綁定邏輯 (保持原本操作邏輯不變)
         btn.addEventListener('click', () => {
-            if (s.currentRoleFeared || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.currentStage) || s.currentStage.startsWith('notify_')) return;
+            if (s.currentRoleFeared || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.currentStage) || s.currentStage.startsWith('notify_')) return;
 
             const btnConfirmAction = document.getElementById('btn-confirm-action');
             if (s.currentStage === 'awaken_witch' && s.awakenWitchStep === 'poison_target') {
@@ -116,7 +116,7 @@ export function createNumberPad() {
                 btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
                 return;
             }
-            if (['magician', 'trickster', 'wolf_sorcerer', 'phantom', 'awaken_seer', 'cupid', 'alchemist'].includes(s.currentStage)) {
+            if (['magician', 'trickster', 'wolf_sorcerer', 'phantom', 'snake_phantom', 'awaken_seer', 'cupid', 'alchemist'].includes(s.currentStage)) {
                 let maxSelect = s.currentStage === 'alchemist' ? 3 : 2;
                 if (s.selectedNumber === 'skip') { s.selectedNumber = null; document.getElementById('btn-optional-skip').classList.remove('action-selected'); }
                 if (s.selectedNumbersArr.includes(i)) {

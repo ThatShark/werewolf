@@ -109,6 +109,7 @@ export const s = {
     chainKilled: [],                  // 連帶死亡名單 (殉情、連線)
     finalKilled: [],                  // 最終總和死亡名單
     dayShootersQueue: [],             // 白天開槍/發動技能隊列
+    snakeWin: false,                  // 白蛇與許仙是否觸發雙死獲勝
 
     // ==========================================================================
     // 8. 其他擴展板子專用變數
@@ -129,7 +130,8 @@ export const wolfFaction = [
     'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf'
 ];
 export const evilRoles = [...wolfFaction, 'nightmare', 'hidden_wolf', 'gargoyle', 'machine_wolf',
-    'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant'
+    'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant',
+    'snake_phantom', 'snake_seer'
 ];
 
 /** 法官語音播報 */

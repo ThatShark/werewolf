@@ -1,15 +1,24 @@
 import { s, wolfFaction, evilRoles, findNearestWolf } from './core.js';
 
+// 判斷是否觸發千年之戀雙死獲勝條件
+function checkSnakeWin(dead1, dead2) {
+    let r1 = s.playerRoles[dead1];
+    let r2 = s.playerRoles[dead2];
+    if ((r1 === 'snake_phantom' && r2 === 'snake_seer') || (r1 === 'snake_seer' && r2 === 'snake_phantom')) {
+        s.snakeWin = true;
+    }
+}
+
 export function calculateNightDeaths() {
     // 1. 初始化死亡判定與狀態清單
     s.primaryKilled = []; s.chainKilled = []; s.finalKilled = [];
-    s.pufferfishTriggered = false; 
-    s.whiteCatFlippedLastNight = false; 
+    s.pufferfishTriggered = false;
+    s.whiteCatFlippedLastNight = false;
     s.rustSwordInfectedTarget = null;
 
     // 定位關鍵角色
     let witchSeat = Object.keys(s.playerRoles).find(k => ['witch', 'awaken_witch'].includes(s.playerRoles[k]));
-    let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'fool_seer'].includes(s.playerRoles[k]));
+    let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'fool_seer', 'snake_seer'].includes(s.playerRoles[k]));
     let guardSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'guard');
     let dwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'dreamwalker');
     let awakenIdiotSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_idiot');
@@ -18,10 +27,10 @@ export function calculateNightDeaths() {
     // 2. 確認夢魘恐懼影響
     let isWolfFeared = s.nightmareTarget && wolfFaction.includes(s.playerRoles[s.nightmareTarget]);
     let actualWolfKill = isWolfFeared ? null : s.wolfKillTarget;
-    
+
     let actualWitchPoison = s.witchPoisonTarget;
     if (witchSeat && parseInt(witchSeat) === s.nightmareTarget) { actualWitchPoison = null; s.witchSaved = false; }
-    
+
     let actualSeerTarget = s.seerTarget;
     if (seerSeat && parseInt(seerSeat) === s.nightmareTarget) actualSeerTarget = null;
 
@@ -54,7 +63,7 @@ export function calculateNightDeaths() {
         let targetRole = s.playerRoles[target];
         let diesToWolf = false;
 
-        if (['ghost_rider', 'curse_fox'].includes(targetRole) || isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target)) { 
+        if (['ghost_rider', 'curse_fox'].includes(targetRole) || isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target)) {
             // 免疫致死
         } else if (isSaved && isGuarded) {
             s.primaryKilled.push(target);
@@ -91,7 +100,7 @@ export function calculateNightDeaths() {
         if (!s.primaryKilled.includes(s.awakenBeautyTarget)) s.chainKilled.push(s.awakenBeautyTarget);
         s.awakenBeautyTarget = null;
     }
-    
+
     // 8. 灰太狼猜測喜羊羊錯誤直接死亡判定
     let grayWolfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'gray_wolf');
     if (grayWolfSeat && s.grayWolfStolenPlayer) {
@@ -102,7 +111,7 @@ export function calculateNightDeaths() {
                 let actualPGSkill = null;
                 if (s.pleasantGoatGuard) actualPGSkill = 'guard';
                 if (s.pleasantGoatAntiTheft) actualPGSkill = 'anti_theft';
-                
+
                 // 猜測錯誤且喜羊羊非空過技能時出局
                 if (actualPGSkill !== null && s.grayWolfGuess !== actualPGSkill) {
                     if (!s.primaryKilled.includes(parseInt(grayWolfSeat))) {
@@ -125,8 +134,8 @@ export function calculateNightDeaths() {
     [beautySeat, vwkBeautySeat].forEach(seat => {
         if (seat && s.finalKilled.includes(parseInt(seat)) && actualWitchPoison !== parseInt(seat)) {
             if (s.beautyTarget && s.playerRoles[s.beautyTarget] !== 'old_hooligan' && !s.finalKilled.includes(s.beautyTarget) && !s.pufferfishTriggered) {
-                s.chainKilled.push(s.beautyTarget); 
-                s.finalKilled = [...s.primaryKilled, ...s.chainKilled]; 
+                s.chainKilled.push(s.beautyTarget);
+                s.finalKilled = [...s.primaryKilled, ...s.chainKilled];
                 handleChainDeaths();
             }
         }
@@ -138,7 +147,7 @@ export function calculateNightDeaths() {
         s.primaryKilled = s.primaryKilled.filter(k => k !== parseInt(wcSeat));
         s.chainKilled = s.chainKilled.filter(k => k !== parseInt(wcSeat));
         s.finalKilled = s.finalKilled.filter(k => k !== parseInt(wcSeat));
-        s.playerStatus[wcSeat].isWhiteCatFlipped = true; 
+        s.playerStatus[wcSeat].isWhiteCatFlipped = true;
         s.whiteCatFlippedLastNight = true;
     }
 
@@ -157,7 +166,7 @@ export function calculateNightDeaths() {
  */
 export function handleChainDeaths() {
     let changed = false;
-    
+
     // 取得原生攝夢人與百變狼王(攝夢人)的座位
     let dwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'dreamwalker');
     let vwkDreamSeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'dreamwalker') ? s.vwkSeat : null;
@@ -165,58 +174,67 @@ export function handleChainDeaths() {
     // 1. 檢查 攝夢人/夢語者 連帶死亡
     [dwSeat, vwkDreamSeat].forEach(seat => {
         if (seat && s.finalKilled.includes(parseInt(seat)) && s.dreamTarget && !s.finalKilled.includes(s.dreamTarget)) {
-            s.chainKilled.push(s.dreamTarget); 
-            s.finalKilled.push(s.dreamTarget); 
+            s.chainKilled.push(s.dreamTarget);
+            s.finalKilled.push(s.dreamTarget);
             changed = true;
             s.playerStatus[s.dreamTarget].deathReason = "連帶死亡(被攝夢)";
         }
     });
 
-    // 2. 檢查 尋香魅影 綁定連帶死亡 (雙生結算)
-    if (s.phantomTargets.length === 2) {
-        let [p1, p2] = s.phantomTargets;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { 
-            s.chainKilled.push(p2); s.finalKilled.push(p2); s.phantomTargets = []; 
-            s.playerStatus[p2].deathReason = "連帶死亡(尋香綁定)"; changed = true; 
+    // 2. 檢查 尋香魅影/許仙 綁定連帶死亡 (雙生結算)
+    const normalizedTargets = (s.phantomTargets || []).map(Number);
+    if (normalizedTargets.length === 2) {
+        const [p1, p2] = normalizedTargets;
+        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) {
+            s.chainKilled.push(p2);
+            s.finalKilled.push(p2);
+            s.phantomTargets = [];
+            s.playerStatus[p2].deathReason = "連帶死亡(尋香綁定)";
+            changed = true;
+            checkSnakeWin(p1, p2);
         }
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { 
-            s.chainKilled.push(p1); s.finalKilled.push(p1); s.phantomTargets = []; 
-            s.playerStatus[p1].deathReason = "連帶死亡(尋香綁定)"; changed = true; 
+        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) {
+            s.chainKilled.push(p1);
+            s.finalKilled.push(p1);
+            s.phantomTargets = [];
+            s.playerStatus[p1].deathReason = "連帶死亡(尋香綁定)";
+            changed = true;
+            checkSnakeWin(p1, p2);
         }
     }
 
     // 3. 檢查 邱比特 情侶連帶死亡 (殉情)
     if (s.cupidLovers.length === 2) {
         let [p1, p2] = s.cupidLovers;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) { 
-            s.chainKilled.push(p2); s.finalKilled.push(p2); s.cupidLovers = []; 
-            s.playerStatus[p2].deathReason = "連帶死亡(情侶殉情)"; changed = true; 
+        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) {
+            s.chainKilled.push(p2); s.finalKilled.push(p2); s.cupidLovers = [];
+            s.playerStatus[p2].deathReason = "連帶死亡(情侶殉情)"; changed = true;
         }
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) { 
-            s.chainKilled.push(p1); s.finalKilled.push(p1); s.cupidLovers = []; 
-            s.playerStatus[p1].deathReason = "連帶死亡(情侶殉情)"; changed = true; 
+        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) {
+            s.chainKilled.push(p1); s.finalKilled.push(p1); s.cupidLovers = [];
+            s.playerStatus[p1].deathReason = "連帶死亡(情侶殉情)"; changed = true;
         }
     }
 
     // 4. 檢查 鬼魅新娘 夫妻連帶死亡
     if (s.ghostBrideGroom && s.ghostBrideWitness) {
         let gSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_bride'));
-        if (s.finalKilled.includes(gSeat) && !s.finalKilled.includes(s.ghostBrideGroom)) { 
-            s.chainKilled.push(s.ghostBrideGroom); s.finalKilled.push(s.ghostBrideGroom); 
-            s.playerStatus[s.ghostBrideGroom].deathReason = "連帶死亡(新郎殉情)"; changed = true; 
+        if (s.finalKilled.includes(gSeat) && !s.finalKilled.includes(s.ghostBrideGroom)) {
+            s.chainKilled.push(s.ghostBrideGroom); s.finalKilled.push(s.ghostBrideGroom);
+            s.playerStatus[s.ghostBrideGroom].deathReason = "連帶死亡(新郎殉情)"; changed = true;
         }
-        else if (s.finalKilled.includes(s.ghostBrideGroom) && !s.finalKilled.includes(gSeat)) { 
-            s.chainKilled.push(gSeat); s.finalKilled.push(gSeat); 
-            s.playerStatus[gSeat].deathReason = "連帶死亡(新郎死亡)"; changed = true; 
+        else if (s.finalKilled.includes(s.ghostBrideGroom) && !s.finalKilled.includes(gSeat)) {
+            s.chainKilled.push(gSeat); s.finalKilled.push(gSeat);
+            s.playerStatus[gSeat].deathReason = "連帶死亡(新郎死亡)"; changed = true;
         }
     }
 
     // 5. 檢查 覺醒攝夢人 (夢語者) 連帶死亡
     let adSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_dreamwalker');
     if (adSeat && s.finalKilled.includes(parseInt(adSeat)) && s.awakenDreamwalkerTarget && !s.finalKilled.includes(s.awakenDreamwalkerTarget)) {
-        s.chainKilled.push(s.awakenDreamwalkerTarget); 
-        s.finalKilled.push(s.awakenDreamwalkerTarget); 
-        s.playerStatus[s.awakenDreamwalkerTarget].deathReason = "連帶死亡(夢語者)"; 
+        s.chainKilled.push(s.awakenDreamwalkerTarget);
+        s.finalKilled.push(s.awakenDreamwalkerTarget);
+        s.playerStatus[s.awakenDreamwalkerTarget].deathReason = "連帶死亡(夢語者)";
         changed = true;
     }
 
@@ -228,7 +246,7 @@ export function handleChainDeaths() {
  */
 export function proceedDayResultRender() {
     if (s.crowTarget) document.getElementById('btn-show-crow').classList.remove('hidden');
-    
+
     let bearRoarText = "";
     let bearSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'bear');
     let mwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'machine_wolf');
@@ -238,23 +256,23 @@ export function proceedDayResultRender() {
         let role = s.playerRoles[seatId];
         if (role === 'machine_wolf' && s.machineWolfTarget) {
             let learnedRole = s.playerRoles[s.machineWolfTarget];
-            if (!evilRoles.includes(learnedRole)) return false; 
+            if (!evilRoles.includes(learnedRole)) return false;
         }
         return evilRoles.includes(role);
     };
 
     const getAdjacent = (seat) => {
-        let left = seat - 1; 
-        while (left !== seat) { 
-            if (left < 1) left = s.totalPlayers; 
-            if (!s.finalKilled.includes(left)) break; 
-            left--; 
+        let left = seat - 1;
+        while (left !== seat) {
+            if (left < 1) left = s.totalPlayers;
+            if (!s.finalKilled.includes(left)) break;
+            left--;
         }
-        let right = seat + 1; 
-        while (right !== seat) { 
-            if (right > s.totalPlayers) right = 1; 
-            if (!s.finalKilled.includes(right)) break; 
-            right++; 
+        let right = seat + 1;
+        while (right !== seat) {
+            if (right > s.totalPlayers) right = 1;
+            if (!s.finalKilled.includes(right)) break;
+            right++;
         }
         return { left, right };
     };
@@ -265,7 +283,7 @@ export function proceedDayResultRender() {
         if (s.seedWolfTarget !== parseInt(bearSeat)) {
             let { left, right } = getAdjacent(parseInt(bearSeat));
             let hasWolf = isSeatWolfForBear(left) || isSeatWolfForBear(right);
-            
+
             if (s.playerStatus[bearSeat]?.isVWK) {
                 if (s.vwkCharmTarget) hasWolf = isSeatWolfForBear(s.vwkCharmTarget);
                 hasWolf = !hasWolf;
@@ -296,7 +314,7 @@ export function proceedDayResultRender() {
         } else {
             extraText += `<span style="color:#fca311;">🐡 ${pfSeat} 號 (河豚) 死亡！</span><br><br>`;
         }
-        s.beautyTarget = null; 
+        s.beautyTarget = null;
     }
     let hvSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'high_villager');
     if (hvSeat && s.seedWolfTarget !== parseInt(hvSeat)) {
@@ -304,14 +322,18 @@ export function proceedDayResultRender() {
     }
 
     let htmlOutput = bearRoarText + extraText;
-    
+
     if (s.finalKilled.length === 0) {
         htmlOutput += "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
     } else {
         s.finalKilled.sort((a, b) => a - b);
         htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.finalKilled.join(' 號、')} 號</span>`;
 
-        // 5. 建立夜晚死者的白天技能/開槍佇列 (排查被灰太狼偷竊、毒殺、恐懼等狀態)
+        if (s.snakeWin) {
+            htmlOutput += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
+        }
+
+        // 5. 建立夜晚死者的白天技能/開槍佇列
         s.dayShootersQueue = [];
         s.finalKilled.forEach(seat => {
             let role = s.playerRoles[seat];
@@ -344,7 +366,7 @@ export function proceedDayResultRender() {
     document.getElementById('day-result').innerHTML = htmlOutput;
 
     if (s.dayShootersQueue.length > 0) processNextShooter();
-    else triggerTricksterVoteSection();
+    else triggerVoteSection();
 }
 
 /**
@@ -353,24 +375,24 @@ export function proceedDayResultRender() {
 export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     if (s.finalKilled.includes(seat)) return;
     let role = s.playerRoles[seat];
-    
+
     // 特殊防禦機制
-    if (isShot && role === 'old_hooligan') { s.playerStatus[seat].injured = true; return; } 
-    if (isShot && role === 'ghost_rider') return; 
-    if (role === 'white_cat' && !s.playerStatus[seat].isWhiteCatFlipped) { s.playerStatus[seat].isWhiteCatFlipped = true; return; } 
+    if (isShot && role === 'old_hooligan') { s.playerStatus[seat].injured = true; return; }
+    if (isShot && role === 'ghost_rider') return;
+    if (role === 'white_cat' && !s.playerStatus[seat].isWhiteCatFlipped) { s.playerStatus[seat].isWhiteCatFlipped = true; return; }
 
     if (role === 'awaken_wolf_beauty' && s.awakenBeautyTarget && !s.finalKilled.includes(s.awakenBeautyTarget)) {
         let subTarget = s.awakenBeautyTarget; s.awakenBeautyTarget = null;
-        killPlayerDuringDay(subTarget, false, false); 
+        killPlayerDuringDay(subTarget, false, false);
         return;
     }
 
     s.finalKilled.push(seat);
-    s.playerStatus[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡(情侶/魅惑/尋香/夢語者)";
+    s.playerStatus[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡";
 
     if (canShoot) {
         let isStolen = (s.grayWolfStolenPlayer === seat && s.grayWolfStolenPlayer !== s.pleasantGoatAntiTheft);
-        
+
         if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
             if (!(role === 'hunter' && isStolen)) {
                 s.dayShootersQueue.push({ seat, role });
@@ -391,9 +413,20 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
     if ((role === 'dreamwalker' || seat === vwkDreamSeat) && s.dreamTarget && !s.finalKilled.includes(s.dreamTarget)) {
         killPlayerDuringDay(s.dreamTarget, false, false);
     }
-    if (s.phantomTargets.includes(seat)) {
-        let other = s.phantomTargets[0] === seat ? s.phantomTargets[1] : s.phantomTargets[0];
-        if (!s.finalKilled.includes(other)) { s.phantomTargets = []; killPlayerDuringDay(other, false, false); }
+    if ((s.phantomTargets || []).map(Number).length === 2) {
+        const normalizedTargets = (s.phantomTargets || []).map(Number);
+        const currentSeat = Number(seat);
+
+        if (normalizedTargets.includes(currentSeat)) {
+            const [t1, t2] = normalizedTargets;
+            const other = t1 === currentSeat ? t2 : t1;
+
+            if (!s.finalKilled.includes(other)) {
+                s.phantomTargets = [];
+                killPlayerDuringDay(other, false, false);
+                checkSnakeWin(currentSeat, other);
+            }
+        }
     }
     if (s.cupidLovers.includes(seat)) {
         let other = s.cupidLovers[0] === seat ? s.cupidLovers[1] : s.cupidLovers[0];
@@ -413,25 +446,28 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
 export function processNextShooter() {
     if (s.dayShootersQueue.length === 0) {
         document.getElementById('day-skill-section').classList.add('hidden');
-        triggerTricksterVoteSection(); 
+        triggerVoteSection();
         return;
     }
-    
+
     document.getElementById('btn-reset').classList.add('hidden');
     const currentShooter = s.dayShootersQueue[0];
     const section = document.getElementById('day-skill-section');
     section.classList.remove('hidden');
     document.getElementById('day-skill-notice').textContent = `🎯 【 ${currentShooter.seat} 號 】玩家，請問是否發動技能？`;
 
-    let pad = document.getElementById('day-skill-pad'); 
+    let pad = document.getElementById('day-skill-pad');
     pad.innerHTML = '';
 
     const finishShooterTurn = () => {
         s.finalKilled.sort((a, b) => a - b);
         let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.finalKilled.join(' 號、')} 號</span>` + (s.speechOrderText ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speechOrderText}</span>` : "");
+        if (s.snakeWin) {
+            dayResultStr += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
+        }
         document.getElementById('day-result').innerHTML = dayResultStr;
-        s.dayShootersQueue.shift(); 
-        processNextShooter(); 
+        s.dayShootersQueue.shift();
+        processNextShooter();
     };
 
     if (currentShooter.role === 'awaken_hunter') {
@@ -450,13 +486,13 @@ export function processNextShooter() {
     for (let i = 1; i <= s.totalPlayers; i++) {
         const btn = document.createElement('button');
         btn.classList.add('num-btn'); btn.textContent = i;
-        if (s.finalKilled.includes(i)) { 
-            btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; 
+        if (s.finalKilled.includes(i)) {
+            btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed';
         } else {
             btn.onclick = () => {
                 document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected'); 
-                selectedDayTarget = i; 
+                btn.classList.add('selected');
+                selectedDayTarget = i;
                 document.getElementById('btn-day-skill-confirm').classList.remove('hidden');
             };
         }
@@ -464,8 +500,8 @@ export function processNextShooter() {
     }
     document.getElementById('btn-day-skill-skip').onclick = finishShooterTurn;
     document.getElementById('btn-day-skill-confirm').onclick = () => {
-        document.getElementById('btn-day-skill-confirm').classList.add('hidden'); 
-        killPlayerDuringDay(selectedDayTarget, true); 
+        document.getElementById('btn-day-skill-confirm').classList.add('hidden');
+        killPlayerDuringDay(selectedDayTarget, true);
         finishShooterTurn();
     };
 }
@@ -473,7 +509,7 @@ export function processNextShooter() {
 export function triggerTricksterVoteSection() {
     const dayResultContent = document.getElementById('day-result-content');
     const btnReset = document.getElementById('btn-reset');
-    
+
     if (Object.values(s.playerRoles).includes('trickster') && document.getElementById('trickster-calc') === null) {
         let tricksterDiv = document.createElement('div'); tricksterDiv.id = 'trickster-calc';
         tricksterDiv.style = "background:#24345e; padding:15px; border-radius:8px; margin-bottom:20px;";
@@ -484,21 +520,21 @@ export function triggerTricksterVoteSection() {
             <div id="trickster-result" class="hidden" style="margin-top:15px; font-size:24px; font-weight:bold; color:#00ff88;"></div>
         `;
         dayResultContent.insertBefore(tricksterDiv, btnReset);
-        
+
         let tPad = document.getElementById('trickster-numpad');
         for (let i = 1; i <= s.totalPlayers; i++) {
             if (s.finalKilled.includes(i)) continue;
             let b = document.createElement('button'); b.className = 'num-btn'; b.textContent = i;
             b.onclick = () => {
-                let magSwap = [...s.magicianSwap].sort().join(','); 
+                let magSwap = [...s.magicianSwap].sort().join(',');
                 let triSwap = [...s.tricksterSwap].sort().join(',');
                 let effectiveTrickster = s.tricksterSwap;
-                
+
                 if (s.magicianSwap.length && s.tricksterSwap.length && magSwap === triSwap) effectiveTrickster = [];
-                
-                let exiled = i; 
+
+                let exiled = i;
                 if (effectiveTrickster.includes(i)) exiled = effectiveTrickster[0] === i ? effectiveTrickster[1] : effectiveTrickster[0];
-                
+
                 document.getElementById('trickster-result').textContent = `實際被放逐出局的是：【 ${exiled} 號 】`;
                 document.getElementById('trickster-result').classList.remove('hidden');
                 document.querySelectorAll('#trickster-numpad .num-btn').forEach(btn => btn.classList.remove('selected'));
