@@ -1114,7 +1114,7 @@
             },
             {
                 "id": "12_pure_white",
-                "name": "純白夜影 (3小狼/狼巫｜4民｜女/獵/守/純白之女)",
+                "name": "純白夜影 (3小狼/狼巫｜4民｜純白之女/女/獵/守)",
                 "roles": {
                     "wolf": 3,
                     "wolf_witch": 1,
@@ -1194,7 +1194,7 @@
             },
             {
                 "id": "12_little_girl_big_wolf",
-                "name": "女孩與野狼 (3小狼/大野狼｜4民｜小女孩/女/獵/守)",
+                "name": "小女孩大野狼 (3小狼/大野狼｜4民｜小女孩/女/獵/守)",
                 "roles": {
                     "wolf": 3,
                     "big_bad_wolf": 1,
@@ -1220,6 +1220,20 @@
                 }
             },
             {
+                "id": "12_seed_wolf_official_yubai",
+                "name": "種狼(娛百版) (2小狼/種狼/隱狼｜4民｜預/女/獵/守)",
+                "roles": {
+                    "wolf": 2,
+                    "seed_wolf": 1,
+                    "hidden_wolf": 1,
+                    "villager": 4,
+                    "seer": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "guard": 1
+                }
+            },
+            {
                 "id": "12_seed_wolf_party",
                 "name": "種狼(私版) (3小狼/種狼｜4民｜預/女/獵/守)",
                 "roles": {
@@ -1234,7 +1248,7 @@
             },
             {
                 "id": "12_big_gray_wolf",
-                "name": "大灰狼 (3小狼/大灰狼｜4民｜預/女/獵/占卜師)",
+                "name": "大灰狼占卜師 (3小狼/大灰狼｜4民｜預/女/獵/占卜師)",
                 "roles": {
                     "wolf": 3,
                     "big_gray_wolf": 1,
