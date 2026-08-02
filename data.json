@@ -1274,7 +1274,7 @@
             },
             {
                 "id": "12_wind_spy",
-                "name": "風聲諜影 (機械狼/2覺石｜預/通靈師/熊/女/獵/河豚/攝/白貓/覺醒孤獨少女)",
+                "name": "風聲諜影 (機械狼/2覺石｜預/通靈師/熊/女/獵/河豚/攝/白貓/混血兒)",
                 "roles": {
                     "machine_wolf": 1,
                     "awaken_gargoyle_A": 1,
@@ -1287,7 +1287,7 @@
                     "pufferfish": 1,
                     "dreamwalker": 1,
                     "white_cat": 1,
-                    "awaken_lonely_girl": 1
+                    "half_blood": 1
                 }
             },
             {
