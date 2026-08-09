@@ -992,10 +992,9 @@
             },
             {
                 "id": "12_variable_wolf",
-                "name": "百變狼王 (2小狼/狼王｜4民｜預/熊/女/獵/攝)",
+                "name": "百變狼王 (3小狼｜4民｜預/熊/女/獵/攝)",
                 "roles": {
-                    "wolf": 2,
-                    "wolf_king": 1,
+                    "wolf": 3,
                     "villager": 4,
                     "seer": 1,
                     "bear": 1,
@@ -1101,7 +1100,7 @@
             },
             {
                 "id": "12_awaken_idiot_noble",
-                "name": "夜之貴族 (3小狼/夜之貴族｜4民｜預/女/獵魔人/覺醒白痴)",
+                "name": "覺醒之夜 (3小狼/夜之貴族｜4民｜預/女/獵魔人/覺醒白痴)",
                 "roles": {
                     "wolf": 3,
                     "night_noble": 1,
@@ -1273,24 +1272,6 @@
                 }
             },
             {
-                "id": "12_wind_spy",
-                "name": "風聲諜影 (機械狼/2覺石｜預/通靈師/熊/女/獵/河豚/攝/白貓/混血兒)",
-                "roles": {
-                    "machine_wolf": 1,
-                    "awaken_gargoyle_A": 1,
-                    "awaken_gargoyle_B": 1,
-                    "seer": 1,
-                    "psychic": 1,
-                    "bear": 1,
-                    "witch": 1,
-                    "hunter": 1,
-                    "pufferfish": 1,
-                    "dreamwalker": 1,
-                    "white_cat": 1,
-                    "half_blood": 1
-                }
-            },
-            {
                 "id": "12_green_grass",
                 "name": "青青草原 (3小灰灰/灰太狼｜4羊駝｜預/女/獵/喜羊羊)",
                 "roles": {
@@ -1355,6 +1336,24 @@
                     "witch": 1,
                     "hunter": 1,
                     "guard": 1,
+                    "half_blood": 1
+                }
+            },
+            {
+                "id": "12_wind_spy",
+                "name": "風聲諜影 (機械狼/2覺石｜預/通靈師/熊/女/獵/河豚/攝/白貓/混血兒)",
+                "roles": {
+                    "machine_wolf": 1,
+                    "awaken_gargoyle_A": 1,
+                    "awaken_gargoyle_B": 1,
+                    "seer": 1,
+                    "psychic": 1,
+                    "bear": 1,
+                    "witch": 1,
+                    "hunter": 1,
+                    "pufferfish": 1,
+                    "dreamwalker": 1,
+                    "white_cat": 1,
                     "half_blood": 1
                 }
             },
