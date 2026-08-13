@@ -59,6 +59,8 @@ export function resolveInspectionResult() {
         let target_role = s.player_roles[actual_target];
         let is_evil = evil_roles.includes(target_role) || s.player_status[actual_target]?.isVWK;
         if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(target_role)) is_evil = false;
+        if (target_role === 'pumpkin') { let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); if (gs && !s.final_killed.includes(parseInt(gs))) is_evil = false; }
+        if (target_role === 'treasure_master' && s.is_treasure_hunter_evil) is_evil = true;
         if (is_evil) { text = "🐺 狼人 (壞人)"; color = "#e94560"; }
         else { text = "🧑‍🌾 好人"; color = "#00ff88"; }
     } else if (s.current_stage === 'gray_wolf_action') {
@@ -67,6 +69,8 @@ export function resolveInspectionResult() {
         let target_role = s.player_roles[actual_target];
         let is_evil = evil_roles.includes(target_role) || s.player_status[actual_target]?.isVWK;
         if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(target_role)) is_evil = false;
+        if (target_role === 'pumpkin') { let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); if (gs && !s.final_killed.includes(parseInt(gs))) is_evil = false; }
+        if (target_role === 'treasure_master' && s.is_treasure_hunter_evil) is_evil = true;
         if (is_evil) { text = "🐺 狼人 (壞人)"; color = "#e94560"; }
         else { text = "🧑‍🌾 好人"; color = "#00ff88"; }
     } else {
@@ -85,6 +89,13 @@ export function resolveInspectionResult() {
             } else {
                 let is_evil = evil_roles.includes(target_role) || s.player_status[actual_target]?.isVWK;
                 if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(target_role)) is_evil = false;
+                // 規則：南瓜鬼在石像鬼死前被查驗皆為金水（第一夜石像鬼必定存活）
+                if (target_role === 'pumpkin') {
+                    let gargoyleSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle');
+                    if (gargoyleSeat && !s.final_killed.includes(parseInt(gargoyleSeat))) is_evil = false;
+                }
+                // 規則：盜寶大師底牌有狼 → 為狼人陣營（查殺）
+                if (target_role === 'treasure_master' && s.is_treasure_hunter_evil) is_evil = true;
                 if (target_role === 'machine_wolf' && s.machine_wolf_target) {
                     let learned_role = s.player_roles[s.machine_wolf_target];
                     if (!evil_roles.includes(learned_role)) is_evil = false;
@@ -98,6 +109,14 @@ export function resolveInspectionResult() {
             let r = s.player_roles[actual_target];
             text = `${s.ROLE_DICT[r].icon} ${s.ROLE_DICT[r].name}`;
             color = "#fca311";
+        } else if (s.current_stage === 'demon') {
+            // 惡魔查驗：顯示目標是「神牌」還是「民牌」
+            let target_role = s.player_roles[actual_target];
+            let civilian_roles = ['villager', 'alpaca', 'old_hooligan', 'high_villager', 'very_good', 'rabbit', 'twin'];
+            let is_god = !civilian_roles.includes(target_role) && !evil_roles.includes(target_role) && !wolf_faction.includes(target_role);
+            text = is_god ? "⚡ 神牌" : "🧑‍🌾 民牌";
+            color = is_god ? "#fca311" : "#00ff88";
+            s.night_action_log.push(`【惡魔】查驗了 ${actual_target}號 → ${is_god ? '神牌' : '民牌'}`);
         } else {
             // 通靈師、純白之女等好人查驗角色也能觸發惡靈騎士反傷
             if (seer_like_roles.includes(s.current_stage)) s.seer_target = actual_target;
@@ -118,7 +137,7 @@ export function resolveInspectionResult() {
  */
 export function resolveNonInspectionAction() {
     // 取得需要查驗結果的角色列表（用於跳過判定）
-    let needs_result_roles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'machine_wolf', 'snake_seer'];
+    let needs_result_roles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'machine_wolf', 'snake_seer', 'demon'];
     if (s.current_stage === 'lucky_boy_action' && s.merchant_item === 'seer' && s.merchant_type !== 'black_market') needs_result_roles.push('lucky_boy_action');
     if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') needs_result_roles.push('gray_wolf_action');
 
@@ -271,19 +290,6 @@ export function resolveNonInspectionAction() {
         s.silence_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
         s.night_action_log.push(s.silence_target ? `【禁言長老】禁言了 ${s.silence_target}號` : `【禁言長老】未禁言`);
     }
-    // --- 惡魔（查驗神/民）---
-    else if (s.current_stage === 'demon') {
-        let target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
-        if (target) {
-            let target_role = s.player_roles[target];
-            // 判斷是神職還是平民（含平民類：villager, alpaca, old_hooligan, high_villager, very_good）
-            let civilian_roles = ['villager', 'alpaca', 'old_hooligan', 'high_villager', 'very_good', 'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'nightmare', 'blood_moon', 'snow_wolf', 'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'wolf_witch', 'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf', 'war_wolf', 'moon_wolf', 'assassin', 'warden', 'phantom_king', 'medusa', 'black_bat', 'pumpkin', 'evil_merchant', 'demon', 'dark_messenger'];
-            let is_god = !civilian_roles.includes(target_role);
-            s.night_action_log.push(`【惡魔】查驗了 ${target}號 → ${is_god ? '神牌' : '民牌'}`);
-        } else {
-            s.night_action_log.push(`【惡魔】未查驗`);
-        }
-    }
     // --- 黑蝙蝠（庇護）---
     else if (s.current_stage === 'black_bat') {
         s.black_bat_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
@@ -417,25 +423,28 @@ export function resolveNonInspectionAction() {
             s.night_action_log.push(`【殭屍】感染了 ${s.selected_numbers_arr.join(',')}號`);
         }
     }
-    // --- 狐狸（三人查驗）---
+    // --- 子狐（魅惑，一次性）---
     else if (s.current_stage === 'fox') {
         let target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
-        if (target) {
-            // 查驗目標及兩側是否有狼人
-            let seats = Object.keys(s.player_roles).map(Number).sort((a, b) => a - b);
-            let idx = seats.indexOf(target);
-            let left = idx > 0 ? seats[idx - 1] : seats[seats.length - 1];
-            let right = idx < seats.length - 1 ? seats[idx + 1] : seats[0];
-            let has_wolf = [left, target, right].some(seat => wolf_faction.includes(s.player_roles[seat]));
-            s.night_action_log.push(`【狐狸】查驗了 ${left},${target},${right}號 → ${has_wolf ? '有狼人' : '無狼人（失去技能）'}`);
-        } else {
-            s.night_action_log.push(`【狐狸】未查驗`);
-        }
+        s.fox_charm_target = target;
+        s.night_action_log.push(target ? `【子狐】魅惑了 ${target}號` : `【子狐】未魅惑`);
     }
     // --- 禁言長老 ---
     else if (s.current_stage === 'silence_elder') {
         s.silence_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
         s.night_action_log.push(s.silence_target ? `【禁言長老】禁言了 ${s.silence_target}號` : `【禁言長老】未禁言`);
+    }
+    // --- 超級守墓人（選繼承者）---
+    else if (s.current_stage === 'super_grave_keeper') {
+        let target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
+        s.sp_grave_keeper_heir = target;
+        s.night_action_log.push(target ? `【超級守墓人】選擇了 ${target}號 作為繼承者` : `【超級守墓人】未選擇繼承者`);
+    }
+    // --- 傀儡選擇（唯鄰是從）---
+    else if (s.current_stage === 'puppet_select') {
+        let target = getActualTarget(parseInt(s.selected_number));
+        s.puppet_target = target;
+        s.night_action_log.push(`【狼人】選擇了 ${target}號 作為傀儡`);
     }
     // --- 梅杜莎（石化）---
     else if (s.current_stage === 'medusa') {

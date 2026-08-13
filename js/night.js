@@ -42,18 +42,18 @@ export function createNumberPad() {
         // ==========================================
         // 規則 1：狼刀限制規則
         // ==========================================
-        if (s.current_stage === 'wolf') {
+        if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
             // 大狼不可自刀
             if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty'].includes(s.player_roles[i])) is_disabled = true;
-            // 占卜師標記限制
+            // 占卜師標記限制（規則：狼隊和大灰狼都受限）
             if (s.diviner_mark) {
                 let dm = parseInt(s.diviner_mark);
                 let p1 = dm - 1 < 1 ? s.total_players : dm - 1;
                 let p2 = dm + 1 > s.total_players ? 1 : dm + 1;
                 if (i !== dm && i !== p1 && i !== p2) is_disabled = true;
             }
-            // 煉金魔女迷霧限制
-            if (s.alchemist_fog_targets && s.alchemist_fog_targets.length > 0) {
+            // 煉金魔女迷霧限制（規則：普通狼刀受限，狼鴉之爪不受限）
+            if (s.alchemist_fog_targets && s.alchemist_fog_targets.length > 0 && s.current_stage === 'wolf') {
                 if (!s.alchemist_fog_targets.includes(i.toString()) && !s.alchemist_fog_targets.includes(i)) is_disabled = true;
             }
         }
@@ -82,16 +82,42 @@ export function createNumberPad() {
         // 幸運兒用毒/查驗：不可自點
         if (s.current_stage === 'lucky_boy_action' && ['seer', 'poison'].includes(s.merchant_item) && i === actual_current_actor_seat) is_disabled = true;
 
-        // 覺醒石像鬼：必須選鄰近座位且不能是其他狼人
+        // 覺醒石像鬼轉化：必須選「狼隊隔壁」且不能是狼人自己
         if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
-            let gargoyle_seats = Object.keys(s.player_roles).filter(k => ['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.player_roles[k]));
+            // 規則：轉化目標必須在「狼隊隔壁」（即所有狼人座位的左右相鄰）
+            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
             let adjacent_seats = [];
-            gargoyle_seats.forEach(w => {
+            all_wolf_seats.forEach(w => {
                 let ws = parseInt(w);
                 adjacent_seats.push(ws - 1 < 1 ? s.total_players : ws - 1, ws + 1 > s.total_players ? 1 : ws + 1);
             });
-            let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
-            if (!adjacent_seats.includes(i) || w_seats.includes(i.toString())) is_disabled = true;
+            // 去除重複，且排除狼人自身座位
+            let w_seats = all_wolf_seats.map(k => parseInt(k));
+            let valid_seats = [...new Set(adjacent_seats)].filter(seat => !w_seats.includes(seat));
+            if (!valid_seats.includes(i)) is_disabled = true;
+        }
+
+        // 邪惡商人：首晚只能選小狼 (role === 'wolf')
+        if (s.current_stage === 'evil_merchant') {
+            if (s.player_roles[i] !== 'wolf') is_disabled = true;
+        }
+
+        // 黑夜使者：只能選狼人陣營
+        if (s.current_stage === 'dark_messenger') {
+            if (!wolf_faction.includes(s.player_roles[i])) is_disabled = true;
+        }
+
+        // 傀儡選擇：只能選狼隊相鄰的非狼人
+        if (s.current_stage === 'puppet_select') {
+            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let adj = [];
+            all_wolf_seats.forEach(w => {
+                let ws = parseInt(w);
+                adj.push(ws - 1 < 1 ? s.total_players : ws - 1, ws + 1 > s.total_players ? 1 : ws + 1);
+            });
+            let w_nums = all_wolf_seats.map(k => parseInt(k));
+            let valid = [...new Set(adj)].filter(seat => !w_nums.includes(seat));
+            if (!valid.includes(i)) is_disabled = true;
         }
 
         if (is_disabled) {

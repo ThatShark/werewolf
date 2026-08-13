@@ -79,9 +79,10 @@ export function calculateNightDeaths() {
         if (s.guard_target && parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard')) === mTarget) {
             s.guard_target = null;
         }
-        // 被石化者的女巫毒藥無效
-        if (s.witch_poison_target && parseInt(Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]))) === mTarget) {
+        // 被石化者的女巫兩瓶藥都無效（毒藥+解藥）
+        if (parseInt(Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k])) || 0) === mTarget) {
             s.witch_poison_target = null;
+            s.is_witch_saved = false;
         }
     }
 
@@ -164,8 +165,13 @@ export function calculateNightDeaths() {
     //   - 被預言家查驗 → 查驗顯示金水但咒狐暴斃
     //   - 免疫狼刀
     // -------------------------------------------------------
+    // 規則：只有預言家/覺醒預言家查驗咒狐才致死；通靈師/純白之女查驗只顯示身分不致死
     if (actualSeerTarget && s.player_roles[parseInt(actualSeerTarget)] === 'curse_fox') {
-        if (!s.primary_killed.includes(parseInt(actualSeerTarget))) s.primary_killed.push(parseInt(actualSeerTarget));
+        let seerRole = seerSeat ? s.player_roles[seerSeat] : null;
+        let killFoxRoles = ['seer', 'awaken_seer', 'shadow_seer'];
+        if (killFoxRoles.includes(seerRole)) {
+            if (!s.primary_killed.includes(parseInt(actualSeerTarget))) s.primary_killed.push(parseInt(actualSeerTarget));
+        }
     }
     if (grSeat && !s.has_ghost_rider_reflected) {
         if (actualWitchPoison && parseInt(actualWitchPoison) === grSeat && witchSeat) {
@@ -212,8 +218,10 @@ export function calculateNightDeaths() {
 
         if (['ghost_rider', 'curse_fox'].includes(targetRole) || isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target)) {
             // 免疫致死（惡靈騎士/咒狐/攝夢保護/覺醒白痴保護/夢語者免疫）
-        } else if (targetRole === 'war_wolf' || targetRole === 'demon') {
-            // 規則：戰狼/惡魔免疫所有神職技能傷害（只能投票出局）
+        } else if (targetRole === 'war_wolf') {
+            // 規則：戰狼免疫所有神職技能傷害（含白天決鬥），只能投票出局
+        } else if (targetRole === 'demon') {
+            // 規則：惡魔免疫夜間傷害（毒、夜槍），但白天可被騎士決鬥殺死
         } else if (s.is_phantom_thief_invincible && targetRole === 'phantom_king') {
             // 規則：怪盜狼王發動無敵 → 免疫一切死亡直到下次入夜
         } else if (isSaved && isGuarded) {
@@ -249,7 +257,9 @@ export function calculateNightDeaths() {
         let target = parseInt(actualWitchPoison);
         let targetRole = s.player_roles[target];
         if (targetRole === 'dreamwalker' && s.player_status[target].isVWK) { /* 百變狼王攝夢免疫毒藥 */ }
-        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf', 'war_wolf', 'demon'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target) || (s.is_phantom_thief_invincible && targetRole === 'phantom_king')) { /* 免疫毒藥 */ }
+        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target) || (s.is_phantom_thief_invincible && targetRole === 'phantom_king')) { /* 免疫毒藥 */ }
+        else if (targetRole === 'war_wolf') { /* 戰狼：免疫所有神職技能傷害 */ }
+        else if (targetRole === 'demon') { /* 惡魔：免疫夜間傷害（毒藥屬夜間傷害） */ }
         else if (targetRole === 'old_hooligan') s.player_status[target].poisoned = true;
         else if (!s.primary_killed.includes(target)) {
             s.primary_killed.push(target);
@@ -273,47 +283,73 @@ export function calculateNightDeaths() {
     }
 
     // -------------------------------------------------------
+    // 6.45 潘朵拉魔盒結算
+    // 規則：魔盒開出「毒」→ 開啟者立即死亡（潘朵拉自己免疫）
+    //       魔盒開出「刀/日槍/希望之光」→ 第一夜不結算（需後續夜晚/白天使用）
+    // -------------------------------------------------------
+    if (s.pandora_gift === 'poison' && s.pandora_target) {
+        let pandoraRecipient = parseInt(s.pandora_target);
+        // 確認獲贈者不是潘朵拉自己（潘朵拉免疫此毒）
+        let pandoraSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'pandora');
+        if (pandoraSeat && parseInt(pandoraSeat) !== pandoraRecipient) {
+            if (!s.primary_killed.includes(pandoraRecipient)) {
+                s.primary_killed.push(pandoraRecipient);
+                s.player_status[pandoraRecipient].deathReason = "潘朵拉魔盒(毒)";
+                // 被潘朵拉毒殺的玩家不能發動技能
+                s.player_status[pandoraRecipient].is_pandora_poisoned = true;
+            }
+        }
+    }
+
+    // -------------------------------------------------------
     // 6.5 黑蝙蝠庇護反彈
-    // 規則：被庇護的玩家被施放技能（守衛守護、預言家查驗、女巫撒毒），
-    //       釋放技能的玩家死亡。技能只能反彈一次。
-    //       狼刀不觸發反彈（狼隊內互不反彈），解藥不觸發反彈。
+    // 規則：被庇護的玩家被施放技能（守衛守護、女巫撒毒、預言家查驗），
+    //       只能反彈一次（按行動順序：守衛→女巫→預言家）。
+    //       第一個命中的技能觸發反彈（釋放者死亡），後續技能正常生效。
+    //       狼刀不觸發反彈，解藥不觸發反彈。
     // -------------------------------------------------------
     if (s.black_bat_target) {
         let batTarget = s.black_bat_target;
-        let batReflectVictims = [];
-        // 守衛守護了被庇護的玩家 → 守衛死亡
-        if (s.guard_target && parseInt(s.guard_target) === batTarget) {
-            let guardSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard');
-            if (guardSeat && !s.primary_killed.includes(parseInt(guardSeat))) {
-                batReflectVictims.push(parseInt(guardSeat));
+        let did_bat_reflect = false; // 是否已消耗反彈
+
+        // 按行動順序檢查：守衛 → 女巫 → 預言家
+        // 1. 守衛守護了被庇護者 → 守衛死亡（反彈消耗）
+        if (!did_bat_reflect && s.guard_target && parseInt(s.guard_target) === batTarget) {
+            let guardKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard');
+            if (guardKey && !s.primary_killed.includes(parseInt(guardKey))) {
+                s.primary_killed.push(parseInt(guardKey));
+                s.player_status[guardKey].deathReason = "黑蝙蝠庇護反彈";
+                did_bat_reflect = true;
             }
         }
-        // 預言家（或通靈師/純白之女/愚言家）查驗了被庇護者 → 查驗者死亡
-        if (s.seer_target && parseInt(s.seer_target) === batTarget) {
-            let seerRoles = ['seer', 'psychic', 'pure_white', 'fool_seer', 'awaken_seer'];
-            let seerSeat = Object.keys(s.player_roles).find(k => seerRoles.includes(s.player_roles[k]));
-            if (seerSeat && !s.primary_killed.includes(parseInt(seerSeat))) {
-                batReflectVictims.push(parseInt(seerSeat));
-            }
-        }
-        // 女巫撒毒被庇護者 → 女巫死亡（且被庇護者免疫毒藥）
+        // 2. 女巫撒毒被庇護者 → 若反彈未消耗：女巫死亡，被庇護者免毒
+        //                       → 若反彈已消耗：被庇護者正常吃毒死亡
         if (s.witch_poison_target && parseInt(s.witch_poison_target) === batTarget) {
-            let witchSeat = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
-            if (witchSeat && !s.primary_killed.includes(parseInt(witchSeat))) {
-                batReflectVictims.push(parseInt(witchSeat));
+            if (!did_bat_reflect) {
+                let witchKey = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
+                if (witchKey && !s.primary_killed.includes(parseInt(witchKey))) {
+                    s.primary_killed.push(parseInt(witchKey));
+                    s.player_status[witchKey].deathReason = "黑蝙蝠庇護反彈";
+                    did_bat_reflect = true;
+                }
+                // 反彈成功 → 被庇護者免毒
+                s.primary_killed = s.primary_killed.filter(k => k !== batTarget);
             }
-            // 移除被庇護者的毒殺死亡
-            s.primary_killed = s.primary_killed.filter(k => k !== batTarget);
+            // 若反彈已消耗 → 被庇護者正常吃毒（不做額外處理，毒殺已在步驟6加入）
         }
-        // 加入反彈受害者
-        batReflectVictims.forEach(v => {
-            if (!s.primary_killed.includes(v)) {
-                s.primary_killed.push(v);
-                s.player_status[v].deathReason = "黑蝙蝠庇護反彈";
+        // 3. 預言家查驗被庇護者 → 若反彈未消耗：查驗者死亡
+        //                       → 若反彈已消耗：正常查驗不反彈
+        if (!did_bat_reflect && s.seer_target && parseInt(s.seer_target) === batTarget) {
+            let seerRoles = ['seer', 'psychic', 'pure_white', 'fool_seer', 'awaken_seer'];
+            let seerKey = Object.keys(s.player_roles).find(k => seerRoles.includes(s.player_roles[k]));
+            if (seerKey && !s.primary_killed.includes(parseInt(seerKey))) {
+                s.primary_killed.push(parseInt(seerKey));
+                s.player_status[seerKey].deathReason = "黑蝙蝠庇護反彈";
+                did_bat_reflect = true;
             }
-        });
-        if (batReflectVictims.length > 0) {
-            s.night_action_log.push(`【黑蝙蝠】庇護反彈生效，${batReflectVictims.join(',')}號死亡`);
+        }
+        if (did_bat_reflect) {
+            s.night_action_log.push(`【黑蝙蝠】庇護反彈生效`);
         }
     }
 
@@ -337,7 +373,8 @@ export function calculateNightDeaths() {
             s.primary_killed = s.primary_killed.filter(k => k !== dmTarget);
         }
         // 攝夢人對被庇護狼人雙攝 → 攝夢人死亡
-        if (s.dream_target && parseInt(s.dream_target) === dmTarget) {
+        // 規則：必須是「連續兩晚」對同一人攝夢才算雙攝（第一夜不可能觸發）
+        if (s.dream_target && parseInt(s.dream_target) === dmTarget && s.prev_dream_target === dmTarget) {
             let dreamSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'dreamwalker');
             if (dreamSeat) dmReflectVictims.push(parseInt(dreamSeat));
         }
@@ -631,6 +668,8 @@ export function proceedDayResultRender() {
             let learnedRole = s.player_roles[s.machine_wolf_target];
             if (!evil_roles.includes(learnedRole)) return false;
         }
+        // 盜寶大師：底牌有狼則為狼人陣營
+        if (role === 'treasure_master' && s.is_treasure_hunter_evil) return true;
         return evil_roles.includes(role);
     };
 

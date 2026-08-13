@@ -41,7 +41,7 @@ export function buildNightQueue() {
 
     s.discarded_roles.forEach(role => {
         let orders = s.ROLE_DICT[role]?.wakeOrder;
-        if (orders && ['seer', 'witch', 'hunter', 'cupid'].includes(role)) {
+        if (orders && ['seer', 'witch', 'hunter', 'cupid', 'guard', 'idiot'].includes(role)) {
             queue_list.push({ stage: role, order: orders[0], seat: null, subLabel: null, isFake: true });
         }
     });
@@ -78,8 +78,28 @@ export function buildNightQueue() {
         for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_witness_${i}`, order: 770, seat: null, subLabel: null, isFake: false });
     }
 
+    // 唯鄰是從板子：狼人開刀前先選傀儡
+    if (s.current_board?.id === '12_puppet') {
+        queue_list.push({ stage: 'puppet_select', order: 2699, seat: null, subLabel: null, isFake: false });
+    }
+
+    // 殭屍感染者相認階段（殭屍 wakeOrder 100 之後）
+    if (active_roles.includes('zombie')) {
+        queue_list.push({ stage: 'zombie_infected', order: 150, seat: null, subLabel: null, isFake: false });
+    }
+
     if (active_roles.some(r => ['black_market', 'miracle_merchant'].includes(r))) {
         for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_luckyboy_${i}`, order: 3550, seat: null, subLabel: null, isFake: false });
+    }
+
+    // 潘朵拉獲贈者喚醒（潘朵拉 wakeOrder 4600 之後）
+    if (active_roles.includes('pandora')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_pandora_${i}`, order: 4650, seat: null, subLabel: null, isFake: false });
+    }
+
+    // 超級黑市商人三位幸運兒喚醒（商人 wakeOrder 3500 之後）
+    if (active_roles.includes('super_black_market')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_sp_lucky_${i}`, order: 3650, seat: null, subLabel: null, isFake: false });
     }
 
     if (active_roles.includes('awaken_witch')) {
@@ -270,12 +290,24 @@ export function runNextNightRole() {
     if (s.current_stage === 'awaken_witch_assistant_action' && (!s.awk_witch_assistant || !s.witch_poison_target)) return runNextNightRole();
     if (s.current_stage === 'awaken_dreamwalker_result' && !s.awk_dreamwalker_target) return runNextNightRole();
 
+    // 潘朵拉獲贈者：只有目標座位才喚醒
+    if (s.current_stage.startsWith('notify_pandora_')) {
+        let seat = parseInt(s.current_stage.split('_').pop());
+        if (!s.pandora_target || seat !== parseInt(s.pandora_target)) return runNextNightRole();
+    }
+    // 超級黑市商人幸運兒：只有三位目標座位才喚醒
+    if (s.current_stage.startsWith('notify_sp_lucky_')) {
+        let seat = parseInt(s.current_stage.split('_').pop());
+        if (!s.sp_merchant_targets || !s.sp_merchant_targets.includes(seat)) return runNextNightRole();
+    }
+
     // 第一晚「確認身分」類角色 — 線上法官已知底牌，什麼都不用做的角色直接跳過
     const first_night_confirm_only = ['idiot', 'knight', 'bear', 'pufferfish', 'white_cat',
         'rusty_knight', 'high_villager', 'grave_keeper', 'order_prince', 'detective', 'police_dog',
         'perseus', 'bar_fighter', 'masked_man', 'alien_prince', 'wolf_crow', 'day_scholar',
         'night_mentor', 'medium', 'white_night', 'dancer', 'mask_wolf', 'wolf_servant',
-        'butler', 'curse_fox', 'night_noble', 'little_girl', 'nine_tail_fox', 'anubis'];
+        'butler', 'curse_fox', 'night_noble', 'little_girl', 'nine_tail_fox', 'anubis',
+        'demon_hunter', 'warden', 'light_count', 'fox'];
     if (first_night_confirm_only.includes(s.current_stage)) return runNextNightRole();
 
     // 大野狼額外刀限制：只有四狼全在場時才能用

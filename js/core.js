@@ -52,7 +52,11 @@ export const s = {
     seer_target: null,                 // 預言家查驗目標
     guard_target: null,                // 守衛守護目標
     dream_target: null,                // 攝夢人目標
+    prev_dream_target: null,           // 上一晚攝夢目標（多天用，第一夜為 null）
     nightmare_target: null,            // 夢魘恐懼目標
+    fox_charm_target: null,            // 子狐魅惑目標
+    sp_grave_keeper_heir: null,        // 超級守墓人繼承者
+    puppet_target: null,               // 唯鄰是從板子的傀儡目標
     gargoyle_target: null,             // 石像鬼查驗目標
     beauty_target: null,               // 狼美人魅惑目標
     awk_beauty_target: null,           // 覺醒狼美人魅惑目標
@@ -156,7 +160,7 @@ export const s = {
 // 狼人陣營與邪惡陣營定義
 export const wolf_faction = [
     'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon', 'snow_wolf',
-    'wolf_brother', 'wolf_brother_little', 'awaken_wolf_king', 'wolf_witch',
+    'wolf_brother', 'awaken_wolf_king', 'wolf_witch',
     'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer',
     'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B',
     'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf', 'war_wolf',
@@ -164,13 +168,13 @@ export const wolf_faction = [
 ];
 export const evil_roles = [...wolf_faction, 'nightmare', 'hidden_wolf', 'gargoyle', 'machine_wolf',
     'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant',
-    'snake_phantom', 'snake_seer', 'troublemaker', 'anubis', 'super_black_market'
+    'snake_phantom', 'snake_seer', 'troublemaker', 'anubis', 'super_black_market', 'wolf_brother_little'
 ];
 
 /** 重置所有遊戲狀態（開始新局時呼叫） */
 export function resetGameState() {
     s.night_queue = []; s.current_stage = null; s.wolf_kill_target = null; s.witch_poison_target = null; s.is_witch_saved = false;
-    s.guard_target = null; s.dream_target = null; s.magician_swap = []; s.trickster_swap = []; s.wolf_sorcerer_swap = []; s.nightmare_target = null; s.gargoyle_target = null;
+    s.guard_target = null; s.dream_target = null; s.prev_dream_target = null; s.magician_swap = []; s.trickster_swap = []; s.wolf_sorcerer_swap = []; s.nightmare_target = null; s.fox_charm_target = null; s.sp_grave_keeper_heir = null; s.puppet_target = null; s.gargoyle_target = null;
     s.beauty_target = null; s.machine_wolf_target = null; s.phantom_targets = []; s.awk_seer_targets = []; s.awk_beauty_target = null; s.diviner_mark = null;
     s.phantom_known_wolf = null; s.selected_number = null; s.current_editing_seat = null; s.final_killed = []; s.day_shooters_queue = [];
     s.has_ghost_rider_reflected = false; s.night_action_log = []; s.is_pufferfish_triggered = false; s.did_white_cat_flip_last_night = false;

@@ -356,7 +356,7 @@ roleHandlers['_target_select'] = (ctx) => {
     const { btnOptionalSkip, nightRoleTitle, nightInstruction } = ctx;
     let base_key = s.current_stage.replace('_couple', '');
     nightRoleTitle.textContent = `${s.ROLE_DICT[base_key].icon} ${s.ROLE_DICT[base_key].name}行動`;
-    if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker', 'half_blood', 'awaken_lonely_girl'].includes(s.current_stage)) {
+    if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker', 'half_blood', 'awaken_lonely_girl', 'wild_child'].includes(s.current_stage)) {
         nightInstruction.innerHTML += "請選擇你的目標對象 (必須選擇)：";
         if (s.current_stage === 'ghost_bride_couple') nightInstruction.innerHTML += "請選擇你們的證婚人 (必須選擇)：";
     } else {
@@ -419,9 +419,13 @@ roleHandlers['wolf'] = (ctx) => {
             numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
             nightInstruction.innerHTML = "請選擇行動模式：";
         };
+        // 規則：煉金魔女迷霧啟動時，狼人不能空刀
+        if (s.alchemist_fog_targets.length > 0) btnSkip.classList.add('hidden');
     } else {
         nightInstruction.innerHTML += `請點擊擊殺目標號碼 (或空刀)：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`;
         btnOptionalSkip.textContent = "空刀 (不擊殺)"; btnOptionalSkip.classList.remove('hidden');
+        // 規則：煉金魔女迷霧啟動時，狼人不能空刀
+        if (s.alchemist_fog_targets.length > 0) btnOptionalSkip.classList.add('hidden');
     }
 };
 
@@ -608,7 +612,9 @@ roleHandlers['zombie'] = (ctx) => {
 // --- 殭屍感染者確認（所有感染者睜眼）---
 roleHandlers['zombie_infected'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🧟 感染者確認";
-    ctx.nightInstruction.innerHTML = "所有感染者請睜眼確認彼此";
+    let infected = s.zombie_infected || [];
+    let text = infected.length > 0 ? `感染者為：${infected.join(', ')}號` : '（尚無感染者）';
+    ctx.nightInstruction.innerHTML = `所有感染者請睜眼確認彼此<br><span style="color:#e94560;">${text}</span>`;
     ctx.numberPad.classList.add('hidden');
     ctx.btnConfirmAction.classList.remove('hidden');
     ctx.btnConfirmAction.textContent = "確認並閉眼";
@@ -668,7 +674,7 @@ roleHandlers['rusty_knight'] = (ctx) => {
 };
 
 // --- 子狐 ---
-roleHandlers['baby_fox'] = (ctx) => {
+roleHandlers['fox'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🦊 子狐行動";
     ctx.nightInstruction.innerHTML = "請選擇你要魅惑的對象（一次性，魅到狼則空刀）：";
     ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
@@ -943,6 +949,19 @@ roleHandlers['curse_fox'] = (ctx) => {
     ctx.numberPad.classList.add('hidden');
     ctx.btnConfirmAction.classList.remove('hidden');
     ctx.btnConfirmAction.textContent = "確認並閉眼";
+};
+
+// --- 超級守墓人（每晚選繼承者）---
+roleHandlers['super_grave_keeper'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🪦✨ 超級守墓人行動";
+    ctx.nightInstruction.innerHTML = "請選擇你的繼承者 (不可自選)：<br><small>若你出局，繼承者會得知所有放逐紀錄</small>";
+    ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
+};
+
+// --- 傀儡選擇（唯鄰是從板子，狼人開刀前選傀儡）---
+roleHandlers['puppet_select'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🐺 狼人選擇傀儡";
+    ctx.nightInstruction.innerHTML = "請選擇與狼人相鄰的一位玩家作為傀儡 (必須選擇)：<br><small>傀儡會被查殺、技能錯亂，但不知道自己被傀</small>";
 };
 
 // --- 夜之貴族（第一晚與狼隊睜眼，無額外行動）---
