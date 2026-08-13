@@ -228,7 +228,7 @@ export function runNextNightRole() {
     night_instruction.innerHTML = "";
 
     resetSelections();
-    s.is_showing_result = false; s.is_current_role_feared = false; s.is_fake_wake = false;
+    s.is_showing_result = false; s.is_current_role_feared = false; s.is_current_role_frozen = false; s.is_fake_wake = false;
     s.current_sub_label = null; s.awk_witch_step = null; s.is_seed_wolf_infecting = false;
 
     if (s.night_queue.length === 0) {
@@ -274,8 +274,8 @@ export function runNextNightRole() {
     const first_night_confirm_only = ['idiot', 'knight', 'bear', 'pufferfish', 'white_cat',
         'rusty_knight', 'high_villager', 'grave_keeper', 'order_prince', 'detective', 'police_dog',
         'perseus', 'bar_fighter', 'masked_man', 'alien_prince', 'wolf_crow', 'day_scholar',
-        'night_mentor', 'spirit_medium', 'white_night', 'dancer', 'mask_wolf', 'wolf_servant',
-        'butler', 'curse_fox', 'night_noble', 'little_girl', 'nine_tail_fox'];
+        'night_mentor', 'medium', 'white_night', 'dancer', 'mask_wolf', 'wolf_servant',
+        'butler', 'curse_fox', 'night_noble', 'little_girl', 'nine_tail_fox', 'anubis'];
     if (first_night_confirm_only.includes(s.current_stage)) return runNextNightRole();
 
     // 大野狼額外刀限制：只有四狼全在場時才能用
@@ -340,6 +340,28 @@ export function runNextNightRole() {
         }
         night_role_title.textContent = `🚫 ${role_name}行動 (被恐懼)`;
         night_instruction.textContent = "今晚已被夢魘恐懼，無法發動技能。";
+        btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼";
+        speak(`${role_name}請睜眼。`); return;
+    }
+
+    // === 企鵝冰凍攔截 ===
+    // 規則：被冰凍的人當晚無法發動技能
+    if (s.penguin_target && parseInt(actor_seat) === s.penguin_target && !s.current_stage.startsWith('notify_') && !['lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
+        s.is_current_role_frozen = true;
+        let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
+        if (s.current_stage === 'wolf') {
+            // 冰到狼人 → 全隊空刀（已在 day.js 中處理 isWolfFrozen），此處顯示提示
+            let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let has_lg = Object.values(s.player_roles).includes('little_girl');
+            if (has_lg) w_seats.push(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'little_girl'));
+            w_seats.sort((a, b) => a - b);
+            night_role_title.textContent = has_lg ? "🐺 狼隊與小女孩行動 (被冰凍)" : "🐺 狼人行動 (被冰凍)";
+            night_instruction.innerHTML = `<span style="color:#4fc3f7;">今晚有狼人被企鵝冰凍，全隊無法刀人。</span><br><br>🐺 睜眼名單：${has_lg ? '【隱藏】' : w_seats.map(id => id + '號').join(', ')}<br><span style="color:#fca311;">被冰凍的是：${s.penguin_target}號</span>`;
+            btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼";
+            speak(`${has_lg ? "狼隊和小女孩" : "狼人"}請睜眼。`); return;
+        }
+        night_role_title.textContent = `🧊 ${role_name}行動 (被冰凍)`;
+        night_instruction.textContent = "今晚已被企鵝冰凍，無法發動技能。";
         btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼";
         speak(`${role_name}請睜眼。`); return;
     }
@@ -510,6 +532,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 role_log += ' (燈影)';
             }
             s.night_action_log.push(`【${role_log}】被恐懼，跳過技能`);
+
+            btn_confirm_action.classList.add('hidden');
+            action_pad.innerHTML = ''; action_pad.classList.add('hidden');
+            night_instruction.textContent = "請閉眼等待...";
+            speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            return;
+        }
+
+        if (s.is_current_role_frozen) {
+            let role_log = getStageVoiceName(s.current_stage, s.current_sub_label);
+            s.night_action_log.push(`【${role_log}】被冰凍，跳過技能`);
 
             btn_confirm_action.classList.add('hidden');
             action_pad.innerHTML = ''; action_pad.classList.add('hidden');

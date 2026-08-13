@@ -621,6 +621,20 @@ roleHandlers['magician'] = (ctx) => {
     ctx.btnOptionalSkip.textContent = "不交換"; ctx.btnOptionalSkip.classList.remove('hidden');
 };
 
+// --- 詭術師（功能同魔術師，但換白天票數）---
+roleHandlers['trickster'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🃏 詭術師行動";
+    ctx.nightInstruction.innerHTML = "請選擇要交換票數的兩個號碼（先選第一個）：";
+    ctx.btnOptionalSkip.textContent = "不交換"; ctx.btnOptionalSkip.classList.remove('hidden');
+};
+
+// --- 狼術師（功能同魔術師）---
+roleHandlers['wolf_sorcerer'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🧙‍♂️ 狼術師行動";
+    ctx.nightInstruction.innerHTML = "請選擇要交換的兩個號碼（先選第一個）：";
+    ctx.btnOptionalSkip.textContent = "不交換"; ctx.btnOptionalSkip.classList.remove('hidden');
+};
+
 // --- 狐狸（三人查驗）---
 roleHandlers['fox'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🦊 狐狸行動";
@@ -707,7 +721,7 @@ roleHandlers['night_mentor'] = (ctx) => {
     ctx.btnConfirmAction.textContent = "確認並閉眼";
 };
 
-roleHandlers['spirit_medium'] = (ctx) => {
+roleHandlers['medium'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "👻 通靈者確認";
     ctx.nightInstruction.innerHTML = "確認通靈者身分（第二晚起可通靈死者技能給繼承者）";
     ctx.numberPad.classList.add('hidden');
@@ -779,7 +793,7 @@ roleHandlers['alien_prince'] = (ctx) => {
     ctx.btnConfirmAction.textContent = "確認並閉眼";
 };
 
-roleHandlers['phantom_thief'] = (ctx) => {
+roleHandlers['phantom_king'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🦹 怪盜狼王確認";
     ctx.nightInstruction.innerHTML = "請問是否發動「無敵」技能？<br><small>（發動後免疫死亡直到下次入夜）</small>";
     ctx.numberPad.classList.add('hidden');
@@ -854,7 +868,7 @@ roleHandlers['super_black_market'] = (ctx) => {
 };
 
 // --- 盜寶大師（從底牌選一張）---
-roleHandlers['treasure_hunter'] = (ctx) => {
+roleHandlers['treasure_master'] = (ctx) => {
     const { btnConfirmAction, btnOptionalSkip, numberPad, actionPad, nightRoleTitle, nightInstruction } = ctx;
     nightRoleTitle.textContent = "💎 盜寶大師行動";
     nightInstruction.innerHTML = "請從三張底牌中選擇一張身分使用：";
@@ -947,6 +961,45 @@ roleHandlers['hidden_wolf'] = (ctx) => {
     ctx.numberPad.classList.add('hidden');
     ctx.btnConfirmAction.classList.remove('hidden');
     ctx.btnConfirmAction.textContent = "確認並閉眼";
+};
+
+// --- 影子（第一晚選主人）---
+roleHandlers['shadow'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🫥 影子行動";
+    ctx.nightInstruction.innerHTML = "請選擇你的主人（勝利條件與主人相同）：";
+};
+
+// --- 復仇者（第一晚告知陣營，無需選人）---
+roleHandlers['revenger'] = (ctx) => {
+    const { btnConfirmAction, numberPad, actionPad, nightRoleTitle, nightInstruction } = ctx;
+    nightRoleTitle.textContent = "🔥 復仇者確認";
+    numberPad.classList.add('hidden');
+
+    // 判斷復仇者陣營：與影子主人對立
+    let shadow_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'shadow');
+    let shadow_master = s.shadow_master_target;
+    let master_role = shadow_master ? s.player_roles[shadow_master] : null;
+    let master_is_wolf = master_role ? wolf_faction.includes(master_role) : false;
+    // 若影子主人是狼人 → 復仇者幫好人；反之幫狼人
+    let revenger_side = master_is_wolf ? '好人' : '狼人';
+    let color = master_is_wolf ? '#00ff88' : '#e94560';
+
+    nightInstruction.innerHTML = `你的陣營為：<br><span style="color:${color}; font-size:32px; font-weight:bold;">${revenger_side}陣營</span><br><br><small>死亡後可刺殺一名玩家，若與你陣營對立則倒牌。</small>`;
+    btnConfirmAction.classList.remove('hidden');
+    btnConfirmAction.textContent = "了解並閉眼";
+};
+
+// --- 開膛手傑克（第一晚選擊殺目標）---
+roleHandlers['jack_ripper'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🔪 開膛手傑克行動";
+    ctx.nightInstruction.innerHTML = "請選擇你要擊殺的目標（不可自選，此刀無法被解藥救）：<br><small style='color:#fca311;'>守衛可以擋住此刀。勝利條件：場上只剩一種性別。</small>";
+};
+
+// --- 超級守墓人（第一晚選繼承者）---
+roleHandlers['super_grave_keeper'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🪦✨ 超級守墓人行動";
+    ctx.nightInstruction.innerHTML = "請選擇你的繼承者（你出局後繼承者能得知所有放逐紀錄）：";
+    ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
 };
 
 // --- 月靈狼（嗥叫為被動，無需面板操作）---

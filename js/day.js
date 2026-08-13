@@ -96,6 +96,21 @@ export function calculateNightDeaths() {
     let isWolfFrozen = s.penguin_target && wolf_faction.includes(s.player_roles[s.penguin_target]);
     let actualWolfKill = (isWolfFeared || isWolfFrozen) ? null : s.wolf_kill_target;
 
+    // 企鵝冰凍非狼人 → 被冰凍者技能失效（清除該人的技能效果）
+    if (s.penguin_target && !wolf_faction.includes(s.player_roles[s.penguin_target])) {
+        let frozenSeat = s.penguin_target;
+        // 若被冰凍的是守衛 → 守護無效
+        if (guardSeat && parseInt(guardSeat) === frozenSeat) s.guard_target = null;
+        // 若被冰凍的是女巫 → 毒藥和解藥都無效
+        if (witchSeat && parseInt(witchSeat) === frozenSeat) { s.witch_poison_target = null; s.is_witch_saved = false; }
+        // 若被冰凍的是預言家 → 查驗無效
+        if (seerSeat && parseInt(seerSeat) === frozenSeat) s.seer_target = null;
+        // 若被冰凍的是攝夢人 → 攝夢無效
+        if (dwSeat && parseInt(dwSeat) === frozenSeat) s.dream_target = null;
+        // 若被冰凍的是禁言長老 → 禁言無效
+        if (s.silence_target && Object.keys(s.player_roles).find(k => s.player_roles[k] === 'silence_elder' && parseInt(k) === frozenSeat)) s.silence_target = null;
+    }
+
     // 名媛寵幸效果：被寵幸的人如果被狼刀，且名媛存活 → 狼刀無效
     if (s.celebrity_target && actualWolfKill === s.celebrity_target) {
         let celebSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
@@ -112,6 +127,32 @@ export function calculateNightDeaths() {
 
     let actualGuard = (guardSeat && parseInt(guardSeat) === s.nightmare_target) ? null : s.guard_target;
     let actualDream = (dwSeat && parseInt(dwSeat) === s.nightmare_target) ? null : s.dream_target;
+
+    // -------------------------------------------------------
+    // 2.5 睡美人影響（睡美人板子）
+    // 規則：首晚進入睡眠的只有睡美人本人，此時影響尚未擴散（第二晚起才向外擴散）
+    //   但第一晚睡美人本身已在睡眠狀態中：
+    //   - 若睡美人是熊 → 熊不咆哮（熊咆哮在白天處理，此處記錄即可）
+    //   - 若睡美人是女巫 → 毒藥使用失敗
+    //   - 若睡美人是獵人 → 始終無法開槍
+    //   - 若睡美人是禁言長老 → 禁言無效
+    //   - 若所有狼人都在睡眠中 → 空刀（第一晚只有睡美人自己睡，所以只有睡美人本人是狼時才會空刀）
+    // -------------------------------------------------------
+    if (s.sleeping_beauty_seat && s.is_sleeping_beauty_active) {
+        let sb = s.sleeping_beauty_seat;
+        let sbRole = s.player_roles[sb];
+        // 若睡美人是女巫 → 毒藥失效
+        if (['witch', 'awaken_witch'].includes(sbRole)) { actualWitchPoison = null; }
+        // 若睡美人是獵人 → 標記無法開槍（在白天開槍佇列中判斷）
+        // 若睡美人是狼人 → 第一晚只有它自己睡，所以若此狼唯一存活則空刀
+        if (wolf_faction.includes(sbRole)) {
+            let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let all_wolves_sleeping = alive_wolves.every(k => parseInt(k) === sb);
+            if (all_wolves_sleeping) actualWolfKill = null;
+        }
+        // 若睡美人是禁言長老 → 禁言無效
+        if (sbRole === 'silence_elder') { s.silence_target = null; }
+    }
 
     // -------------------------------------------------------
     // 3. 惡靈騎士反傷與咒狐暴斃
@@ -173,7 +214,7 @@ export function calculateNightDeaths() {
             // 免疫致死（惡靈騎士/咒狐/攝夢保護/覺醒白痴保護/夢語者免疫）
         } else if (targetRole === 'war_wolf' || targetRole === 'demon') {
             // 規則：戰狼/惡魔免疫所有神職技能傷害（只能投票出局）
-        } else if (s.is_phantom_thief_invincible && targetRole === 'phantom_thief') {
+        } else if (s.is_phantom_thief_invincible && targetRole === 'phantom_king') {
             // 規則：怪盜狼王發動無敵 → 免疫一切死亡直到下次入夜
         } else if (isSaved && isGuarded) {
             // 規則：奶穿 — 女巫救+守衛守同一人 → 死亡
@@ -208,11 +249,26 @@ export function calculateNightDeaths() {
         let target = parseInt(actualWitchPoison);
         let targetRole = s.player_roles[target];
         if (targetRole === 'dreamwalker' && s.player_status[target].isVWK) { /* 百變狼王攝夢免疫毒藥 */ }
-        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf', 'war_wolf', 'demon'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target) || (s.is_phantom_thief_invincible && targetRole === 'phantom_thief')) { /* 免疫毒藥 */ }
+        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf', 'war_wolf', 'demon'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target) || (s.is_phantom_thief_invincible && targetRole === 'phantom_king')) { /* 免疫毒藥 */ }
         else if (targetRole === 'old_hooligan') s.player_status[target].poisoned = true;
         else if (!s.primary_killed.includes(target)) {
             s.primary_killed.push(target);
             s.player_status[target].deathReason = "毒殺";
+        }
+    }
+
+    // -------------------------------------------------------
+    // 6.4 開膛手傑克結算
+    // 規則：每晚擊殺一人，此刀無法被女巫解藥救，但守衛可以擋住
+    //   被預言家查驗顯示為好人（在 actions.js 查驗邏輯中處理）
+    // -------------------------------------------------------
+    if (s.jack_ripper_target) {
+        let jrTarget = parseInt(s.jack_ripper_target);
+        let isJRGuarded = (actualGuard === jrTarget) || (s.pleasant_goat_guard === jrTarget);
+        let isJRDreamed = (actualDream === jrTarget);
+        if (!isJRGuarded && !isJRDreamed && !immuneToNightDamageTargets.includes(jrTarget) && !s.primary_killed.includes(jrTarget)) {
+            s.primary_killed.push(jrTarget);
+            s.player_status[jrTarget].deathReason = "開膛手傑克擊殺";
         }
     }
 
@@ -556,6 +612,12 @@ export function handleChainDeaths() {
  * 渲染與計算天亮後的白天資訊 (包含熊咆哮、特殊免死、死亡名單、開槍佇列)
  */
 export function proceedDayResultRender() {
+    // 鏽劍騎士：傷口感染的狼人加入死亡名單（與死訊一起公布）
+    if (s.rust_sword_infected_target && !s.final_killed.includes(s.rust_sword_infected_target)) {
+        s.final_killed.push(s.rust_sword_infected_target);
+        s.player_status[s.rust_sword_infected_target].deathReason = "鏽劍感染死亡";
+    }
+
     if (s.crow_target) document.getElementById('btn-show-crow').classList.remove('hidden');
 
     let bearRoarText = "";
@@ -609,6 +671,10 @@ export function proceedDayResultRender() {
     }
 
     if (bearSeat || (mwSeat && s.machine_wolf_target && s.player_roles[s.machine_wolf_target] === 'bear')) {
+        // 規則：睡美人影響 — 若熊在睡眠中，永遠不咆哮
+        if (s.sleeping_beauty_seat && s.is_sleeping_beauty_active && bearSeat && parseInt(bearSeat) === s.sleeping_beauty_seat) {
+            bearDidRoar = false;
+        }
         bearRoarText = bearDidRoar ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
     }
 
@@ -664,7 +730,9 @@ export function proceedDayResultRender() {
                 if (role === 'awaken_hunter' || (role === 'hunter' && s.player_status[seat].isVWK)) {
                     if (s.nightmare_target !== seat && !isStolen) s.day_shooters_queue.push({ seat, role });
                 } else if (['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awk_wolf_gun_target === seat || s.evil_merchant_gun_target === seat) {
-                    if (s.witch_poison_target !== seat && s.nightmare_target !== seat && !(role === 'hunter' && isStolen)) {
+                    // 規則：睡美人是獵人 → 始終無法開槍
+                    let is_sleeping = s.sleeping_beauty_seat && s.is_sleeping_beauty_active && seat === s.sleeping_beauty_seat;
+                    if (s.witch_poison_target !== seat && s.nightmare_target !== seat && !(role === 'hunter' && isStolen) && !is_sleeping) {
                         s.day_shooters_queue.push({ seat, role });
                         if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role });
                     }

@@ -38,6 +38,7 @@ export const s = {
     is_showing_result: false,          // 是否正在顯示查驗結果
     is_fake_wake: false,               // 是否為偽裝睜眼 (如底牌未選的角色)
     is_current_role_feared: false,     // 當前行動角色是否被恐懼
+    is_current_role_frozen: false,     // 當前行動角色是否被冰凍
     night_action_log: [],              // 夜間行動法官紀錄日誌
     speech_order_text: null,           // 白天發言順序文本
     sheriff_candidates: [],            // 上警名單
@@ -74,6 +75,7 @@ export const s = {
     awk_wolf_gun_target: null,         // 覺醒狼王分槍目標
     ghost_bride_groom: null,           // 鬼魅新娘-新郎
     ghost_bride_witness: null,         // 鬼魅新娘-證婚人
+    shadow_master_target: null,        // 影子選擇的主人
 
     // ==========================================================================
     // 5. 陣列目標與特殊群體狀態
@@ -141,6 +143,14 @@ export const s = {
     is_sp_merchant_turns_evil: false,  // 超級黑市商人是否變狼
     treasure_hunter_choice: null,      // 盜寶大師選擇的底牌身分
     is_treasure_hunter_evil: false,    // 盜寶大師是否為狼陣營
+
+    // === 性別機制（開膛手傑克板子）===
+    player_genders: {},                // 玩家性別對照 { 座位號: 'male'|'female' }
+    jack_ripper_target: null,          // 開膛手傑克擊殺目標
+
+    // === 睡美人板子 ===
+    sleeping_beauty_seat: null,        // 睡美人的座位號（null 表示本場無睡美人）
+    is_sleeping_beauty_active: true,   // 睡美人狀態是否仍在擴散中（被異族王子驗出則 false）
 };
 
 // 狼人陣營與邪惡陣營定義
@@ -170,8 +180,8 @@ export function resetGameState() {
     s.alchemist_fog_targets = []; s.is_alchemist_snake_used = false; s.vwk_seat = null; s.awk_wolf_gun_target = null;
     s.half_blood_target = null; s.wild_child_target = null; s.lonely_girl_target = null; s.time_wolf_target = null; s.awk_idiot_target = null; s.crow_target = null;
     s.seed_wolf_target = null; s.is_seed_wolf_infecting = false; s.awk_gargoyle_target = null; s.awk_gargoyle_target_a = null; s.awk_gargoyle_target_b = null;
-    s.awk_dreamwalker_target = null; s.ghost_bride_groom = null; s.ghost_bride_witness = null;
-    s.primary_killed = []; s.chain_killed = []; s.current_sub_label = null; s.is_fake_wake = false; s.is_current_role_feared = false; s.rust_sword_infected_target = null; s.big_bad_wolf_kill_target = null;
+    s.awk_dreamwalker_target = null; s.ghost_bride_groom = null; s.ghost_bride_witness = null; s.shadow_master_target = null;
+    s.primary_killed = []; s.chain_killed = []; s.current_sub_label = null; s.is_fake_wake = false; s.is_current_role_feared = false; s.is_current_role_frozen = false; s.rust_sword_infected_target = null; s.big_bad_wolf_kill_target = null;
     s.pleasant_goat_guard = null; s.pleasant_goat_anti_theft = null; s.gray_wolf_stolen_player = null; s.gray_wolf_stolen_skill = null; s.gray_wolf_guess = null;
     s.penguin_target = null; s.celebrity_target = null;
     s.charmer_target = null; s.demon_hunter_target = null;
@@ -183,6 +193,8 @@ export function resetGameState() {
     s.pandora_target = null; s.pandora_pool = null; s.pandora_gift = null;
     s.sp_merchant_targets = []; s.is_sp_merchant_turns_evil = false;
     s.treasure_hunter_choice = null; s.is_treasure_hunter_evil = false;
+    s.player_genders = {}; s.jack_ripper_target = null;
+    s.sleeping_beauty_seat = null; s.is_sleeping_beauty_active = true;
     s.sheriff_candidates = []; s.speech_order_text = null; s.shadow_seer_seat = null;
     s.is_snake_win = false;
 }

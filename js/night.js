@@ -65,7 +65,7 @@ export function createNumberPad() {
             const cannot_select_self = [
                 'witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'fool_seer', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow',
                 'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal',
-                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer'
+                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer', 'jack_ripper'
             ];
             if (cannot_select_self.includes(s.current_stage)) is_disabled = true;
         }
@@ -100,7 +100,7 @@ export function createNumberPad() {
 
         // 按鈕點擊綁定邏輯 (保持原本操作邏輯不變)
         btn.addEventListener('click', () => {
-            if (s.is_current_role_feared || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) return;
+            if (s.is_current_role_feared || s.is_current_role_frozen || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) return;
             vibrate(10);
 
             const btn_confirm_action = document.getElementById('btn-confirm-action');

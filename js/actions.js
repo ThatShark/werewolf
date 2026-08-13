@@ -184,12 +184,13 @@ export function resolveNonInspectionAction() {
         s.cupid_lovers = [...s.selected_numbers_arr];
         s.night_action_log.push(`【邱比特】連接了 ${s.cupid_lovers.join('和')}號`);
     }
-    // --- 混血兒 / 野孩子 / 覺醒孤獨少女 ---
-    else if (['half_blood', 'wild_child', 'awaken_lonely_girl'].includes(s.current_stage)) {
+    // --- 混血兒 / 野孩子 / 覺醒孤獨少女 / 影子 ---
+    else if (['half_blood', 'wild_child', 'awaken_lonely_girl', 'shadow'].includes(s.current_stage)) {
         let t = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
         if (s.current_stage === 'half_blood') s.half_blood_target = t;
         if (s.current_stage === 'wild_child') s.wild_child_target = t;
         if (s.current_stage === 'awaken_lonely_girl') s.lonely_girl_target = t;
+        if (s.current_stage === 'shadow') s.shadow_master_target = t;
         s.night_action_log.push(t ? `【${s.ROLE_DICT[s.current_stage].name}】選擇了 ${t}號` : `【${s.ROLE_DICT[s.current_stage].name}】未選擇`);
     }
     // --- 鬼魅新娘選新郎 ---
@@ -259,6 +260,16 @@ export function resolveNonInspectionAction() {
     else if (s.current_stage === 'demon_hunter') {
         s.demon_hunter_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
         s.night_action_log.push(s.demon_hunter_target ? `【獵魔人】狩獵了 ${s.demon_hunter_target}號` : `【獵魔人】未狩獵`);
+    }
+    // --- 開膛手傑克 ---
+    else if (s.current_stage === 'jack_ripper') {
+        s.jack_ripper_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
+        s.night_action_log.push(s.jack_ripper_target ? `【開膛手傑克】擊殺了 ${s.jack_ripper_target}號` : `【開膛手傑克】未擊殺`);
+    }
+    // --- 禁言長老 ---
+    else if (s.current_stage === 'silence_elder') {
+        s.silence_target = (s.selected_number === 'skip') ? null : getActualTarget(parseInt(s.selected_number));
+        s.night_action_log.push(s.silence_target ? `【禁言長老】禁言了 ${s.silence_target}號` : `【禁言長老】未禁言`);
     }
     // --- 惡魔（查驗神/民）---
     else if (s.current_stage === 'demon') {
@@ -471,7 +482,7 @@ export function resolveNonInspectionAction() {
         }
     }
     // --- 怪盜狼王（發動無敵）---
-    else if (s.current_stage === 'phantom_thief') {
+    else if (s.current_stage === 'phantom_king') {
         if (s.selected_number === 'skip') {
             // skip 按鈕文字是「發動無敵」
             s.is_phantom_thief_invincible = true;
@@ -503,7 +514,7 @@ export function resolveNonInspectionAction() {
         }
     }
     // --- 盜寶大師（選底牌身分）---
-    else if (s.current_stage === 'treasure_hunter') {
+    else if (s.current_stage === 'treasure_master') {
         if (s.treasure_hunter_choice) {
             // 判斷陣營：有狼陣營底牌 → 盜寶大師為狼人陣營
             let has_wolf_in_spare = s.spare_cards.some(r => wolf_faction.includes(r));

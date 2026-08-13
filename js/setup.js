@@ -131,6 +131,72 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             role_setup_grid.appendChild(btn);
         }
     }
+
+    // === 性別指定面板（開膛手板子）===
+    renderGenderPanel();
+}
+
+/** 渲染性別指定面板（僅 hasGender 板子顯示）*/
+function renderGenderPanel() {
+    const section = document.getElementById('gender-setup-section');
+    const grid = document.getElementById('gender-grid');
+    const count_el = document.getElementById('gender-count');
+    if (!section || !grid) return;
+
+    if (!s.current_board.hasGender) {
+        section.classList.add('hidden');
+        s.player_genders = {};
+        return;
+    }
+
+    section.classList.remove('hidden');
+    grid.innerHTML = '';
+    s.player_genders = s.player_genders || {};
+
+    for (let i = 1; i <= s.total_players; i++) {
+        if (!s.player_genders[i]) s.player_genders[i] = null;
+        const btn = document.createElement('div');
+        btn.classList.add('role-btn');
+        btn.style.cursor = 'pointer';
+        btn.style.textAlign = 'center';
+        btn.style.padding = '10px 5px';
+        updateGenderBtn(btn, i);
+        btn.addEventListener('click', () => {
+            // 循環切換：null → male → female → male ...
+            if (!s.player_genders[i]) s.player_genders[i] = 'male';
+            else if (s.player_genders[i] === 'male') s.player_genders[i] = 'female';
+            else s.player_genders[i] = 'male';
+            updateGenderBtn(btn, i);
+            updateGenderCount();
+        });
+        grid.appendChild(btn);
+    }
+    updateGenderCount();
+
+    function updateGenderBtn(btn, seat) {
+        let g = s.player_genders[seat];
+        if (g === 'male') {
+            btn.innerHTML = `<span style="font-size:20px;">♂️</span><br><span style="font-size:12px;">${seat}號 男</span>`;
+            btn.style.borderColor = '#4fc3f7';
+            btn.style.background = 'rgba(79,195,247,0.15)';
+        } else if (g === 'female') {
+            btn.innerHTML = `<span style="font-size:20px;">♀️</span><br><span style="font-size:12px;">${seat}號 女</span>`;
+            btn.style.borderColor = '#f48fb1';
+            btn.style.background = 'rgba(244,143,177,0.15)';
+        } else {
+            btn.innerHTML = `<span style="font-size:20px;">❓</span><br><span style="font-size:12px;">${seat}號</span>`;
+            btn.style.borderColor = 'var(--color-border)';
+            btn.style.background = 'var(--bg-card)';
+        }
+    }
+
+    function updateGenderCount() {
+        let m = Object.values(s.player_genders).filter(g => g === 'male').length;
+        let f = Object.values(s.player_genders).filter(g => g === 'female').length;
+        let half = s.total_players / 2;
+        count_el.textContent = `男：${m}/${half}　女：${f}/${half}`;
+        count_el.style.color = (m === half && f === half) ? 'var(--color-success)' : 'var(--color-text-muted)';
+    }
 }
 
 /** 載入 data.json 並初始化板子下拉選單 */
@@ -311,6 +377,32 @@ function handleStartNight(count_select, setting_board) {
 
     let thief_key = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'thief');
     s.initial_thief_seat = thief_key ? parseInt(thief_key) : null;
+
+    // === 性別機制驗證（開膛手傑克板子）===
+    if (s.current_board.hasGender) {
+        let male_count = Object.values(s.player_genders).filter(g => g === 'male').length;
+        let female_count = Object.values(s.player_genders).filter(g => g === 'female').length;
+        if (male_count + female_count < s.total_players) {
+            return alert("請先指定所有玩家的性別！");
+        }
+        if (male_count !== s.total_players / 2 || female_count !== s.total_players / 2) {
+            return alert(`性別分配必須為 ${s.total_players / 2} 男 ${s.total_players / 2} 女！`);
+        }
+    }
+
+    // === 睡美人板子：隨機抽選睡美人 ===
+    if (s.current_board.hasSleepingBeauty) {
+        let alien_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'alien_prince');
+        let all_seats = Object.keys(s.player_roles).map(Number);
+        let candidate = all_seats[Math.floor(Math.random() * all_seats.length)];
+        // 規則：若抽中異族王子，本場沒有睡美人
+        if (candidate === parseInt(alien_seat)) {
+            s.sleeping_beauty_seat = null;
+        } else {
+            s.sleeping_beauty_seat = candidate;
+        }
+        s.is_sleeping_beauty_active = true;
+    }
 
     buildNightQueue();
     s.night_action_log = [];
