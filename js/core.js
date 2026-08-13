@@ -207,6 +207,7 @@ export function getStageVoiceName(stage, sub_label) {
     if (stage === 'awaken_witch') return '覺醒女巫';
     if (stage === 'awaken_wolf_king_gun') return '覺醒狼王';
     if (stage === 'wolf_gun_confirm') return '三小狼';
+    if (stage === 'wolf') return '狼人';
     if (stage === 'wolf_meet') return '狼人';
     if (stage === 'lovers_meet') return '情侶';
     if (stage === 'wolf_brother_meet') return '狼兄狼弟';
