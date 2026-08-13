@@ -4,14 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="面對面狼人殺自動化法官工具，支援 6~16 人局多種板子配置">
+    <meta name="theme-color" content="#1a1a2e">
+    <!-- PWA 支援 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="狼人殺法官">
+    <link rel="manifest" href="manifest.json">
     <title>狼人殺第一天法官</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <button class="theme-toggle" id="btn-theme-toggle" aria-label="切換主題">🌙</button>
     <div class="container">
         <div id="screen-start" class="screen">
-            <h1>🐺 狼人殺 第一天法官 [維修中]</h1>
+            <h1>🐺 狼人殺 第一天法官</h1>
             <div class="game-settings">
                 <label>
                     遊戲人數：
@@ -21,14 +29,20 @@
                         <option value="8">8 人局</option>
                         <option value="9">9 人局</option>
                         <option value="10">10 人局</option>
+                        <option value="11">11 人局</option>
                         <option value="12" selected>12 人局</option>
+                        <option value="13">13 人局</option>
+                        <option value="14">14 人局</option>
+                        <option value="15">15 人局</option>
+                        <option value="16">16 人局</option>
                     </select>
                 </label>
                 <div class="setting-group-label">
                     板子選擇：
                     <div class="custom-dropdown" id="board-dropdown">
                         <div class="dropdown-selected" id="board-selected">載入中...</div>
-                        <div class="dropdown-list hidden" id="board-list"></div>
+                        <div class="dropdown-list hidden" id="board-list">
+                        </div>
                     </div>
                     <select id="setting-board" class="hidden"></select>
                 </div>
@@ -44,13 +58,20 @@
                     <input type="checkbox" id="setting-random-role">
                     系統隨機分配職業 (玩家輪流查看)
                 </label>
+                <label>
+                    閉眼→睜眼間隔秒數：
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+                        <input type="range" id="setting-transition-delay" min="0" max="5" step="0.5" value="1" style="flex:1;">
+                        <span id="transition-delay-value" style="min-width:32px; text-align:center; font-size:16px; color:#fff;">1s</span>
+                    </div>
+                </label>
             </div>
             <button id="btn-go-setup" class="primary-btn">下一步：錄入身分</button>
         </div>
 
         <div id="screen-setup" class="screen hidden">
             <h2>📝 錄入玩家身分</h2>
-            <p style="color: #a2a8d3; font-size: 14px; margin-bottom: 15px;">點擊號碼牌設定身分，設定後將自動屏蔽隱藏。進入黑夜前系統會校驗配置是否正確。</p>
+            <p style="color: var(--color-text-muted); font-size: 14px; margin-bottom: 15px;">點擊號碼牌設定身分，設定後將自動屏蔽隱藏。進入黑夜前系統會校驗配置是否正確。</p>
             <div id="role-setup-grid" class="grid-container"></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-back-start" class="text-btn">返回</button>
@@ -60,7 +81,7 @@
 
         <div id="screen-night" class="screen hidden">
             <h2 id="night-role-title">角色名稱</h2>
-            <p id="night-instruction" style="color: #a2a8d3;"></p>
+            <p id="night-instruction" style="color: var(--color-text-muted);"></p>
 
             <div id="number-pad" class="grid-container hidden"></div>
 
@@ -76,7 +97,7 @@
             <h2>📢 上警環節</h2>
 
             <div id="sheriff-setup-section">
-                <p style="color: #a2a8d3; margin-bottom: 20px;">請點擊參與警長競選的玩家編號：</p>
+                <p style="color: var(--color-text-muted); margin-bottom: 20px;">請點擊參與警長競選的玩家編號：</p>
                 <div id="sheriff-numpad" class="grid-container"></div>
                 <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <button id="btn-start-sheriff-speech" class="primary-btn hidden">確認競選名單並開始發言</button>
@@ -85,9 +106,9 @@
             </div>
 
             <div id="sheriff-action-section" class="hidden">
-                <h3 style="color:#fca311;">🗣️ 警長競選發言</h3>
+                <h3 style="color:var(--color-accent);">🗣️ 警長競選發言</h3>
                 <p id="sheriff-speech-order"
-                    style="font-size: 24px; font-weight: bold; margin: 20px 0; color: #00ff88; line-height: 1.5;"></p>
+                    style="font-size: 24px; font-weight: bold; margin: 20px 0; color: var(--color-success); line-height: 1.5;"></p>
                 <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <button id="btn-finish-sheriff" class="primary-btn">警長競選結束 (開始投票)</button>
                     <button id="btn-sheriff-wolf-blow" class="secondary-btn" style="border: 1px solid #e94560;">🐺 狼人自爆
@@ -96,8 +117,8 @@
             </div>
 
             <div id="sheriff-result-section" class="hidden">
-                <h3 style="color:#fca311;">🎖️ 警長選舉結果</h3>
-                <p style="color: #a2a8d3; margin-bottom: 20px; font-size: 18px;">請問是否有順利選出警長？</p>
+                <h3 style="color:var(--color-accent);">🎖️ 警長選舉結果</h3>
+                <p style="color: var(--color-text-muted); margin-bottom: 20px; font-size: 18px;">請問是否有順利選出警長？</p>
                 <div style="display:flex; flex-direction: column; gap: 10px;">
                     <button id="btn-sheriff-elected" class="primary-btn">✅ 有選出警長</button>
                     <button id="btn-sheriff-not-elected" class="secondary-btn">❌ 沒有選出警長 (警徽流失)</button>
@@ -113,9 +134,9 @@
                 <button id="btn-show-judge" class="text-btn" style="margin-bottom: 10px; border: 1px solid #4b5563;">📋
                     查看法官紀錄</button>
                 <div id="day-skill-section" class="hidden"
-                    style="background-color: #24345e; border: 2px solid #fca311; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    style="background-color: var(--bg-card); border: 2px solid var(--color-accent); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <p id="day-skill-notice"
-                        style="color: #fca311; font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號
+                        style="color: var(--color-accent); font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號
                         】玩家，請問是否發動技能？</p>
                     <div id="day-skill-pad" class="grid-container"></div>
                     <button id="btn-day-skill-skip" class="text-btn" style="margin-top: 10px;">放棄發動技能</button>

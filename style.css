@@ -1,11 +1,41 @@
+/* ==========================================
+   CSS 變數（集中管理顏色與間距）
+   ========================================== */
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-card: #24345e;
+    --bg-input: #16213e;
+    --color-primary: #e94560;
+    --color-secondary: #0f3460;
+    --color-accent: #fca311;
+    --color-success: #00ff88;
+    --color-info: #51c9c1;
+    --color-purple: #4b0082;
+    --color-text: #fff;
+    --color-text-muted: #a2a8d3;
+    --color-text-light: #d3d8ff;
+    --color-border: #4b5563;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 20px;
+}
+
+/* ==========================================
+   全域基礎
+   ========================================== */
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 body {
-    background-color: #1a1a2e;
-    color: #fff;
+    background-color: var(--bg-primary);
+    color: var(--color-text);
     font-family: '微軟正黑體', sans-serif;
     display: flex;
     justify-content: center;
@@ -13,6 +43,7 @@ body {
     min-height: 100vh;
     margin: 0;
     text-align: center;
+    touch-action: manipulation;
 }
 
 .container {
@@ -25,7 +56,42 @@ body {
     display: none !important;
 }
 
-/* 號碼鍵盤網格 */
+/* ==========================================
+   按鈕通用
+   ========================================== */
+button {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    min-height: 44px;
+    touch-action: manipulation;
+    transition: transform 0.1s, opacity 0.1s;
+}
+
+/* 按下回饋（行動裝置觸控） */
+button:active:not(:disabled) {
+    transform: scale(0.95);
+    opacity: 0.85;
+}
+
+.primary-btn { background-color: var(--color-primary); color: white; }
+.secondary-btn { background-color: var(--color-secondary); color: white; }
+.special-btn { background-color: var(--color-purple); color: white; }
+.text-btn { background-color: transparent; color: var(--color-text-muted); border: 1px solid var(--color-text-muted); }
+
+.flex-btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* ==========================================
+   號碼鍵盤
+   ========================================== */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -34,10 +100,10 @@ body {
 }
 
 .num-btn {
-    background-color: #24345e;
+    background-color: var(--bg-card);
     color: white;
-    border: 2px solid #0f3460;
-    border-radius: 12px;
+    border: 2px solid var(--color-secondary);
+    border-radius: var(--radius-lg);
     padding: 20px 0;
     font-size: 24px;
     font-weight: bold;
@@ -45,38 +111,23 @@ body {
     transition: 0.2s;
 }
 
+.num-btn:active:not(:disabled) {
+    transform: scale(0.92);
+}
+
 .num-btn.selected {
-    background-color: #51c9c1;
+    background-color: var(--color-info);
     border-color: #fff;
     transform: scale(1.1);
 }
 
-.flex-btn-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 8px;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.primary-btn { background-color: #e94560; color: white; }
-.secondary-btn { background-color: #0f3460; color: white; }
-.special-btn { background-color: #4b0082; color: white; } /* 毒藥用紫色 */
-.text-btn { background-color: transparent; color: #a2a8d3; border: 1px solid #a2a8d3;}
-
-/* 新增的設定區塊樣式 */
+/* ==========================================
+   設定頁
+   ========================================== */
 .game-settings {
-    background-color: #24345e;
+    background-color: var(--bg-card);
     padding: 15px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     margin-bottom: 20px;
     text-align: left;
     display: flex;
@@ -88,22 +139,39 @@ button {
     display: flex;
     flex-direction: column;
     font-size: 14px;
-    color: #d3d8ff;
+    color: var(--color-text-light);
 }
 
 .game-settings select {
     margin-top: 5px;
     padding: 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    background-color: #16213e;
-    color: white; 
-    border: 1px solid #4b5563;
+    background-color: var(--bg-input);
+    color: white;
+    border: 1px solid var(--color-border);
     font-size: 16px;
     width: 100%;
 }
 
-/* --- 客製化下拉選單樣式 --- */
+.checkbox-label {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px !important;
+    color: var(--color-text) !important;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-primary);
+}
+
+/* ==========================================
+   客製化下拉選單
+   ========================================== */
 .custom-dropdown {
     position: relative;
     width: 100%;
@@ -111,28 +179,28 @@ button {
 }
 
 .dropdown-selected {
-    background-color: #16213e;
+    background-color: var(--bg-input);
     color: white;
-    border: 1px solid #4b5563;
-    padding: 10px 30px 10px 10px; 
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    padding: 10px 30px 10px 10px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 16px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    position: relative; 
+    position: relative;
 }
 
 .dropdown-selected::after {
     content: '▼';
     position: absolute;
-    right: 12px; 
+    right: 12px;
     top: 50%;
-    transform: translateY(-50%); 
+    transform: translateY(-50%);
     font-size: 12px;
-    color: #a2a8d3;
+    color: var(--color-text-muted);
 }
 
 .dropdown-list {
@@ -140,12 +208,12 @@ button {
     top: 100%;
     left: 0;
     width: 100%;
-    background-color: #16213e;
-    border: 1px solid #4b5563;
-    border-radius: 4px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     z-index: 1000;
     max-height: 250px;
-    overflow-y: auto; /* 超出高度時出現滾動條 */
+    overflow-y: auto;
     margin-top: 4px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     text-align: left;
@@ -153,12 +221,11 @@ button {
 
 .dropdown-item {
     padding: 12px 10px;
-    border-bottom: 1px solid #24345e;
+    border-bottom: 1px solid var(--bg-card);
     cursor: pointer;
     font-size: 16px;
-    color: #d3d8ff;
+    color: var(--color-text-light);
     line-height: 1.5;
-    /* 這裡確保過長的文字會自動換行 */
     white-space: normal;
     word-wrap: break-word;
 }
@@ -172,33 +239,24 @@ button {
     color: #fff;
 }
 
-.checkbox-label {
-    flex-direction: row !important;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px !important;
-    color: #fff !important;
-    cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: #e94560;
-}
-
-/* 身分設定按鈕樣式 */
+/* ==========================================
+   角色設定按鈕
+   ========================================== */
 .role-btn {
-    background-color: #24345e;
+    background-color: var(--bg-card);
     color: white;
-    border: 2px solid #0f3460;
-    border-radius: 8px;
+    border: 2px solid var(--color-secondary);
+    border-radius: var(--radius-md);
     padding: 10px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     cursor: pointer;
     transition: 0.2s;
+}
+
+.role-btn:active {
+    transform: scale(0.95);
 }
 
 .role-btn .seat-num {
@@ -212,21 +270,28 @@ button {
     margin-top: 4px;
 }
 
-/* 不同陣營的顏色提示 */
-.role-btn[data-role="wolf"] { border-color: #e94560; color: #ff7b93; }
-.role-btn[data-role="villager"] { border-color: #a2a8d3; }
-.role-btn[data-role="seer"] { border-color: #fca311; color: #fca311; }
-.role-btn[data-role="witch"] { border-color: #4b0082; color: #d8bfd8; }
-.role-btn[data-role="hunter"] { border-color: #00fa9a; color: #00fa9a; }
+.role-btn[data-status="unset"] {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    background-color: transparent;
+}
 
-/* --- 新增：彈出視窗 (Modal) 樣式 --- */
+.role-btn[data-status="set"] {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background-color: var(--color-secondary);
+}
+
+/* ==========================================
+   彈出視窗 (Modal)
+   ========================================== */
 .modal {
     position: fixed;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); /* 半透明黑底屏蔽背景 */
+    background-color: rgba(0, 0, 0, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -234,12 +299,12 @@ button {
 }
 
 .modal-content {
-    background-color: #16213e;
+    background-color: var(--bg-secondary);
     padding: 20px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     width: 90%;
     max-width: 350px;
-    border: 2px solid #24345e;
+    border: 2px solid var(--bg-card);
     text-align: center;
 }
 
@@ -251,38 +316,34 @@ button {
 }
 
 .role-select-btn {
-    background-color: #24345e;
+    background-color: var(--bg-card);
     color: white;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--color-border);
     padding: 15px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     font-size: 18px;
     font-weight: bold;
 }
 
-.role-select-btn:hover {
-    background-color: #e94560;
+.role-select-btn:active:not(:disabled) {
+    background-color: var(--color-primary);
     border-color: #fff;
 }
 
-/* --- 修改：身分按鈕狀態 --- */
-.role-btn[data-status="unset"] {
-    border-color: #4b5563;
-    color: #a2a8d3;
-    background-color: transparent;
+.role-select-btn:disabled {
+    background-color: var(--bg-primary);
+    color: var(--color-border);
+    border-color: var(--bg-primary);
+    cursor: not-allowed;
 }
 
-.role-btn[data-status="set"] {
-    border-color: #00ff88;
-    color: #00ff88;
-    background-color: #0f3460;
-}
-
-/* --- 新增：剩餘身分指示器樣式 --- */
+/* ==========================================
+   剩餘身分指示器
+   ========================================== */
 .remaining-container {
-    background: #24345e;
+    background: var(--bg-card);
     padding: 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     margin-bottom: 15px;
     display: flex;
     flex-wrap: wrap;
@@ -291,27 +352,231 @@ button {
 }
 
 .remaining-badge {
-    background: #16213e;
+    background: var(--bg-secondary);
     padding: 6px 12px;
-    border-radius: 20px;
+    border-radius: var(--radius-pill);
     font-size: 14px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--color-border);
     color: #fff;
     transition: 0.2s;
 }
 
-/* 該職業發完時的狀態 */
 .remaining-badge.zero {
-    border-color: #00ff88;
-    color: #00ff88;
-    background: #0f3460;
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background: var(--color-secondary);
     opacity: 0.7;
 }
 
-/* 彈窗按鈕禁用狀態 */
-.role-select-btn:disabled {
-    background-color: #1a1a2e;
-    color: #4b5563;
-    border-color: #1a1a2e;
-    cursor: not-allowed;
+
+/* ==========================================
+   畫面切換淡入淡出動畫
+   ========================================== */
+.screen {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 夜晚角色切換時的淡入效果 */
+.night-fade-in {
+    animation: nightFadeIn 0.25s ease-out;
+}
+
+@keyframes nightFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+/* ==========================================
+   淺色主題覆蓋
+   ========================================== */
+[data-theme="light"] {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f1f3f5;
+    --color-primary: #dc3545;
+    --color-secondary: #6c757d;
+    --color-accent: #d63384;
+    --color-success: #198754;
+    --color-info: #0d6efd;
+    --color-purple: #6f42c1;
+    --color-text: #212529;
+    --color-text-muted: #495057;
+    --color-text-light: #343a40;
+    --color-border: #adb5bd;
+}
+
+[data-theme="light"] .num-btn {
+    color: #212529;
+    border-color: #adb5bd;
+    background-color: #f8f9fa;
+}
+
+[data-theme="light"] .num-btn.selected {
+    color: white;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+[data-theme="light"] .primary-btn {
+    background-color: #dc3545;
+}
+
+[data-theme="light"] .secondary-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+[data-theme="light"] .special-btn {
+    background-color: #6f42c1;
+}
+
+[data-theme="light"] .text-btn {
+    color: #495057;
+    border-color: #adb5bd;
+}
+
+[data-theme="light"] .game-settings {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+}
+
+[data-theme="light"] .game-settings select {
+    background-color: #ffffff;
+    color: #212529;
+    border-color: #adb5bd;
+}
+
+[data-theme="light"] .dropdown-selected {
+    background-color: #ffffff;
+    color: #212529;
+    border-color: #adb5bd;
+}
+
+[data-theme="light"] .dropdown-selected::after {
+    color: #495057;
+}
+
+[data-theme="light"] .dropdown-list {
+    background-color: #ffffff;
+    border-color: #adb5bd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .dropdown-item {
+    color: #212529;
+    border-bottom-color: #e9ecef;
+}
+
+[data-theme="light"] .dropdown-item:hover,
+[data-theme="light"] .dropdown-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+[data-theme="light"] .modal-content {
+    background-color: #ffffff;
+    border-color: #dee2e6;
+}
+
+[data-theme="light"] .role-select-btn {
+    background-color: #f8f9fa;
+    color: #212529;
+    border-color: #adb5bd;
+}
+
+[data-theme="light"] .role-btn {
+    background-color: #f8f9fa;
+    color: #212529;
+    border-color: #adb5bd;
+}
+
+[data-theme="light"] .role-btn[data-status="set"] {
+    border-color: #198754;
+    color: #198754;
+    background-color: #d1e7dd;
+}
+
+[data-theme="light"] .role-btn[data-status="unset"] {
+    border-color: #adb5bd;
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+[data-theme="light"] .theme-toggle {
+    background: #ffffff;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+/* 主題切換按鈕 */
+.theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--color-border);
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    cursor: pointer;
+}
+
+
+/* --- 淺色主題：輔助文字更深 --- */
+[data-theme="light"] #night-instruction {
+    color: #343a40 !important;
+}
+
+[data-theme="light"] .game-settings label,
+[data-theme="light"] .setting-group-label {
+    color: #343a40;
+}
+
+/* --- 淺色主題：inline style 面板覆蓋（法官紀錄、狀態框等）--- */
+[data-theme="light"] #judge-player-status,
+[data-theme="light"] #judge-night-log {
+    background: #e9ecef !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] #view-role-result {
+    background: #e9ecef !important;
+    border-color: var(--color-accent) !important;
+    color: #212529 !important;
+}
+
+/* --- 淺色主題：按鈕 active 區分 --- */
+[data-theme="light"] .num-btn:active:not(:disabled) {
+    background-color: #dee2e6;
+    transform: scale(0.92);
+}
+
+[data-theme="light"] .text-btn:active:not(:disabled) {
+    background-color: #e9ecef;
+    color: #212529;
+}
+
+[data-theme="light"] .secondary-btn:active:not(:disabled) {
+    background-color: #495057;
+}
+
+/* --- 淺色主題：action-selected 狀態 --- */
+[data-theme="light"] .action-selected {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border: 2px solid #0d6efd !important;
 }

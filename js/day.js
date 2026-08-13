@@ -1,243 +1,554 @@
-import { s, wolfFaction, evilRoles, findNearestWolf } from './core.js';
+import { s, wolf_faction, evil_roles, findNearestWolf } from './core.js';
+import { triggerTricksterVoteSection } from './vote.js';
 
 // 判斷是否觸發千年之戀雙死獲勝條件
 function checkSnakeWin(dead1, dead2) {
-    let r1 = s.playerRoles[dead1];
-    let r2 = s.playerRoles[dead2];
+    let r1 = s.player_roles[dead1];
+    let r2 = s.player_roles[dead2];
     if ((r1 === 'snake_phantom' && r2 === 'snake_seer') || (r1 === 'snake_seer' && r2 === 'snake_phantom')) {
-        s.snakeWin = true;
+        s.is_snake_win = true;
     }
 }
 
 export function calculateNightDeaths() {
+    // ======================================================================
+    // 夜間死亡結算主函式
+    // 結算順序：恐懼判定 → 反傷/咒狐 → 狼刀(含護盾) → 毒藥 → 覺醒狼美人 → 灰太狼 → 連帶死亡 → 狼美人殉情 → 白貓免死 → 商人反噬
+    // ======================================================================
+
     // 1. 初始化死亡判定與狀態清單
-    s.primaryKilled = []; s.chainKilled = []; s.finalKilled = [];
-    s.pufferfishTriggered = false;
-    s.whiteCatFlippedLastNight = false;
-    s.rustSwordInfectedTarget = null;
+    s.primary_killed = []; s.chain_killed = []; s.final_killed = [];
+    s.is_pufferfish_triggered = false;
+    s.did_white_cat_flip_last_night = false;
+    s.rust_sword_infected_target = null;
 
-    // 定位關鍵角色
-    let witchSeat = Object.keys(s.playerRoles).find(k => ['witch', 'awaken_witch'].includes(s.playerRoles[k]));
-    let seerSeat = Object.keys(s.playerRoles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'fool_seer', 'snake_seer'].includes(s.playerRoles[k]));
-    let guardSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'guard');
-    let dwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'dreamwalker');
-    let awakenIdiotSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_idiot');
-    let grSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_rider')) || null;
+    // 定位關鍵角色座位
+    let witchSeat = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
+    let seerSeat = Object.keys(s.player_roles).find(k => ['seer', 'shadow_seer', 'awaken_seer', 'psychic', 'pure_white', 'wolf_witch', 'fool_seer', 'snake_seer'].includes(s.player_roles[k]));
+    let guardSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard');
+    let dwSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'dreamwalker');
+    let awakenIdiotSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_idiot');
+    let grSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_rider')) || null;
 
-    // 2. 確認夢魘恐懼影響
-    let isWolfFeared = s.nightmareTarget && wolfFaction.includes(s.playerRoles[s.nightmareTarget]);
-    let actualWolfKill = isWolfFeared ? null : s.wolfKillTarget;
-
-    let actualWitchPoison = s.witchPoisonTarget;
-    if (witchSeat && parseInt(witchSeat) === s.nightmareTarget) { actualWitchPoison = null; s.witchSaved = false; }
-
-    let actualSeerTarget = s.seerTarget;
-    if (seerSeat && parseInt(seerSeat) === s.nightmareTarget) actualSeerTarget = null;
-
-    // 守衛護盾與喜羊羊護盾聯集
-    let actualGuard = (guardSeat && parseInt(guardSeat) === s.nightmareTarget) ? null : s.guardTarget;
-    let actualDream = (dwSeat && parseInt(dwSeat) === s.nightmareTarget) ? null : s.dreamTarget;
-
-    // 3. 處理惡靈騎士反傷與咒狐暴斃
-    if (actualSeerTarget && s.playerRoles[parseInt(actualSeerTarget)] === 'curse_fox') {
-        if (!s.primaryKilled.includes(parseInt(actualSeerTarget))) s.primaryKilled.push(parseInt(actualSeerTarget));
+    // -------------------------------------------------------
+    // 1.5 搗蛋鬼耍寶效果
+    // 規則：被耍寶的人使用技能時，視為對自己使用
+    //   - 守衛被耍寶 → 守護自己（若連續兩晚自守則出局）
+    //   - 預言家被耍寶 → 查驗自己
+    //   - 女巫毒被耍寶 → 毒自己
+    //   - 獵人被耍寶 → 開槍帶走自己
+    //   - 狼人被耍寶 → 被耍寶的狼自刀
+    // -------------------------------------------------------
+    if (s.troublemaker_target) {
+        let tSeat = s.troublemaker_target;
+        // 若被耍寶的是守衛 → guardTarget 改為守衛自己
+        if (s.guard_target && parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard')) === tSeat) {
+            s.guard_target = tSeat;
+        }
+        // 若被耍寶的是預言家相關 → seerTarget 改為自己
+        let seerRoles = ['seer', 'psychic', 'pure_white', 'awaken_seer'];
+        let seerKey = Object.keys(s.player_roles).find(k => seerRoles.includes(s.player_roles[k]));
+        if (seerKey && parseInt(seerKey) === tSeat && s.seer_target) {
+            s.seer_target = tSeat;
+        }
+        // 若被耍寶的是女巫 → witchPoisonTarget 改為自己（若有毒）
+        let witchKey = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
+        if (witchKey && parseInt(witchKey) === tSeat && s.witch_poison_target) {
+            s.witch_poison_target = tSeat;
+        }
+        // 若被耍寶的是狼人 → wolfKillTarget 改為該狼自己
+        if (wolf_faction.includes(s.player_roles[tSeat]) && s.wolf_kill_target) {
+            s.wolf_kill_target = tSeat;
+        }
     }
-    if (grSeat && !s.ghostRiderReflected) {
-        if (actualWitchPoison === grSeat && witchSeat) { s.primaryKilled.push(parseInt(witchSeat)); s.ghostRiderReflected = true; }
-        else if (actualSeerTarget === grSeat && !s.ghostRiderReflected && seerSeat) { s.primaryKilled.push(parseInt(seerSeat)); s.ghostRiderReflected = true; }
+
+    // -------------------------------------------------------
+    // 1.6 梅杜莎石化效果
+    // 規則：被石化的玩家當晚技能失效（與夢魘恐懼類似但不完全相同）
+    //   - 被石化的女巫兩瓶藥都不能用
+    //   - 被石化的狼人僅該名無法行動
+    // -------------------------------------------------------
+    if (s.medusa_target) {
+        let mTarget = s.medusa_target;
+        let mRole = s.player_roles[mTarget];
+        // 被石化者的查驗無效
+        if (s.seer_target && parseInt(Object.keys(s.player_roles).find(k => ['seer', 'psychic', 'pure_white', 'fool_seer'].includes(s.player_roles[k]))) === mTarget) {
+            s.seer_target = null;
+        }
+        // 被石化者的守衛無效
+        if (s.guard_target && parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard')) === mTarget) {
+            s.guard_target = null;
+        }
+        // 被石化者的女巫毒藥無效
+        if (s.witch_poison_target && parseInt(Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]))) === mTarget) {
+            s.witch_poison_target = null;
+        }
     }
 
-    // 4. 判斷覺醒白痴保護狀態
+    // -------------------------------------------------------
+    // 2. 夢魘恐懼影響 + 企鵝冰凍影響
+    // 規則（夢魘）：被恐懼的玩家當晚不能使用技能
+    // 規則（企鵝）：被冰凍的狼人 → 全隊無法刀人
+    // 規則（名媛）：被寵幸且被刀的玩家，若名媛存活 → 狼刀無效（空刀）
+    // -------------------------------------------------------
+    let isWolfFeared = s.nightmare_target && wolf_faction.includes(s.player_roles[s.nightmare_target]);
+    // 企鵝冰凍狼人 → 全隊無法刀人
+    let isWolfFrozen = s.penguin_target && wolf_faction.includes(s.player_roles[s.penguin_target]);
+    let actualWolfKill = (isWolfFeared || isWolfFrozen) ? null : s.wolf_kill_target;
+
+    // 名媛寵幸效果：被寵幸的人如果被狼刀，且名媛存活 → 狼刀無效
+    if (s.celebrity_target && actualWolfKill === s.celebrity_target) {
+        let celebSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
+        if (celebSeat && !s.primary_killed.includes(parseInt(celebSeat))) {
+            actualWolfKill = null; // 寵幸保護成功，視為空刀
+        }
+    }
+
+    let actualWitchPoison = s.witch_poison_target;
+    if (witchSeat && parseInt(witchSeat) === s.nightmare_target) { actualWitchPoison = null; s.is_witch_saved = false; }
+
+    let actualSeerTarget = s.seer_target;
+    if (seerSeat && parseInt(seerSeat) === s.nightmare_target) actualSeerTarget = null;
+
+    let actualGuard = (guardSeat && parseInt(guardSeat) === s.nightmare_target) ? null : s.guard_target;
+    let actualDream = (dwSeat && parseInt(dwSeat) === s.nightmare_target) ? null : s.dream_target;
+
+    // -------------------------------------------------------
+    // 3. 惡靈騎士反傷與咒狐暴斃
+    // 規則（惡靈騎士）：
+    //   - 免疫夜間傷害（狼刀、女巫毒、獵人夜槍均無效）
+    //   - 一次性反傷：女巫毒惡靈騎士 → 女巫死；預言家/通靈師查驗 → 查驗者死
+    //   - 若同夜毒+驗同時命中，先行動者遭反傷（女巫先於預言家）
+    // 規則（咒狐）：
+    //   - 被預言家查驗 → 查驗顯示金水但咒狐暴斃
+    //   - 免疫狼刀
+    // -------------------------------------------------------
+    if (actualSeerTarget && s.player_roles[parseInt(actualSeerTarget)] === 'curse_fox') {
+        if (!s.primary_killed.includes(parseInt(actualSeerTarget))) s.primary_killed.push(parseInt(actualSeerTarget));
+    }
+    if (grSeat && !s.has_ghost_rider_reflected) {
+        if (actualWitchPoison && parseInt(actualWitchPoison) === grSeat && witchSeat) {
+            s.primary_killed.push(parseInt(witchSeat));
+            s.player_status[witchSeat].deathReason = "惡靈騎士反傷(毒)";
+            s.has_ghost_rider_reflected = true;
+        }
+        else if (actualSeerTarget && parseInt(actualSeerTarget) === grSeat && seerSeat) {
+            s.primary_killed.push(parseInt(seerSeat));
+            s.player_status[seerSeat].deathReason = "惡靈騎士反傷(驗)";
+            s.has_ghost_rider_reflected = true;
+        }
+    }
+
+    // -------------------------------------------------------
+    // 4. 覺醒白痴保護
+    // 規則：覺醒白痴每晚可用秘密之身保護一名玩家，為其抵擋一次夜間傷害
+    // -------------------------------------------------------
     let isIdiotProtected = false;
-    if (s.awakenIdiotTarget && (actualWolfKill === s.awakenIdiotTarget || s.bigBadWolfKillTarget === s.awakenIdiotTarget)) isIdiotProtected = true;
-    else if (awakenIdiotSeat && (actualWolfKill === parseInt(awakenIdiotSeat) || s.bigBadWolfKillTarget === parseInt(awakenIdiotSeat))) isIdiotProtected = true;
+    if (s.awk_idiot_target && (actualWolfKill === s.awk_idiot_target || s.big_bad_wolf_kill_target === s.awk_idiot_target)) isIdiotProtected = true;
+    else if (awakenIdiotSeat && (actualWolfKill === parseInt(awakenIdiotSeat) || s.big_bad_wolf_kill_target === parseInt(awakenIdiotSeat))) isIdiotProtected = true;
 
-    // 5. 處理狼刀及大野狼刀的護盾/攝夢結算
-    let immuneToNightDamageTargets = [s.awakenDreamwalkerTarget];
-    let killList = [actualWolfKill, s.bigBadWolfKillTarget].filter(Boolean).map(x => parseInt(x));
+    // -------------------------------------------------------
+    // 5. 狼刀結算（含大野狼額外刀）
+    // 規則：
+    //   - 惡靈騎士/咒狐免疫狼刀
+    //   - 被攝夢的玩家免疫夜間傷害
+    //   - 被覺醒攝夢人指定的夢語者免疫夜間傷害
+    //   - 守衛守護的目標免疫狼刀
+    //   - 女巫解藥可救活被狼刀的玩家
+    //   - 「奶穿」規則：同時被守衛守護且被女巫解藥救 → 反而死亡
+    //   - 河豚被狼刀殺死 → 觸發河豚效果（當天狼美人魅惑失效）
+    //   - 鏽劍騎士被狼刀殺死 → 左邊最近的狼人將在天亮出局
+    // -------------------------------------------------------
+    let immuneToNightDamageTargets = [s.awk_dreamwalker_target, s.light_count_target, s.dark_messenger_target].filter(Boolean);
+    let killList = [actualWolfKill, s.big_bad_wolf_kill_target].filter(Boolean).map(x => parseInt(x));
 
     killList.forEach(target => {
-        let isGuarded = (actualGuard === target) || (s.pleasantGoatGuard === target);
-        let isSaved = (target === parseInt(actualWolfKill) && s.witchSaved);
+        let isGuarded = (actualGuard === target) || (s.pleasant_goat_guard === target);
+        let isSaved = (target === parseInt(actualWolfKill) && s.is_witch_saved);
         let isDreamed = (actualDream === target);
-        let targetRole = s.playerRoles[target];
+        let targetRole = s.player_roles[target];
         let diesToWolf = false;
 
         if (['ghost_rider', 'curse_fox'].includes(targetRole) || isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target)) {
-            // 免疫致死
+            // 免疫致死（惡靈騎士/咒狐/攝夢保護/覺醒白痴保護/夢語者免疫）
+        } else if (targetRole === 'war_wolf' || targetRole === 'demon') {
+            // 規則：戰狼/惡魔免疫所有神職技能傷害（只能投票出局）
+        } else if (s.is_phantom_thief_invincible && targetRole === 'phantom_thief') {
+            // 規則：怪盜狼王發動無敵 → 免疫一切死亡直到下次入夜
         } else if (isSaved && isGuarded) {
-            s.primaryKilled.push(target);
+            // 規則：奶穿 — 女巫救+守衛守同一人 → 死亡
+            s.primary_killed.push(target);
             diesToWolf = true;
-            s.playerStatus[target].deathReason = "奶穿";
+            s.player_status[target].deathReason = "奶穿";
         } else if (!isSaved && !isGuarded) {
-            s.primaryKilled.push(target);
+            // 無保護 → 正常死亡
+            s.primary_killed.push(target);
             diesToWolf = true;
-            s.playerStatus[target].deathReason = (s.bigBadWolfKillTarget === target) ? "大野狼擊殺" : "狼刀";
+            s.player_status[target].deathReason = (s.big_bad_wolf_kill_target === target) ? "大野狼擊殺" : "狼刀";
         }
+        // else: 被守衛守住或被解藥救活 → 存活
 
         // 特殊角色受刀連動
-        if (diesToWolf && targetRole === 'pufferfish') s.pufferfishTriggered = true;
-        if (diesToWolf && targetRole === 'rust_sword_knight') s.rustSwordInfectedTarget = findNearestWolf(target, -1);
+        if (diesToWolf && targetRole === 'pufferfish') s.is_pufferfish_triggered = true;
+        if (diesToWolf && targetRole === 'rust_sword_knight') s.rust_sword_infected_target = findNearestWolf(target, -1);
     });
 
-    // 6. 處理女巫毒藥結算
+    // -------------------------------------------------------
+    // 6. 女巫毒藥結算
+    // 規則：
+    //   - 惡靈騎士免疫毒藥（且會觸發反傷，已在步驟3處理）
+    //   - 獵魔人免疫毒藥
+    //   - 舞者免疫毒藥
+    //   - 假面免疫毒藥
+    //   - 被攝夢的玩家免疫毒藥
+    //   - 老流氓被毒 → 進入中毒狀態，隔天發言結束後才死
+    //   - 被毒殺的玩家死後不能發動技能（獵人不能開槍）
+    // -------------------------------------------------------
     if (actualWitchPoison) {
         let target = parseInt(actualWitchPoison);
-        let targetRole = s.playerRoles[target];
-        if (targetRole === 'dreamwalker' && s.playerStatus[target].isVWK) { /* 百變狼王攝夢免疫 */ }
-        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target)) { }
-        else if (targetRole === 'old_hooligan') s.playerStatus[target].poisoned = true;
-        else if (!s.primaryKilled.includes(target)) {
-            s.primaryKilled.push(target);
-            s.playerStatus[target].deathReason = "毒殺";
+        let targetRole = s.player_roles[target];
+        if (targetRole === 'dreamwalker' && s.player_status[target].isVWK) { /* 百變狼王攝夢免疫毒藥 */ }
+        else if (['ghost_rider', 'demon_hunter', 'dancer', 'mask_wolf', 'war_wolf', 'demon'].includes(targetRole) || actualDream === target || immuneToNightDamageTargets.includes(target) || (s.is_phantom_thief_invincible && targetRole === 'phantom_thief')) { /* 免疫毒藥 */ }
+        else if (targetRole === 'old_hooligan') s.player_status[target].poisoned = true;
+        else if (!s.primary_killed.includes(target)) {
+            s.primary_killed.push(target);
+            s.player_status[target].deathReason = "毒殺";
         }
     }
 
-    // 7. 覺醒狼美人魅惑轉移邏輯
-    let awbSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_wolf_beauty');
-    if (awbSeat && s.primaryKilled.includes(parseInt(awbSeat)) && s.awakenBeautyTarget) {
-        s.primaryKilled = s.primaryKilled.filter(k => k !== parseInt(awbSeat)); // 自身免死
-        if (!s.primaryKilled.includes(s.awakenBeautyTarget)) s.chainKilled.push(s.awakenBeautyTarget);
-        s.awakenBeautyTarget = null;
+    // -------------------------------------------------------
+    // 6.5 黑蝙蝠庇護反彈
+    // 規則：被庇護的玩家被施放技能（守衛守護、預言家查驗、女巫撒毒），
+    //       釋放技能的玩家死亡。技能只能反彈一次。
+    //       狼刀不觸發反彈（狼隊內互不反彈），解藥不觸發反彈。
+    // -------------------------------------------------------
+    if (s.black_bat_target) {
+        let batTarget = s.black_bat_target;
+        let batReflectVictims = [];
+        // 守衛守護了被庇護的玩家 → 守衛死亡
+        if (s.guard_target && parseInt(s.guard_target) === batTarget) {
+            let guardSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'guard');
+            if (guardSeat && !s.primary_killed.includes(parseInt(guardSeat))) {
+                batReflectVictims.push(parseInt(guardSeat));
+            }
+        }
+        // 預言家（或通靈師/純白之女/愚言家）查驗了被庇護者 → 查驗者死亡
+        if (s.seer_target && parseInt(s.seer_target) === batTarget) {
+            let seerRoles = ['seer', 'psychic', 'pure_white', 'fool_seer', 'awaken_seer'];
+            let seerSeat = Object.keys(s.player_roles).find(k => seerRoles.includes(s.player_roles[k]));
+            if (seerSeat && !s.primary_killed.includes(parseInt(seerSeat))) {
+                batReflectVictims.push(parseInt(seerSeat));
+            }
+        }
+        // 女巫撒毒被庇護者 → 女巫死亡（且被庇護者免疫毒藥）
+        if (s.witch_poison_target && parseInt(s.witch_poison_target) === batTarget) {
+            let witchSeat = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
+            if (witchSeat && !s.primary_killed.includes(parseInt(witchSeat))) {
+                batReflectVictims.push(parseInt(witchSeat));
+            }
+            // 移除被庇護者的毒殺死亡
+            s.primary_killed = s.primary_killed.filter(k => k !== batTarget);
+        }
+        // 加入反彈受害者
+        batReflectVictims.forEach(v => {
+            if (!s.primary_killed.includes(v)) {
+                s.primary_killed.push(v);
+                s.player_status[v].deathReason = "黑蝙蝠庇護反彈";
+            }
+        });
+        if (batReflectVictims.length > 0) {
+            s.night_action_log.push(`【黑蝙蝠】庇護反彈生效，${batReflectVictims.join(',')}號死亡`);
+        }
     }
 
-    // 8. 灰太狼猜測喜羊羊錯誤直接死亡判定
-    let grayWolfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'gray_wolf');
-    if (grayWolfSeat && s.grayWolfStolenPlayer) {
-        let tSeat = s.grayWolfStolenPlayer;
-        if (s.playerRoles[tSeat] === 'pleasant_goat') {
-            let pgSelfProtected = (s.pleasantGoatGuard === tSeat && s.pleasantGoatAntiTheft === tSeat);
+    // -------------------------------------------------------
+    // 6.6 黑夜使者絕對反殺
+    // 規則：被庇護的狼人當晚被查驗/毒/攝夢雙攝 → 施放者死亡
+    // -------------------------------------------------------
+    if (s.dark_messenger_target) {
+        let dmTarget = s.dark_messenger_target;
+        let dmReflectVictims = [];
+        // 預言家查驗被庇護狼人 → 預言家死亡
+        if (s.seer_target && parseInt(s.seer_target) === dmTarget) {
+            let seerRoles = ['seer', 'psychic', 'pure_white', 'fool_seer', 'awaken_seer'];
+            let seerSeat = Object.keys(s.player_roles).find(k => seerRoles.includes(s.player_roles[k]));
+            if (seerSeat) dmReflectVictims.push(parseInt(seerSeat));
+        }
+        // 女巫毒被庇護狼人 → 女巫死亡
+        if (s.witch_poison_target && parseInt(s.witch_poison_target) === dmTarget) {
+            let witchSeat = Object.keys(s.player_roles).find(k => ['witch', 'awaken_witch'].includes(s.player_roles[k]));
+            if (witchSeat) dmReflectVictims.push(parseInt(witchSeat));
+            s.primary_killed = s.primary_killed.filter(k => k !== dmTarget);
+        }
+        // 攝夢人對被庇護狼人雙攝 → 攝夢人死亡
+        if (s.dream_target && parseInt(s.dream_target) === dmTarget) {
+            let dreamSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'dreamwalker');
+            if (dreamSeat) dmReflectVictims.push(parseInt(dreamSeat));
+        }
+        dmReflectVictims.forEach(v => {
+            if (!s.primary_killed.includes(v)) {
+                s.primary_killed.push(v);
+                s.player_status[v].deathReason = "黑夜使者絕對反殺";
+            }
+        });
+        if (dmReflectVictims.length > 0) {
+            s.night_action_log.push(`【黑夜使者】絕對反殺生效，${dmReflectVictims.join(',')}號死亡`);
+        }
+    }
+
+    // -------------------------------------------------------
+    // 7. 覺醒狼美人魅惑轉移
+    // 規則：覺醒狼美人第一次面臨出局時，被她魅惑的玩家代替她出局
+    // -------------------------------------------------------
+    let awbSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_wolf_beauty');
+    if (awbSeat && s.primary_killed.includes(parseInt(awbSeat)) && s.awk_beauty_target) {
+        s.primary_killed = s.primary_killed.filter(k => k !== parseInt(awbSeat)); // 自身免死
+        if (!s.primary_killed.includes(s.awk_beauty_target)) s.chain_killed.push(s.awk_beauty_target);
+        s.awk_beauty_target = null;
+    }
+
+    // -------------------------------------------------------
+    // 8. 灰太狼猜測喜羊羊錯誤 → 灰太狼出局
+    // 規則：灰太狼偷喜羊羊時需猜測其使用的技能，猜錯則灰太狼出局
+    // -------------------------------------------------------
+    let grayWolfSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gray_wolf');
+    if (grayWolfSeat && s.gray_wolf_stolen_player) {
+        let tSeat = s.gray_wolf_stolen_player;
+        if (s.player_roles[tSeat] === 'pleasant_goat') {
+            let pgSelfProtected = (s.pleasant_goat_guard === tSeat && s.pleasant_goat_anti_theft === tSeat);
             if (!pgSelfProtected) {
                 let actualPGSkill = null;
-                if (s.pleasantGoatGuard) actualPGSkill = 'guard';
-                if (s.pleasantGoatAntiTheft) actualPGSkill = 'anti_theft';
+                if (s.pleasant_goat_guard) actualPGSkill = 'guard';
+                if (s.pleasant_goat_anti_theft) actualPGSkill = 'anti_theft';
 
-                // 猜測錯誤且喜羊羊非空過技能時出局
-                if (actualPGSkill !== null && s.grayWolfGuess !== actualPGSkill) {
-                    if (!s.primaryKilled.includes(parseInt(grayWolfSeat))) {
-                        s.primaryKilled.push(parseInt(grayWolfSeat));
-                        s.playerStatus[grayWolfSeat].deathReason = "猜測喜羊羊錯誤";
+                if (actualPGSkill !== null && s.gray_wolf_guess !== actualPGSkill) {
+                    if (!s.primary_killed.includes(parseInt(grayWolfSeat))) {
+                        s.primary_killed.push(parseInt(grayWolfSeat));
+                        s.player_status[grayWolfSeat].deathReason = "猜測喜羊羊錯誤";
                     }
                 }
             }
         }
     }
 
-    // 更新最終死亡清單，並結算連帶死亡 (攝夢、情侶等)
-    s.finalKilled = [...s.primaryKilled, ...s.chainKilled];
+    // 統合死亡清單並進入連帶死亡遞迴
+    s.final_killed = [...s.primary_killed, ...s.chain_killed];
     handleChainDeaths();
 
-    // 9. 結算狼美人魅惑死
-    let beautySeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'wolf_beauty');
-    let vwkBeautySeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'bear') ? s.vwkSeat : null;
+    // -------------------------------------------------------
+    // 8.5 獵魔人狩獵結算
+    // 規則：狩獵狼人→次日對方出局；狩獵好人→次日獵魔人出局
+    //   獵魔人免疫女巫毒藥（已在步驟6處理）
+    // -------------------------------------------------------
+    if (s.demon_hunter_target) {
+        let dhSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'demon_hunter');
+        let targetRole = s.player_roles[s.demon_hunter_target];
+        let isTargetEvil = wolf_faction.includes(targetRole);
+        // 戰狼免疫獵魔人
+        if (targetRole === 'war_wolf') isTargetEvil = false;
+        
+        if (isTargetEvil) {
+            // 狩獵到狼人 → 對方出局
+            if (!s.final_killed.includes(s.demon_hunter_target)) {
+                s.primary_killed.push(s.demon_hunter_target);
+                s.final_killed.push(s.demon_hunter_target);
+                s.player_status[s.demon_hunter_target].deathReason = "獵魔人狩獵";
+            }
+        } else if (dhSeat) {
+            // 狩獵到好人 → 獵魔人自己出局
+            if (!s.final_killed.includes(parseInt(dhSeat))) {
+                s.primary_killed.push(parseInt(dhSeat));
+                s.final_killed.push(parseInt(dhSeat));
+                s.player_status[dhSeat].deathReason = "狩獵好人反噬";
+            }
+        }
+    }
+
+    // -------------------------------------------------------
+    // 8.6 蠱惑師死亡替代
+    // 規則：蠱惑師死亡時，被蠱惑者代替出局（蠱惑師存活）
+    // -------------------------------------------------------
+    let charmerSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'charmer');
+    if (charmerSeat && s.final_killed.includes(parseInt(charmerSeat)) && s.charmer_target) {
+        // 蠱惑師死亡 → 被蠱惑者代替
+        s.primary_killed = s.primary_killed.filter(k => k !== parseInt(charmerSeat));
+        s.final_killed = s.final_killed.filter(k => k !== parseInt(charmerSeat));
+        if (!s.final_killed.includes(s.charmer_target)) {
+            s.chain_killed.push(s.charmer_target);
+            s.final_killed.push(s.charmer_target);
+            s.player_status[s.charmer_target].deathReason = "蠱惑師死亡替代";
+        }
+        handleChainDeaths();
+    }
+
+    // -------------------------------------------------------
+    // 9. 狼美人殉情結算
+    // 規則：狼美人以任何方式被淘汰（包括最後一狼），
+    //   前一晚被魅惑的玩家跟著殉情且不能發動技能。
+    //   例外：被騎士決鬥殺死時不觸發、被毒殺時不觸發殉情、河豚觸發時失效。
+    // -------------------------------------------------------
+    let beautySeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_beauty');
+    let vwkBeautySeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'bear') ? s.vwk_seat : null;
 
     [beautySeat, vwkBeautySeat].forEach(seat => {
-        if (seat && s.finalKilled.includes(parseInt(seat)) && actualWitchPoison !== parseInt(seat)) {
-            if (s.beautyTarget && s.playerRoles[s.beautyTarget] !== 'old_hooligan' && !s.finalKilled.includes(s.beautyTarget) && !s.pufferfishTriggered) {
-                s.chainKilled.push(s.beautyTarget);
-                s.finalKilled = [...s.primaryKilled, ...s.chainKilled];
+        if (seat && s.final_killed.includes(parseInt(seat)) && actualWitchPoison !== parseInt(seat)) {
+            if (s.beauty_target && s.player_roles[s.beauty_target] !== 'old_hooligan' && !s.final_killed.includes(s.beauty_target) && !s.is_pufferfish_triggered) {
+                s.chain_killed.push(s.beauty_target);
+                s.final_killed = [...s.primary_killed, ...s.chain_killed];
                 handleChainDeaths();
             }
         }
     });
 
-    // 10. 結算白貓翻牌免死
-    let wcSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'white_cat');
-    if (wcSeat && s.finalKilled.includes(parseInt(wcSeat)) && !s.playerStatus[wcSeat].isWhiteCatFlipped) {
-        s.primaryKilled = s.primaryKilled.filter(k => k !== parseInt(wcSeat));
-        s.chainKilled = s.chainKilled.filter(k => k !== parseInt(wcSeat));
-        s.finalKilled = s.finalKilled.filter(k => k !== parseInt(wcSeat));
-        s.playerStatus[wcSeat].isWhiteCatFlipped = true;
-        s.whiteCatFlippedLastNight = true;
+    // -------------------------------------------------------
+    // 10. 白貓翻牌免死
+    // 規則：白貓任何原因死亡都能翻牌免疫本次死亡（僅一次）
+    // -------------------------------------------------------
+    let wcSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'white_cat');
+    if (wcSeat && s.final_killed.includes(parseInt(wcSeat)) && !s.player_status[wcSeat].isWhiteCatFlipped) {
+        s.primary_killed = s.primary_killed.filter(k => k !== parseInt(wcSeat));
+        s.chain_killed = s.chain_killed.filter(k => k !== parseInt(wcSeat));
+        s.final_killed = s.final_killed.filter(k => k !== parseInt(wcSeat));
+        s.player_status[wcSeat].isWhiteCatFlipped = true;
+        s.did_white_cat_flip_last_night = true;
     }
 
-    // 11. 商人反噬機制
-    if (s.merchantTarget && evilRoles.includes(s.playerRoles[s.merchantTarget])) {
-        let merchSeat = Object.keys(s.playerRoles).find(k => ['black_market', 'miracle_merchant'].includes(s.playerRoles[k]));
-        if (merchSeat && !s.finalKilled.includes(parseInt(merchSeat))) {
-            s.primaryKilled.push(parseInt(merchSeat)); s.finalKilled.push(parseInt(merchSeat));
-            s.playerStatus[parseInt(merchSeat)].deathReason = "給狼技能反噬";
+    // -------------------------------------------------------
+    // 11. 商人反噬
+    // 規則：黑市商人/奇蹟商人若將技能給了狼人陣營的幸運兒，次日商人死亡
+    // -------------------------------------------------------
+    if (s.merchant_target && evil_roles.includes(s.player_roles[s.merchant_target])) {
+        let merchSeat = Object.keys(s.player_roles).find(k => ['black_market', 'miracle_merchant'].includes(s.player_roles[k]));
+        if (merchSeat && !s.final_killed.includes(parseInt(merchSeat))) {
+            s.primary_killed.push(parseInt(merchSeat)); s.final_killed.push(parseInt(merchSeat));
+            s.player_status[parseInt(merchSeat)].deathReason = "給狼技能反噬";
         }
     }
 }
 
 /**
  * 遞迴處理連帶死亡鏈 (Chain Deaths)
+ * 規則：當某人死亡觸發連帶效應時，被連帶的人可能再觸發其他連帶，形成鏈式反應。
+ * 以遞迴方式處理直到沒有新增死亡為止。
  */
 export function handleChainDeaths() {
     let changed = false;
 
     // 取得原生攝夢人與百變狼王(攝夢人)的座位
-    let dwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'dreamwalker');
-    let vwkDreamSeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'dreamwalker') ? s.vwkSeat : null;
+    let dwSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'dreamwalker');
+    let vwkDreamSeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'dreamwalker') ? s.vwk_seat : null;
 
-    // 1. 檢查 攝夢人/夢語者 連帶死亡
+    // -------------------------------------------------------
+    // 1. 攝夢人連帶死亡
+    // 規則：攝夢人在夜晚出局 → 夢遊者一併出局（且不能發動技能）
+    // -------------------------------------------------------
     [dwSeat, vwkDreamSeat].forEach(seat => {
-        if (seat && s.finalKilled.includes(parseInt(seat)) && s.dreamTarget && !s.finalKilled.includes(s.dreamTarget)) {
-            s.chainKilled.push(s.dreamTarget);
-            s.finalKilled.push(s.dreamTarget);
+        if (seat && s.final_killed.includes(parseInt(seat)) && s.dream_target && !s.final_killed.includes(s.dream_target)) {
+            s.chain_killed.push(s.dream_target);
+            s.final_killed.push(s.dream_target);
             changed = true;
-            s.playerStatus[s.dreamTarget].deathReason = "連帶死亡(被攝夢)";
+            s.player_status[s.dream_target].deathReason = "連帶死亡(被攝夢)";
         }
     });
 
-    // 2. 檢查 尋香魅影/許仙 綁定連帶死亡 (雙生結算)
-    const normalizedTargets = (s.phantomTargets || []).map(Number);
+    // -------------------------------------------------------
+    // 2. 尋香魅影/許仙尋香魅影 綁定殉情
+    // 規則：被綁定的兩人其中一方死亡 → 另一方跟著殉情
+    //   觸發後鍊子技能失效（phantomTargets 清空）
+    // -------------------------------------------------------
+    const normalizedTargets = (s.phantom_targets || []).map(Number);
     if (normalizedTargets.length === 2) {
         const [p1, p2] = normalizedTargets;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) {
-            s.chainKilled.push(p2);
-            s.finalKilled.push(p2);
-            s.phantomTargets = [];
-            s.playerStatus[p2].deathReason = "連帶死亡(尋香綁定)";
+        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) {
+            s.chain_killed.push(p2);
+            s.final_killed.push(p2);
+            s.phantom_targets = [];
+            s.player_status[p2].deathReason = "連帶死亡(尋香綁定)";
             changed = true;
             checkSnakeWin(p1, p2);
         }
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) {
-            s.chainKilled.push(p1);
-            s.finalKilled.push(p1);
-            s.phantomTargets = [];
-            s.playerStatus[p1].deathReason = "連帶死亡(尋香綁定)";
+        else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) {
+            s.chain_killed.push(p1);
+            s.final_killed.push(p1);
+            s.phantom_targets = [];
+            s.player_status[p1].deathReason = "連帶死亡(尋香綁定)";
             changed = true;
             checkSnakeWin(p1, p2);
         }
     }
 
-    // 3. 檢查 邱比特 情侶連帶死亡 (殉情)
-    if (s.cupidLovers.length === 2) {
-        let [p1, p2] = s.cupidLovers;
-        if (s.finalKilled.includes(p1) && !s.finalKilled.includes(p2)) {
-            s.chainKilled.push(p2); s.finalKilled.push(p2); s.cupidLovers = [];
-            s.playerStatus[p2].deathReason = "連帶死亡(情侶殉情)"; changed = true;
+    // -------------------------------------------------------
+    // 3. 邱比特情侶殉情
+    // 規則：情侶為生命共同體，一方死亡 → 另一方跟著殉情
+    //   因殉情而死的狼王/獵人不能發動開槍技能
+    // -------------------------------------------------------
+    if (s.cupid_lovers.length === 2) {
+        let [p1, p2] = s.cupid_lovers;
+        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) {
+            s.chain_killed.push(p2); s.final_killed.push(p2); s.cupid_lovers = [];
+            s.player_status[p2].deathReason = "連帶死亡(情侶殉情)"; changed = true;
         }
-        else if (s.finalKilled.includes(p2) && !s.finalKilled.includes(p1)) {
-            s.chainKilled.push(p1); s.finalKilled.push(p1); s.cupidLovers = [];
-            s.playerStatus[p1].deathReason = "連帶死亡(情侶殉情)"; changed = true;
-        }
-    }
-
-    // 4. 檢查 鬼魅新娘 夫妻連帶死亡
-    if (s.ghostBrideGroom && s.ghostBrideWitness) {
-        let gSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_bride'));
-        if (s.finalKilled.includes(gSeat) && !s.finalKilled.includes(s.ghostBrideGroom)) {
-            s.chainKilled.push(s.ghostBrideGroom); s.finalKilled.push(s.ghostBrideGroom);
-            s.playerStatus[s.ghostBrideGroom].deathReason = "連帶死亡(新郎殉情)"; changed = true;
-        }
-        else if (s.finalKilled.includes(s.ghostBrideGroom) && !s.finalKilled.includes(gSeat)) {
-            s.chainKilled.push(gSeat); s.finalKilled.push(gSeat);
-            s.playerStatus[gSeat].deathReason = "連帶死亡(新郎死亡)"; changed = true;
+        else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) {
+            s.chain_killed.push(p1); s.final_killed.push(p1); s.cupid_lovers = [];
+            s.player_status[p1].deathReason = "連帶死亡(情侶殉情)"; changed = true;
         }
     }
 
-    // 5. 檢查 覺醒攝夢人 (夢語者) 連帶死亡
-    let adSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_dreamwalker');
-    if (adSeat && s.finalKilled.includes(parseInt(adSeat)) && s.awakenDreamwalkerTarget && !s.finalKilled.includes(s.awakenDreamwalkerTarget)) {
-        s.chainKilled.push(s.awakenDreamwalkerTarget);
-        s.finalKilled.push(s.awakenDreamwalkerTarget);
-        s.playerStatus[s.awakenDreamwalkerTarget].deathReason = "連帶死亡(夢語者)";
+    // -------------------------------------------------------
+    // 4. 鬼魅新娘夫妻連帶死亡
+    // 規則：新娘與新郎為生命共同體，一方死亡 → 另一方殉情
+    // -------------------------------------------------------
+    if (s.ghost_bride_groom && s.ghost_bride_witness) {
+        let gSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride'));
+        if (s.final_killed.includes(gSeat) && !s.final_killed.includes(s.ghost_bride_groom)) {
+            s.chain_killed.push(s.ghost_bride_groom); s.final_killed.push(s.ghost_bride_groom);
+            s.player_status[s.ghost_bride_groom].deathReason = "連帶死亡(新郎殉情)"; changed = true;
+        }
+        else if (s.final_killed.includes(s.ghost_bride_groom) && !s.final_killed.includes(gSeat)) {
+            s.chain_killed.push(gSeat); s.final_killed.push(gSeat);
+            s.player_status[gSeat].deathReason = "連帶死亡(新郎死亡)"; changed = true;
+        }
+    }
+
+    // -------------------------------------------------------
+    // 5. 覺醒攝夢人（夢語者）連帶死亡
+    // 規則：覺醒攝夢人在夜晚出局 → 夢語者一併出局（不能發動技能）
+    // -------------------------------------------------------
+    let adSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_dreamwalker');
+    if (adSeat && s.final_killed.includes(parseInt(adSeat)) && s.awk_dreamwalker_target && !s.final_killed.includes(s.awk_dreamwalker_target)) {
+        s.chain_killed.push(s.awk_dreamwalker_target);
+        s.final_killed.push(s.awk_dreamwalker_target);
+        s.player_status[s.awk_dreamwalker_target].deathReason = "連帶死亡(夢語者)";
         changed = true;
     }
 
+    // -------------------------------------------------------
+    // 6. 名媛殉情
+    // 規則：名媛死亡 → 被寵幸者跟著殉情（戰狼除外）
+    // -------------------------------------------------------
+    let celebSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
+    if (celebSeat && s.final_killed.includes(parseInt(celebSeat)) && s.celebrity_target && !s.final_killed.includes(s.celebrity_target)) {
+        if (s.player_roles[s.celebrity_target] !== 'war_wolf') {
+            s.chain_killed.push(s.celebrity_target);
+            s.final_killed.push(s.celebrity_target);
+            s.player_status[s.celebrity_target].deathReason = "連帶死亡(名媛殉情)";
+            changed = true;
+        }
+    }
+
+    // -------------------------------------------------------
+    // 7. 梅杜莎連帶死亡
+    // 規則：梅杜莎以非自爆方式出局 → 被石化的玩家跟隨出局
+    // -------------------------------------------------------
+    let medusaSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'medusa');
+    if (medusaSeat && s.final_killed.includes(parseInt(medusaSeat)) && s.medusa_target && !s.final_killed.includes(s.medusa_target)) {
+        s.chain_killed.push(s.medusa_target);
+        s.final_killed.push(s.medusa_target);
+        s.player_status[s.medusa_target].deathReason = "連帶死亡(梅杜莎石化)";
+        changed = true;
+    }
+
+    // 若有新增死亡則遞迴再次檢查（可能觸發新的連帶鏈）
     if (changed) handleChainDeaths();
 }
 
@@ -245,33 +556,33 @@ export function handleChainDeaths() {
  * 渲染與計算天亮後的白天資訊 (包含熊咆哮、特殊免死、死亡名單、開槍佇列)
  */
 export function proceedDayResultRender() {
-    if (s.crowTarget) document.getElementById('btn-show-crow').classList.remove('hidden');
+    if (s.crow_target) document.getElementById('btn-show-crow').classList.remove('hidden');
 
     let bearRoarText = "";
-    let bearSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'bear');
-    let mwSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'machine_wolf');
+    let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear');
+    let mwSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'machine_wolf');
 
     const isSeatWolfForBear = (seatId) => {
-        if (!seatId || s.finalKilled.includes(seatId)) return false;
-        let role = s.playerRoles[seatId];
-        if (role === 'machine_wolf' && s.machineWolfTarget) {
-            let learnedRole = s.playerRoles[s.machineWolfTarget];
-            if (!evilRoles.includes(learnedRole)) return false;
+        if (!seatId || s.final_killed.includes(seatId)) return false;
+        let role = s.player_roles[seatId];
+        if (role === 'machine_wolf' && s.machine_wolf_target) {
+            let learnedRole = s.player_roles[s.machine_wolf_target];
+            if (!evil_roles.includes(learnedRole)) return false;
         }
-        return evilRoles.includes(role);
+        return evil_roles.includes(role);
     };
 
     const getAdjacent = (seat) => {
         let left = seat - 1;
         while (left !== seat) {
-            if (left < 1) left = s.totalPlayers;
-            if (!s.finalKilled.includes(left)) break;
+            if (left < 1) left = s.total_players;
+            if (!s.final_killed.includes(left)) break;
             left--;
         }
         let right = seat + 1;
         while (right !== seat) {
-            if (right > s.totalPlayers) right = 1;
-            if (!s.finalKilled.includes(right)) break;
+            if (right > s.total_players) right = 1;
+            if (!s.final_killed.includes(right)) break;
             right++;
         }
         return { left, right };
@@ -279,179 +590,189 @@ export function proceedDayResultRender() {
 
     let bearDidRoar = false;
 
-    if (bearSeat && !s.finalKilled.includes(parseInt(bearSeat))) {
-        if (s.seedWolfTarget !== parseInt(bearSeat)) {
+    if (bearSeat && !s.final_killed.includes(parseInt(bearSeat))) {
+        if (s.seed_wolf_target !== parseInt(bearSeat)) {
             let { left, right } = getAdjacent(parseInt(bearSeat));
             let hasWolf = isSeatWolfForBear(left) || isSeatWolfForBear(right);
 
-            if (s.playerStatus[bearSeat]?.isVWK) {
-                if (s.vwkCharmTarget) hasWolf = isSeatWolfForBear(s.vwkCharmTarget);
+            if (s.player_status[bearSeat]?.isVWK) {
+                if (s.vwk_charm_target) hasWolf = isSeatWolfForBear(s.vwk_charm_target);
                 hasWolf = !hasWolf;
             }
             if (hasWolf) bearDidRoar = true;
         }
     }
 
-    if (mwSeat && !s.finalKilled.includes(parseInt(mwSeat)) && s.machineWolfTarget && s.playerRoles[s.machineWolfTarget] === 'bear') {
+    if (mwSeat && !s.final_killed.includes(parseInt(mwSeat)) && s.machine_wolf_target && s.player_roles[s.machine_wolf_target] === 'bear') {
         let { left, right } = getAdjacent(parseInt(mwSeat));
         if (isSeatWolfForBear(left) || isSeatWolfForBear(right)) bearDidRoar = true;
     }
 
-    if (bearSeat || (mwSeat && s.machineWolfTarget && s.playerRoles[s.machineWolfTarget] === 'bear')) {
+    if (bearSeat || (mwSeat && s.machine_wolf_target && s.player_roles[s.machine_wolf_target] === 'bear')) {
         bearRoarText = bearDidRoar ? "🐻 熊咆哮了！<br><br>" : "🐻 熊沒有咆哮。<br><br>";
     }
 
+    // 月靈狼嗥叫判定（類似熊，判斷兩側是否有神職）
+    let moonWolfSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'moon_wolf');
+    if (moonWolfSeat && !s.final_killed.includes(parseInt(moonWolfSeat))) {
+        let { left, right } = getAdjacent(parseInt(moonWolfSeat));
+        // 神職列表（好人有技能的角色）
+        const godRoles = ['seer','witch','hunter','guard','dreamwalker','awaken_dreamwalker','awaken_idiot','crow','knight','demon_hunter','magician','alchemist','psychic','pure_white','awaken_seer','awaken_witch','awaken_hunter','bear','pufferfish','white_cat','celebrity','penguin','charmer'];
+        let hasGod = godRoles.includes(s.player_roles[left]) || godRoles.includes(s.player_roles[right]);
+        bearRoarText += hasGod ? "🐺🌙 月靈狼嗥叫了！<br><br>" : "🐺🌙 月靈狼沒有嗥叫。<br><br>";
+    }
+
     let extraText = "";
-    if (s.whiteCatFlippedLastNight) {
-        let wcSeat = Object.keys(s.playerRoles).find(k => k === 'white_cat');
+    if (s.did_white_cat_flip_last_night) {
+        let wcSeat = Object.keys(s.player_roles).find(k => k === 'white_cat');
         extraText += `<span style="color:#00ff88;">🐱 ${wcSeat} 號玩家是白貓，發動技能免死一次！</span><br><br>`;
     }
-    if (s.pufferfishTriggered) {
-        let pfSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'pufferfish');
-        let hasWolfBeauty = Object.values(s.playerRoles).includes('wolf_beauty') || Object.values(s.playerRoles).includes('awaken_wolf_beauty');
+    if (s.is_pufferfish_triggered) {
+        let pfSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'pufferfish');
+        let hasWolfBeauty = Object.values(s.player_roles).includes('wolf_beauty') || Object.values(s.player_roles).includes('awaken_wolf_beauty');
         if (hasWolfBeauty) {
             extraText += `<span style="color:#fca311;">🐡 ${pfSeat} 號 (河豚) 死亡！狼美人技能今日失效！</span><br><br>`;
         } else {
             extraText += `<span style="color:#fca311;">🐡 ${pfSeat} 號 (河豚) 死亡！</span><br><br>`;
         }
-        s.beautyTarget = null;
+        s.beauty_target = null;
     }
-    let hvSeat = Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'high_villager');
-    if (hvSeat && s.seedWolfTarget !== parseInt(hvSeat)) {
+    let hvSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'high_villager');
+    if (hvSeat && s.seed_wolf_target !== parseInt(hvSeat)) {
         extraText += `<span style="color:#fca311;">👑 高級平民是 ${hvSeat} 號玩家！</span><br><br>`;
     }
 
     let htmlOutput = bearRoarText + extraText;
 
-    if (s.finalKilled.length === 0) {
+    if (s.final_killed.length === 0) {
         htmlOutput += "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>";
     } else {
-        s.finalKilled.sort((a, b) => a - b);
-        htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.finalKilled.join(' 號、')} 號</span>`;
+        s.final_killed.sort((a, b) => a - b);
+        htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${s.final_killed.join(' 號、')} 號</span>`;
 
-        if (s.snakeWin) {
+        if (s.is_snake_win) {
             htmlOutput += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
         }
 
         // 5. 建立夜晚死者的白天技能/開槍佇列
-        s.dayShootersQueue = [];
-        s.finalKilled.forEach(seat => {
-            let role = s.playerRoles[seat];
-            if (s.primaryKilled.includes(seat)) {
-                let isStolen = (s.grayWolfStolenPlayer === seat && s.grayWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+        s.day_shooters_queue = [];
+        s.final_killed.forEach(seat => {
+            let role = s.player_roles[seat];
+            if (s.primary_killed.includes(seat)) {
+                let isStolen = (s.gray_wolf_stolen_player === seat && s.gray_wolf_stolen_player !== s.pleasant_goat_anti_theft);
 
-                if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK)) {
-                    if (s.nightmareTarget !== seat && !isStolen) s.dayShootersQueue.push({ seat, role });
-                } else if (['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
-                    if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat && !(role === 'hunter' && isStolen)) {
-                        s.dayShootersQueue.push({ seat, role });
-                        if (role === 'awaken_wolf_king' && s.awakenWolfGunTarget === null) s.dayShootersQueue.push({ seat, role });
+                if (role === 'awaken_hunter' || (role === 'hunter' && s.player_status[seat].isVWK)) {
+                    if (s.nightmare_target !== seat && !isStolen) s.day_shooters_queue.push({ seat, role });
+                } else if (['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awk_wolf_gun_target === seat || s.evil_merchant_gun_target === seat) {
+                    if (s.witch_poison_target !== seat && s.nightmare_target !== seat && !(role === 'hunter' && isStolen)) {
+                        s.day_shooters_queue.push({ seat, role });
+                        if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role });
                     }
                 }
 
                 // 灰太狼若偷到獵槍且未被毒殺/恐懼，也能開槍
-                if (role === 'gray_wolf' && s.grayWolfStolenSkill === 'hunter') {
-                    if (s.witchPoisonTarget !== seat && s.nightmareTarget !== seat) {
-                        s.dayShootersQueue.push({ seat, role: 'hunter' });
+                if (role === 'gray_wolf' && s.gray_wolf_stolen_skill === 'hunter') {
+                    if (s.witch_poison_target !== seat && s.nightmare_target !== seat) {
+                        s.day_shooters_queue.push({ seat, role: 'hunter' });
                     }
                 }
             }
         });
     }
 
-    if (s.speechOrderText) {
-        htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speechOrderText}</span>`;
+    if (s.speech_order_text) {
+        htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
     }
 
     document.getElementById('day-result').innerHTML = htmlOutput;
 
-    if (s.dayShootersQueue.length > 0) processNextShooter();
-    else triggerVoteSection();
+    if (s.day_shooters_queue.length > 0) processNextShooter();
+    else triggerTricksterVoteSection();
 }
 
 /**
  * 處理玩家在白天期間的死亡 (如因開槍擊殺、投票放逐或因連帶關係暴斃)
  */
 export function killPlayerDuringDay(seat, isShot = false, canShoot = true) {
-    if (s.finalKilled.includes(seat)) return;
-    let role = s.playerRoles[seat];
+    if (s.final_killed.includes(seat)) return;
+    let role = s.player_roles[seat];
 
     // 特殊防禦機制
-    if (isShot && role === 'old_hooligan') { s.playerStatus[seat].injured = true; return; }
+    if (isShot && role === 'old_hooligan') { s.player_status[seat].injured = true; return; }
     if (isShot && role === 'ghost_rider') return;
-    if (role === 'white_cat' && !s.playerStatus[seat].isWhiteCatFlipped) { s.playerStatus[seat].isWhiteCatFlipped = true; return; }
+    if (role === 'white_cat' && !s.player_status[seat].isWhiteCatFlipped) { s.player_status[seat].isWhiteCatFlipped = true; return; }
 
-    if (role === 'awaken_wolf_beauty' && s.awakenBeautyTarget && !s.finalKilled.includes(s.awakenBeautyTarget)) {
-        let subTarget = s.awakenBeautyTarget; s.awakenBeautyTarget = null;
+    if (role === 'awaken_wolf_beauty' && s.awk_beauty_target && !s.final_killed.includes(s.awk_beauty_target)) {
+        let subTarget = s.awk_beauty_target; s.awk_beauty_target = null;
         killPlayerDuringDay(subTarget, false, false);
         return;
     }
 
-    s.finalKilled.push(seat);
-    s.playerStatus[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡";
+    s.final_killed.push(seat);
+    s.player_status[seat].deathReason = isShot ? "被開槍帶走" : "連帶死亡";
 
     if (canShoot) {
-        let isStolen = (s.grayWolfStolenPlayer === seat && s.grayWolfStolenPlayer !== s.pleasantGoatAntiTheft);
+        let isStolen = (s.gray_wolf_stolen_player === seat && s.gray_wolf_stolen_player !== s.pleasant_goat_anti_theft);
 
-        if (role === 'awaken_hunter' || (role === 'hunter' && s.playerStatus[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awakenWolfGunTarget === seat) {
+        if (role === 'awaken_hunter' || (role === 'hunter' && s.player_status[seat].isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awk_wolf_gun_target === seat || s.evil_merchant_gun_target === seat) {
             if (!(role === 'hunter' && isStolen)) {
-                s.dayShootersQueue.push({ seat, role });
-                if (role === 'awaken_wolf_king' && s.awakenWolfGunTarget === null) s.dayShootersQueue.push({ seat, role });
+                s.day_shooters_queue.push({ seat, role });
+                if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role });
             }
         }
 
-        if (role === 'gray_wolf' && s.grayWolfStolenSkill === 'hunter') {
-            s.dayShootersQueue.push({ seat, role: 'hunter' });
+        if (role === 'gray_wolf' && s.gray_wolf_stolen_skill === 'hunter') {
+            s.day_shooters_queue.push({ seat, role: 'hunter' });
         }
     }
 
-    let vwkBeautySeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'bear') ? s.vwkSeat : null;
-    if ((role === 'wolf_beauty' || seat === vwkBeautySeat) && s.beautyTarget && s.playerRoles[s.beautyTarget] !== 'old_hooligan' && !s.finalKilled.includes(s.beautyTarget) && !s.pufferfishTriggered) {
-        killPlayerDuringDay(s.beautyTarget, false, false);
+    let vwkBeautySeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'bear') ? s.vwk_seat : null;
+    if ((role === 'wolf_beauty' || seat === vwkBeautySeat) && s.beauty_target && s.player_roles[s.beauty_target] !== 'old_hooligan' && !s.final_killed.includes(s.beauty_target) && !s.is_pufferfish_triggered) {
+        killPlayerDuringDay(s.beauty_target, false, false);
     }
-    let vwkDreamSeat = (s.vwkSeat && s.playerRoles[s.vwkSeat] === 'dreamwalker') ? s.vwkSeat : null;
-    if ((role === 'dreamwalker' || seat === vwkDreamSeat) && s.dreamTarget && !s.finalKilled.includes(s.dreamTarget)) {
-        killPlayerDuringDay(s.dreamTarget, false, false);
+    let vwkDreamSeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'dreamwalker') ? s.vwk_seat : null;
+    if ((role === 'dreamwalker' || seat === vwkDreamSeat) && s.dream_target && !s.final_killed.includes(s.dream_target)) {
+        killPlayerDuringDay(s.dream_target, false, false);
     }
-    if ((s.phantomTargets || []).map(Number).length === 2) {
-        const normalizedTargets = (s.phantomTargets || []).map(Number);
+    if ((s.phantom_targets || []).map(Number).length === 2) {
+        const normalizedTargets = (s.phantom_targets || []).map(Number);
         const currentSeat = Number(seat);
 
         if (normalizedTargets.includes(currentSeat)) {
             const [t1, t2] = normalizedTargets;
             const other = t1 === currentSeat ? t2 : t1;
 
-            if (!s.finalKilled.includes(other)) {
-                s.phantomTargets = [];
+            if (!s.final_killed.includes(other)) {
+                s.phantom_targets = [];
                 killPlayerDuringDay(other, false, false);
                 checkSnakeWin(currentSeat, other);
             }
         }
     }
-    if (s.cupidLovers.includes(seat)) {
-        let other = s.cupidLovers[0] === seat ? s.cupidLovers[1] : s.cupidLovers[0];
-        if (!s.finalKilled.includes(other)) { s.cupidLovers = []; killPlayerDuringDay(other, false, false); }
+    if (s.cupid_lovers.includes(seat)) {
+        let other = s.cupid_lovers[0] === seat ? s.cupid_lovers[1] : s.cupid_lovers[0];
+        if (!s.final_killed.includes(other)) { s.cupid_lovers = []; killPlayerDuringDay(other, false, false); }
     }
-    if (s.ghostBrideGroom && s.ghostBrideWitness) {
-        let gSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'ghost_bride'));
-        if (seat === gSeat && !s.finalKilled.includes(s.ghostBrideGroom)) killPlayerDuringDay(s.ghostBrideGroom, false, false);
-        else if (seat === s.ghostBrideGroom && !s.finalKilled.includes(gSeat)) killPlayerDuringDay(gSeat, false, false);
+    if (s.ghost_bride_groom && s.ghost_bride_witness) {
+        let gSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride'));
+        if (seat === gSeat && !s.final_killed.includes(s.ghost_bride_groom)) killPlayerDuringDay(s.ghost_bride_groom, false, false);
+        else if (seat === s.ghost_bride_groom && !s.final_killed.includes(gSeat)) killPlayerDuringDay(gSeat, false, false);
     }
-    let adSeat = parseInt(Object.keys(s.playerRoles).find(k => s.playerRoles[k] === 'awaken_dreamwalker'));
-    if (seat === adSeat && s.awakenDreamwalkerTarget && !s.finalKilled.includes(s.awakenDreamwalkerTarget)) {
-        killPlayerDuringDay(s.awakenDreamwalkerTarget, false, false);
+    let adSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_dreamwalker'));
+    if (seat === adSeat && s.awk_dreamwalker_target && !s.final_killed.includes(s.awk_dreamwalker_target)) {
+        killPlayerDuringDay(s.awk_dreamwalker_target, false, false);
     }
 }
 
 export function processNextShooter() {
-    if (s.dayShootersQueue.length === 0) {
+    if (s.day_shooters_queue.length === 0) {
         document.getElementById('day-skill-section').classList.add('hidden');
-        triggerVoteSection();
+        triggerTricksterVoteSection();
         return;
     }
 
     document.getElementById('btn-reset').classList.add('hidden');
-    const currentShooter = s.dayShootersQueue[0];
+    const currentShooter = s.day_shooters_queue[0];
     const section = document.getElementById('day-skill-section');
     section.classList.remove('hidden');
     document.getElementById('day-skill-notice').textContent = `🎯 【 ${currentShooter.seat} 號 】玩家，請問是否發動技能？`;
@@ -460,13 +781,13 @@ export function processNextShooter() {
     pad.innerHTML = '';
 
     const finishShooterTurn = () => {
-        s.finalKilled.sort((a, b) => a - b);
-        let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.finalKilled.join(' 號、')} 號</span>` + (s.speechOrderText ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speechOrderText}</span>` : "");
-        if (s.snakeWin) {
+        s.final_killed.sort((a, b) => a - b);
+        let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${s.final_killed.join(' 號、')} 號</span>` + (s.speech_order_text ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speech_order_text}</span>` : "");
+        if (s.is_snake_win) {
             dayResultStr += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
         }
         document.getElementById('day-result').innerHTML = dayResultStr;
-        s.dayShootersQueue.shift();
+        s.day_shooters_queue.shift();
         processNextShooter();
     };
 
@@ -483,10 +804,10 @@ export function processNextShooter() {
     }
 
     let selectedDayTarget = null;
-    for (let i = 1; i <= s.totalPlayers; i++) {
+    for (let i = 1; i <= s.total_players; i++) {
         const btn = document.createElement('button');
         btn.classList.add('num-btn'); btn.textContent = i;
-        if (s.finalKilled.includes(i)) {
+        if (s.final_killed.includes(i)) {
             btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed';
         } else {
             btn.onclick = () => {
@@ -504,44 +825,4 @@ export function processNextShooter() {
         killPlayerDuringDay(selectedDayTarget, true);
         finishShooterTurn();
     };
-}
-
-export function triggerTricksterVoteSection() {
-    const dayResultContent = document.getElementById('day-result-content');
-    const btnReset = document.getElementById('btn-reset');
-
-    if (Object.values(s.playerRoles).includes('trickster') && document.getElementById('trickster-calc') === null) {
-        let tricksterDiv = document.createElement('div'); tricksterDiv.id = 'trickster-calc';
-        tricksterDiv.style = "background:#24345e; padding:15px; border-radius:8px; margin-bottom:20px;";
-        tricksterDiv.innerHTML = `
-            <h3 style="color:#fca311; margin-top:0;">🃏 詭術師換票結算</h3>
-            <p style="color:#a2a8d3;">請輸入實際得票最高的玩家編號：</p>
-            <div id="trickster-numpad" class="grid-container"></div>
-            <div id="trickster-result" class="hidden" style="margin-top:15px; font-size:24px; font-weight:bold; color:#00ff88;"></div>
-        `;
-        dayResultContent.insertBefore(tricksterDiv, btnReset);
-
-        let tPad = document.getElementById('trickster-numpad');
-        for (let i = 1; i <= s.totalPlayers; i++) {
-            if (s.finalKilled.includes(i)) continue;
-            let b = document.createElement('button'); b.className = 'num-btn'; b.textContent = i;
-            b.onclick = () => {
-                let magSwap = [...s.magicianSwap].sort().join(',');
-                let triSwap = [...s.tricksterSwap].sort().join(',');
-                let effectiveTrickster = s.tricksterSwap;
-
-                if (s.magicianSwap.length && s.tricksterSwap.length && magSwap === triSwap) effectiveTrickster = [];
-
-                let exiled = i;
-                if (effectiveTrickster.includes(i)) exiled = effectiveTrickster[0] === i ? effectiveTrickster[1] : effectiveTrickster[0];
-
-                document.getElementById('trickster-result').textContent = `實際被放逐出局的是：【 ${exiled} 號 】`;
-                document.getElementById('trickster-result').classList.remove('hidden');
-                document.querySelectorAll('#trickster-numpad .num-btn').forEach(btn => btn.classList.remove('selected'));
-                b.classList.add('selected');
-            };
-            tPad.appendChild(b);
-        }
-    }
-    btnReset.classList.remove('hidden');
 }
