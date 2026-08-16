@@ -571,7 +571,9 @@ roleHandlers['light_count'] = (ctx) => {
 // --- 蝕日侍女 ---
 roleHandlers['eclipse_maid'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🌑 蝕日侍女行動";
-    ctx.nightInstruction.innerHTML = "請選擇你要吞噬技能的對象（非狼人）：";
+    let wolves = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]) && k !== ctx.actorSeat);
+    let wolf_text = wolves.length > 0 ? `<span style="color:#e94560;">你的狼隊友為：${wolves.join(', ')} 號</span><br><br>` : "";
+    ctx.nightInstruction.innerHTML = wolf_text + "請選擇你要吞噬技能的對象（非狼人）：";
     ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
 };
 
@@ -642,7 +644,7 @@ roleHandlers['wolf_sorcerer'] = (ctx) => {
 };
 
 // --- 狐狸（三人查驗）---
-roleHandlers['fox'] = (ctx) => {
+roleHandlers['real_fox'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🦊 狐狸行動";
     ctx.nightInstruction.innerHTML = "請選擇要查驗的中間玩家（將查驗該玩家及兩側）：";
     ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
@@ -735,7 +737,7 @@ roleHandlers['medium'] = (ctx) => {
     ctx.btnConfirmAction.textContent = "確認並閉眼";
 };
 
-roleHandlers['white_night'] = (ctx) => {
+roleHandlers['light_messenger'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🌅 白夜使者確認";
     ctx.nightInstruction.innerHTML = "確認白夜使者身分（白天可發動時光倒流）";
     ctx.numberPad.classList.add('hidden');
@@ -976,7 +978,8 @@ roleHandlers['night_noble'] = (ctx) => {
 // --- 隱狼（第一晚看狼隊友）---
 roleHandlers['hidden_wolf'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "👁️🐺 隱狼確認";
-    ctx.nightInstruction.innerHTML = "確認你的狼隊友位置";
+    let wolves = Object.keys(s.player_roles).filter(k => evil_roles.includes(s.player_roles[k]) && k !== ctx.actorSeat);
+    ctx.nightInstruction.innerHTML = `確認你的狼隊友位置：<br><br><span style="color:#e94560; font-size:24px; font-weight:bold;">${wolves.length > 0 ? wolves.join(', ') + ' 號' : '無'}</span>`;
     ctx.numberPad.classList.add('hidden');
     ctx.btnConfirmAction.classList.remove('hidden');
     ctx.btnConfirmAction.textContent = "確認並閉眼";
@@ -994,14 +997,24 @@ roleHandlers['revenger'] = (ctx) => {
     nightRoleTitle.textContent = "🔥 復仇者確認";
     numberPad.classList.add('hidden');
 
-    // 判斷復仇者陣營：與影子主人對立
     let shadow_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'shadow');
     let shadow_master = s.shadow_master_target;
-    let master_role = shadow_master ? s.player_roles[shadow_master] : null;
-    let master_is_wolf = master_role ? wolf_faction.includes(master_role) : false;
-    // 若影子主人是狼人 → 復仇者幫好人；反之幫狼人
-    let revenger_side = master_is_wolf ? '好人' : '狼人';
-    let color = master_is_wolf ? '#00ff88' : '#e94560';
+    let revenger_seat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'revenger'));
+    
+    let revenger_side = "";
+    let color = "";
+
+    // 影子若選到復仇者，兩人連為情侶鏈，成為第三方
+    if (shadow_master && shadow_master === revenger_seat) {
+        revenger_side = '第三方';
+        color = '#ff00ff';
+    } else {
+        let master_role = shadow_master ? s.player_roles[shadow_master] : null;
+        let master_is_wolf = master_role ? wolf_faction.includes(master_role) : false;
+        // 若影子主人是狼人 → 復仇者幫好人；反之幫狼人
+        revenger_side = master_is_wolf ? '好人' : '狼人';
+        color = master_is_wolf ? '#00ff88' : '#e94560';
+    }
 
     nightInstruction.innerHTML = `你的陣營為：<br><span style="color:${color}; font-size:32px; font-weight:bold;">${revenger_side}陣營</span><br><br><small>死亡後可刺殺一名玩家，若與你陣營對立則倒牌。</small>`;
     btnConfirmAction.classList.remove('hidden');

@@ -89,6 +89,10 @@ export function resolveInspectionResult() {
             } else {
                 let is_evil = evil_roles.includes(target_role) || s.player_status[actual_target]?.isVWK;
                 if (['snow_wolf', 'hidden_wolf', 'wolf_brother_little'].includes(target_role)) is_evil = false;
+                
+                // 規則：傀儡查驗為查殺
+                if (actual_target === s.puppet_target) is_evil = true;
+                
                 // 規則：南瓜鬼在石像鬼死前被查驗皆為金水（第一夜石像鬼必定存活）
                 if (target_role === 'pumpkin') {
                     let gargoyleSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle');
@@ -100,7 +104,11 @@ export function resolveInspectionResult() {
                     let learned_role = s.player_roles[s.machine_wolf_target];
                     if (!evil_roles.includes(learned_role)) is_evil = false;
                 }
+                // 規則：燈影預言家，查驗結果相反
                 if (s.current_board.id === '12_shadow' && parseInt(actor_seat) === s.shadow_seer_seat) is_evil = !is_evil;
+                // 規則：預言家是傀儡，查驗結果相反
+                if (parseInt(actor_seat) === s.puppet_target) is_evil = !is_evil;
+                
                 if (is_evil) { text = "🐺 狼人 (壞人)"; color = "#e94560"; }
                 else { text = "🧑‍🌾 好人"; color = "#00ff88"; }
             }
@@ -112,7 +120,7 @@ export function resolveInspectionResult() {
         } else if (s.current_stage === 'demon') {
             // 惡魔查驗：顯示目標是「神牌」還是「民牌」
             let target_role = s.player_roles[actual_target];
-            let civilian_roles = ['villager', 'alpaca', 'old_hooligan', 'high_villager', 'very_good', 'rabbit', 'twin'];
+            let civilian_roles = ['villager', 'alpaca', 'old_hooligan', 'high_villager', 'very_good', 'rabbit', 'twins'];
             let is_god = !civilian_roles.includes(target_role) && !evil_roles.includes(target_role) && !wolf_faction.includes(target_role);
             text = is_god ? "⚡ 神牌" : "🧑‍🌾 民牌";
             color = is_god ? "#fca311" : "#00ff88";

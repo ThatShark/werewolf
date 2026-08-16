@@ -44,7 +44,7 @@ export function createNumberPad() {
         // ==========================================
         if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
             // 大狼不可自刀
-            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty'].includes(s.player_roles[i])) is_disabled = true;
+            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty', 'war_wolf', 'demon', 'medusa', 'evil_merchant', 'phantom_king'].includes(s.player_roles[i])) is_disabled = true;
             // 占卜師標記限制（規則：狼隊和大灰狼都受限）
             if (s.diviner_mark) {
                 let dm = parseInt(s.diviner_mark);
@@ -65,7 +65,8 @@ export function createNumberPad() {
             const cannot_select_self = [
                 'witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'fool_seer', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow',
                 'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal',
-                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer', 'jack_ripper'
+                'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer', 'jack_ripper',
+                'war_wolf', 'demon', 'medusa', 'evil_merchant', 'phantom_king', 'penguin', 'celebrity', 'light_count', 'super_grave_keeper', 'troublemaker'
             ];
             if (cannot_select_self.includes(s.current_stage)) is_disabled = true;
         }

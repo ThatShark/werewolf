@@ -160,13 +160,13 @@ export const s = {
 // 狼人陣營與邪惡陣營定義
 export const wolf_faction = [
     'wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon', 'snow_wolf',
-    'wolf_brother', 'awaken_wolf_king', 'wolf_witch',
+    'wolf_brother', 'awaken_wolf_king', 'wolf_witch', 'nightmare', 
     'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer',
     'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B',
     'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf', 'war_wolf',
     'moon_wolf', 'assassin', 'warden', 'phantom_king', 'medusa', 'black_bat', 'pumpkin', 'evil_merchant', 'demon', 'dark_messenger'
 ];
-export const evil_roles = [...wolf_faction, 'nightmare', 'hidden_wolf', 'gargoyle', 'machine_wolf',
+export const evil_roles = [...wolf_faction, 'hidden_wolf', 'gargoyle', 'machine_wolf',
     'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant',
     'snake_phantom', 'snake_seer', 'troublemaker', 'anubis', 'super_black_market', 'wolf_brother_little'
 ];
