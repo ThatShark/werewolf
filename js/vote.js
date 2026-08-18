@@ -1,13 +1,6 @@
-import { s } from './core.js';
+// js/vote.js
+import { s, getNightTargets } from './core.js';
 
-// ==========================================
-// 白天投票相關邏輯（詭術師換票結算等）
-// ==========================================
-
-/**
- * 顯示詭術師換票結算面板與重新開始按鈕
- * 在開槍佇列處理完畢後呼叫
- */
 export function triggerTricksterVoteSection() {
     const day_result_content = document.getElementById('day-result-content');
     const btn_reset = document.getElementById('btn-reset');
@@ -28,11 +21,11 @@ export function triggerTricksterVoteSection() {
             if (s.final_killed.includes(i)) continue;
             let b = document.createElement('button'); b.className = 'num-btn'; b.textContent = i;
             b.onclick = () => {
-                let mag_swap = [...s.magician_swap].sort().join(',');
-                let tri_swap = [...s.trickster_swap].sort().join(',');
-                let effective_trickster = s.trickster_swap;
+                let mag_swap = getNightTargets('swap', 'magician').sort().join(',');
+                let tri_swap = getNightTargets('swap', 'trickster').sort().join(',');
+                let effective_trickster = getNightTargets('swap', 'trickster');
 
-                if (s.magician_swap.length && s.trickster_swap.length && mag_swap === tri_swap) effective_trickster = [];
+                if (mag_swap.length && tri_swap.length && mag_swap === tri_swap) effective_trickster = [];
 
                 let exiled = i;
                 if (effective_trickster.includes(i)) exiled = effective_trickster[0] === i ? effective_trickster[1] : effective_trickster[0];
