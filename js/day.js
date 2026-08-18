@@ -1,4 +1,4 @@
-import { s, wolf_faction, evil_roles, findNearestWolf } from './core.js';
+import { s, wolf_faction, wolf_team_roles, evil_roles, findNearestWolf } from './core.js';
 import { triggerTricksterVoteSection } from './vote.js';
 
 // 判斷是否觸發千年之戀雙死獲勝條件
@@ -57,7 +57,7 @@ export function calculateNightDeaths() {
             s.witch_poison_target = tSeat;
         }
         // 若被耍寶的是狼人 → wolfKillTarget 改為該狼自己
-        if (wolf_faction.includes(s.player_roles[tSeat]) && s.wolf_kill_target) {
+        if (wolf_team_roles.includes(s.player_roles[tSeat]) && s.wolf_kill_target) {
             s.wolf_kill_target = tSeat;
         }
     }
@@ -92,13 +92,13 @@ export function calculateNightDeaths() {
     // 規則（企鵝）：被冰凍的狼人 → 全隊無法刀人
     // 規則（名媛）：被寵幸且被刀的玩家，若名媛存活 → 狼刀無效（空刀）
     // -------------------------------------------------------
-    let isWolfFeared = s.nightmare_target && wolf_faction.includes(s.player_roles[s.nightmare_target]);
+    let isWolfFeared = s.nightmare_target && wolf_team_roles.includes(s.player_roles[s.nightmare_target]);
     // 企鵝冰凍狼人 → 全隊無法刀人
-    let isWolfFrozen = s.penguin_target && wolf_faction.includes(s.player_roles[s.penguin_target]);
+    let isWolfFrozen = s.penguin_target && wolf_team_roles.includes(s.player_roles[s.penguin_target]);
     let actualWolfKill = (isWolfFeared || isWolfFrozen) ? null : s.wolf_kill_target;
 
     // 企鵝冰凍非狼人 → 被冰凍者技能失效（清除該人的技能效果）
-    if (s.penguin_target && !wolf_faction.includes(s.player_roles[s.penguin_target])) {
+    if (s.penguin_target && !wolf_team_roles.includes(s.player_roles[s.penguin_target])) {
         let frozenSeat = s.penguin_target;
         // 若被冰凍的是守衛 → 守護無效
         if (guardSeat && parseInt(guardSeat) === frozenSeat) s.guard_target = null;
@@ -146,8 +146,8 @@ export function calculateNightDeaths() {
         if (['witch', 'awaken_witch'].includes(sbRole)) { actualWitchPoison = null; }
         // 若睡美人是獵人 → 標記無法開槍（在白天開槍佇列中判斷）
         // 若睡美人是狼人 → 第一晚只有它自己睡，所以若此狼唯一存活則空刀
-        if (wolf_faction.includes(sbRole)) {
-            let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+        if (wolf_team_roles.includes(sbRole)) {
+            let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             let all_wolves_sleeping = alive_wolves.every(k => parseInt(k) === sb);
             if (all_wolves_sleeping) actualWolfKill = null;
         }
@@ -729,7 +729,7 @@ export function proceedDayResultRender() {
 
     let extraText = "";
     if (s.did_white_cat_flip_last_night) {
-        let wcSeat = Object.keys(s.player_roles).find(k => k === 'white_cat');
+        let wcSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'white_cat');
         extraText += `<span style="color:#00ff88;">🐱 ${wcSeat} 號玩家是白貓，發動技能免死一次！</span><br><br>`;
     }
     if (s.is_pufferfish_triggered) {

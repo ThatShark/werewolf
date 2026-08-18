@@ -1,4 +1,4 @@
-import { s, getStageVoiceName, getActualTarget, applyTimeWolfReflection, wolf_faction, evil_roles, speak, resetGameState, vibrate } from './core.js';
+import { s, getStageVoiceName, getActualTarget, applyTimeWolfReflection, wolf_faction, wolf_team_roles, evil_roles, speak, resetGameState, vibrate } from './core.js';
 import { resetSelections } from './night.js';
 import { calculateNightDeaths, proceedDayResultRender, handleChainDeaths } from './day.js';
 import { initSetupEvents } from './setup.js';
@@ -60,7 +60,12 @@ export function buildNightQueue() {
             case 900: stage = 'wolf_brother_meet'; break;
             case 2000: stage = 'gray_wolf_steal'; break;
             case 4400: stage = 'gray_wolf_action'; break;
-            case 2700: stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf'; break;
+            case 2700:
+                // 不入狼隊的角色（例如覺醒石像鬼與大灰狼）雖有相同 wakeOrder，
+                // 不能因此進入狼刀流程；只有真正狼隊成員在此階段行動。
+                if (!roles.some(role => wolf_team_roles.includes(role))) return;
+                stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf';
+                break;
             case 2800: stage = 'awaken_wolf_king_gun'; break;
             case 2900: stage = 'wolf_gun_confirm'; break;
             case 3600: stage = 'lucky_boy_action'; break;
@@ -303,17 +308,17 @@ export function runNextNightRole() {
 
     // 第一晚「確認身分」類角色 — 線上法官已知底牌，什麼都不用做的角色直接跳過
     const first_night_confirm_only = ['idiot', 'knight', 'bear', 'pufferfish', 'white_cat',
-        'rusty_knight', 'high_villager', 'grave_keeper', 'order_prince', 'detective', 'police_dog',
+        'rust_sword_knight', 'high_villager', 'grave_keeper', 'sequence_prince', 'detective', 'police_dog',
         'perseus', 'bar_fighter', 'masked_man', 'alien_prince', 'wolf_crow', 'day_scholar',
-        'night_mentor', 'medium', 'white_night', 'dancer', 'mask_wolf', 'wolf_servant',
+        'night_mentor', 'medium', 'light_messenger', 'dancer', 'mask_wolf', 'wolf_servant',
         'butler', 'curse_fox', 'night_noble', 'little_girl', 'nine_tail_fox', 'anubis',
         'demon_hunter', 'warden', 'light_count', 'fox'];
     if (first_night_confirm_only.includes(s.current_stage)) return runNextNightRole();
 
     // 大野狼額外刀限制：只有四狼全在場時才能用
     if (s.current_stage === 'big_bad_wolf') {
-        let total_wolves = Object.values(s.player_roles).filter(r => wolf_faction.includes(r)).length;
-        let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]) && s.player_status[k]?.alive !== false).length;
+        let total_wolves = Object.values(s.player_roles).filter(r => wolf_team_roles.includes(r)).length;
+        let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]) && s.player_status[k]?.alive !== false).length;
         if (alive_wolves < total_wolves) return runNextNightRole();
     }
 
@@ -361,7 +366,7 @@ export function runNextNightRole() {
         s.is_current_role_feared = true;
         let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf') {
-            let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let w_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             let has_lg = Object.values(s.player_roles).includes('little_girl');
             if (has_lg) w_seats.push(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'little_girl'));
             w_seats.sort((a, b) => a - b);
@@ -383,7 +388,7 @@ export function runNextNightRole() {
         let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf') {
             // 冰到狼人 → 全隊空刀（已在 day.js 中處理 isWolfFrozen），此處顯示提示
-            let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let w_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             let has_lg = Object.values(s.player_roles).includes('little_girl');
             if (has_lg) w_seats.push(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'little_girl'));
             w_seats.sort((a, b) => a - b);
@@ -425,7 +430,7 @@ export function runNextNightRole() {
             night_instruction.innerHTML = `狼人陣營同伴是：<br><span style="color:#e94560;">${w.length ? w.join(', ') + ' 號' : '無'}</span>`;
         } else if (s.current_stage === 'eclipse_maid') {
             night_role_title.textContent = "🌞 蝕日侍女確認";
-            let w = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]) && s.player_roles[k] !== 'eclipse_maid');
+            let w = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             night_instruction.innerHTML = `狼人陣營同伴是：<br><span style="color:#e94560;">${w.length ? w.join(', ') + ' 號' : '無'}</span>`;
         } else {
             if (s.current_stage === 'lovers_meet') night_role_title.textContent = "💕 情侶相認";
@@ -553,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (p) s.acted_players.push(parseInt(p));
             }
             if (s.current_stage === 'wolf' && !s.is_seed_wolf_infecting) {
-                let ws = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+                let ws = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
                 ws.forEach(x => s.acted_players.push(parseInt(x)));
             }
         }

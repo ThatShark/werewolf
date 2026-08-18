@@ -97,6 +97,7 @@ export const s = {
     // 6. 特殊技能旗標與變數
     // ==========================================================================
     is_witch_saved: false,             // 女巫是否用解藥
+    is_time_wolf_reflection_used: false, // 蝕時狼妃封鎖是否已反彈過一次
     is_seed_wolf_infecting: false,     // 種狼是否正在發動感染
     has_ghost_rider_reflected: false,  // 惡靈騎士是否已反傷
     did_white_cat_flip_last_night: false, // 白貓昨晚是否翻牌免死
@@ -171,9 +172,14 @@ export const evil_roles = [...wolf_faction, 'hidden_wolf', 'gargoyle', 'machine_
     'snake_phantom', 'snake_seer', 'troublemaker', 'anubis', 'super_black_market', 'wolf_brother_little'
 ];
 
+// 屬於狼人陣營但不入狼隊的角色，不參與集體狼刀。
+export const wolf_team_roles = wolf_faction.filter(role => ![
+    'wolf_crow', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_gray_wolf'
+].includes(role));
+
 /** 重置所有遊戲狀態（開始新局時呼叫） */
 export function resetGameState() {
-    s.night_queue = []; s.current_stage = null; s.wolf_kill_target = null; s.witch_poison_target = null; s.is_witch_saved = false;
+    s.night_queue = []; s.current_stage = null; s.wolf_kill_target = null; s.witch_poison_target = null; s.is_witch_saved = false; s.is_time_wolf_reflection_used = false;
     s.guard_target = null; s.dream_target = null; s.prev_dream_target = null; s.magician_swap = []; s.trickster_swap = []; s.wolf_sorcerer_swap = []; s.nightmare_target = null; s.fox_charm_target = null; s.sp_grave_keeper_heir = null; s.puppet_target = null; s.gargoyle_target = null;
     s.beauty_target = null; s.machine_wolf_target = null; s.phantom_targets = []; s.awk_seer_targets = []; s.awk_beauty_target = null; s.diviner_mark = null;
     s.phantom_known_wolf = null; s.selected_number = null; s.current_editing_seat = null; s.final_killed = []; s.day_shooters_queue = [];
@@ -256,8 +262,11 @@ export function getActualTarget(seat) {
 /** 處理蝕時狼妃的反彈邏輯 */
 export function applyTimeWolfReflection(target_seat, actor_seat) {
     if (!target_seat || !s.time_wolf_target || !actor_seat) return target_seat;
-    // 如果非邪惡陣營對蝕時目標使用技能，則反彈回自己
-    if (target_seat === s.time_wolf_target && !evil_roles.includes(s.player_roles[actor_seat])) return parseInt(actor_seat);
+    // 規則：非邪惡陣營對封鎖目標施放技能時反彈到自己，且整晚只生效一次。
+    if (target_seat === s.time_wolf_target && !s.is_time_wolf_reflection_used && !evil_roles.includes(s.player_roles[actor_seat])) {
+        s.is_time_wolf_reflection_used = true;
+        return parseInt(actor_seat);
+    }
     return target_seat;
 }
 

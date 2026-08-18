@@ -1,4 +1,4 @@
-import { s, wolf_faction, getActualTarget, applyTimeWolfReflection, vibrate } from './core.js';
+import { s, wolf_faction, wolf_team_roles, evil_roles, getActualTarget, applyTimeWolfReflection, vibrate } from './core.js';
 
 export function resetSelections() {
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
@@ -44,7 +44,7 @@ export function createNumberPad() {
         // ==========================================
         if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
             // 大狼不可自刀
-            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty', 'war_wolf', 'demon', 'medusa', 'evil_merchant', 'phantom_king'].includes(s.player_roles[i])) is_disabled = true;
+            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty', 'demon', 'medusa', 'evil_merchant', 'phantom_king'].includes(s.player_roles[i])) is_disabled = true;
             // 占卜師標記限制（規則：狼隊和大灰狼都受限）
             if (s.diviner_mark) {
                 let dm = parseInt(s.diviner_mark);
@@ -75,7 +75,7 @@ export function createNumberPad() {
         // 規則 3：特殊角色選擇目標限制
         // ==========================================
         // 覺醒狼王分槍：限選其他狼隊友
-        if (s.current_stage === 'awaken_wolf_king_gun' && (!wolf_faction.includes(s.player_roles[i]) || i === actual_current_actor_seat)) is_disabled = true;
+        if (s.current_stage === 'awaken_wolf_king_gun' && (!['wolf', 'little_gray_wolf'].includes(s.player_roles[i]) || i === actual_current_actor_seat)) is_disabled = true;
 
         // 鬼魅新娘選證婚人：不能是新郎或自己
         if (s.current_stage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride')) || i === s.ghost_bride_groom)) is_disabled = true;
@@ -86,7 +86,7 @@ export function createNumberPad() {
         // 覺醒石像鬼轉化：必須選「狼隊隔壁」且不能是狼人自己
         if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
             // 規則：轉化目標必須在「狼隊隔壁」（即所有狼人座位的左右相鄰）
-            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             let adjacent_seats = [];
             all_wolf_seats.forEach(w => {
                 let ws = parseInt(w);
@@ -94,7 +94,9 @@ export function createNumberPad() {
             });
             // 去除重複，且排除狼人自身座位
             let w_seats = all_wolf_seats.map(k => parseInt(k));
-            let valid_seats = [...new Set(adjacent_seats)].filter(seat => !w_seats.includes(seat));
+            // 規則：覺醒石像鬼只能轉化「好人陣營」玩家，第三方與狼人陣營皆不可選。
+            const third_party_roles = ['pandora', 'cupid', 'half_blood', 'curse_fox', 'awaken_lonely_girl', 'snake_seer', 'snake_phantom', 'zombie', 'shadow', 'revenger', 'jack_ripper', 'thief', 'wild_child', 'ghost_bride'];
+            let valid_seats = [...new Set(adjacent_seats)].filter(seat => !w_seats.includes(seat) && !evil_roles.includes(s.player_roles[seat]) && !third_party_roles.includes(s.player_roles[seat]));
             if (!valid_seats.includes(i)) is_disabled = true;
         }
 
@@ -105,12 +107,12 @@ export function createNumberPad() {
 
         // 黑夜使者：只能選狼人陣營
         if (s.current_stage === 'dark_messenger') {
-            if (!wolf_faction.includes(s.player_roles[i])) is_disabled = true;
+            if (!wolf_team_roles.includes(s.player_roles[i])) is_disabled = true;
         }
 
         // 傀儡選擇：只能選狼隊相鄰的非狼人
         if (s.current_stage === 'puppet_select') {
-            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+            let all_wolf_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             let adj = [];
             all_wolf_seats.forEach(w => {
                 let ws = parseInt(w);

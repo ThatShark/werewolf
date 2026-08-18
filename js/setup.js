@@ -1,4 +1,4 @@
-import { s, wolf_faction, speak } from './core.js';
+import { s, wolf_faction, wolf_team_roles, speak } from './core.js';
 import { buildNightQueue, runNextNightRole } from './main.js';
 
 // ==========================================
@@ -372,7 +372,7 @@ function handleStartNight(count_select, setting_board) {
         s.player_status[s.vwk_seat].isVWK = true;
     }
 
-    let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]) && !['eclipse_maid', 'hidden_wolf', 'gray_wolf'].includes(s.player_roles[k]));
+    let w_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
     if (w_seats.length > 0) s.phantom_known_wolf = w_seats[Math.floor(Math.random() * w_seats.length)];
 
     let thief_key = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'thief');

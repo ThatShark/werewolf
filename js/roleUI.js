@@ -1,4 +1,4 @@
-import { s, getStageVoiceName, getActualTarget, wolf_faction, evil_roles, speak } from './core.js';
+import { s, getStageVoiceName, getActualTarget, wolf_faction, wolf_team_roles, evil_roles, speak } from './core.js';
 import { createNumberPad } from './night.js';
 
 // ==========================================
@@ -375,7 +375,7 @@ roleHandlers['alchemist'] = (ctx) => {
 // --- 狼人（含種狼感染模式）---
 roleHandlers['wolf'] = (ctx) => {
     const { btnConfirmAction, btnOptionalSkip, numberPad, nightRoleTitle, nightInstruction } = ctx;
-    let w_seats = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]));
+    let w_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
     let has_lg = Object.values(s.player_roles).includes('little_girl');
     if (has_lg) w_seats.push(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'little_girl'));
     w_seats.sort((a, b) => a - b);
@@ -496,7 +496,7 @@ roleHandlers['_notify'] = (ctx) => {
             if (s.seed_wolf_target === seat) msgs.push(`你被種狼感染成了狼人！🐺`);
         }
         if (notify_type === 'notify_end') {
-            if (s.awk_gargoyle_target === seat || s.awk_gargoyle_targetA === seat || s.awk_gargoyle_targetB === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`);
+            if (s.awk_gargoyle_target === seat || s.awk_gargoyle_target_a === seat || s.awk_gargoyle_target_b === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`);
         }
         let resBox = document.createElement('div');
         resBox.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
@@ -571,7 +571,7 @@ roleHandlers['light_count'] = (ctx) => {
 // --- 蝕日侍女 ---
 roleHandlers['eclipse_maid'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "🌑 蝕日侍女行動";
-    let wolves = Object.keys(s.player_roles).filter(k => wolf_faction.includes(s.player_roles[k]) && k !== ctx.actorSeat);
+    let wolves = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]) && k !== ctx.actorSeat);
     let wolf_text = wolves.length > 0 ? `<span style="color:#e94560;">你的狼隊友為：${wolves.join(', ')} 號</span><br><br>` : "";
     ctx.nightInstruction.innerHTML = wolf_text + "請選擇你要吞噬技能的對象（非狼人）：";
     ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden');
@@ -658,7 +658,7 @@ roleHandlers['crow'] = (ctx) => {
 };
 
 // --- 定序王子（確認）---
-roleHandlers['order_prince'] = (ctx) => {
+roleHandlers['sequence_prince'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "👑 定序王子確認";
     ctx.nightInstruction.innerHTML = "確認定序王子身分（被動技能，無需夜間選擇）";
     ctx.numberPad.classList.add('hidden');
@@ -667,7 +667,7 @@ roleHandlers['order_prince'] = (ctx) => {
 };
 
 // --- 鏽劍騎士（確認）---
-roleHandlers['rusty_knight'] = (ctx) => {
+roleHandlers['rust_sword_knight'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "⚔️ 鏽劍騎士確認";
     ctx.nightInstruction.innerHTML = "確認鏽劍騎士身分（被動技能）";
     ctx.numberPad.classList.add('hidden');
