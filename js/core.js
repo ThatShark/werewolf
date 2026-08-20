@@ -15,7 +15,8 @@ export const s = {
     is_alchemist_snake_used: false, phantom_known_wolf: null, merchant_item: null, merchant_type: null, awk_witch_step: null, awk_witch_assistant: null, awk_witch_assistant_agreed: null,
     day_shooters_queue: [], is_snake_win: false, is_pandora_win: false, moon_wolf_roar: null,
     gray_wolf_stolen_player: null, gray_wolf_stolen_skill: null, gray_wolf_guess: null, machine_wolf_learn_target: null, evil_merchant_gun_target: null,
-    pandora_target: null, pandora_pool: null, pandora_gift: null, sp_merchant_targets: [], is_sp_merchant_turns_evil: false, treasure_hunter_choice: null, is_treasure_hunter_evil: false,
+    pandora_target: null, pandora_pool: null, pandora_gift: null, sp_merchant_targets: [], sp_merchant_gifts: [], is_sp_merchant_turns_evil: false, treasure_hunter_choice: null, is_treasure_hunter_evil: false,
+    night_status_flows: [],
     player_genders: {}, sleeping_beauty_seat: null, is_sleeping_beauty_active: true
 };
 
@@ -77,13 +78,14 @@ export function resetGameState() {
     s.current_editing_seat = null; s.spare_cards = []; s.discarded_roles = []; s.initial_thief_seat = null; s.thief_chosen_role = null; s.vwk_seat = null; s.shadow_seer_seat = null;
     s.current_stage = null; s.current_actor_seat = null; s.current_sub_label = null; s.current_viewing_seat = 1; s.selected_number = null; s.selected_numbers_arr = [];
     s.is_showing_result = false; s.is_fake_wake = false; s.is_current_role_feared = false; s.is_current_role_frozen = false; s.speech_order_text = null; s.defer_speech_order_until_shooting = false; s.sheriff_candidates = [];
-    s.prev_dream_target = null; s.sp_grave_keeper_heir = null; s.puppet_target = null; s.half_blood_target = null; s.wild_child_target = null; s.lonely_girl_target = null;
+    s.sp_grave_keeper_heir = null; s.puppet_target = null; s.half_blood_target = null; s.wild_child_target = null; s.lonely_girl_target = null;
     s.seed_wolf_target = null; s.awk_gargoyle_target = null; s.awk_gargoyle_target_a = null; s.awk_gargoyle_target_b = null; s.rust_sword_infected_target = null; s.awk_wolf_gun_target = null;
     s.ghost_bride_groom = null; s.ghost_bride_witness = null; s.shadow_master_target = null; s.phantom_targets = []; s.cupid_lovers = []; s.acted_players = []; s.zombie_infected = [];
     s.is_time_wolf_reflection_used = false; s.has_ghost_rider_reflected = false; s.did_white_cat_flip_last_night = false; s.is_pufferfish_triggered = false; s.is_alchemist_snake_used = false;
     s.phantom_known_wolf = null; s.merchant_item = null; s.merchant_type = null; s.awk_witch_step = null; s.awk_witch_assistant = null; s.awk_witch_assistant_agreed = null; s.is_snake_win = false; s.is_pandora_win = false;
     s.gray_wolf_stolen_player = null; s.gray_wolf_stolen_skill = null; s.gray_wolf_guess = null; s.machine_wolf_learn_target = null; s.evil_merchant_gun_target = null;
-    s.pandora_target = null; s.pandora_pool = null; s.pandora_gift = null; s.sp_merchant_targets = []; s.is_sp_merchant_turns_evil = false; s.treasure_hunter_choice = null; s.is_treasure_hunter_evil = false;
+    s.pandora_target = null; s.pandora_pool = null; s.pandora_gift = null; s.sp_merchant_targets = []; s.sp_merchant_gifts = []; s.is_sp_merchant_turns_evil = false; s.treasure_hunter_choice = null; s.is_treasure_hunter_evil = false;
+    s.night_status_flows = [];
     s.player_genders = {}; s.sleeping_beauty_seat = null; s.is_sleeping_beauty_active = true;
     s.final_killed = [];
     resetNightState();
@@ -97,6 +99,7 @@ export function resetNightState() {
     s.day_shooters_queue = []; 
     s.moon_wolf_roar = null;
     s.is_seed_wolf_infecting = false;
+    s.night_status_flows = [];
 }
 
 export function vibrate(pattern = 15) { if (navigator.vibrate) navigator.vibrate(pattern); }
@@ -114,6 +117,16 @@ export function getStageVoiceName(stage, sub_label) {
 }
 
 export function addNightAction(actor, role, effect, targets, metadata = {}) { s.night_actions.push({ id: `night-${s.night_actions.length + 1}-${role}-${effect}`, actor, role, effect, selected_targets: [...targets], resolved_targets: [...targets], phase: 'night', status: 'active', metadata }); }
+export function insertNightStatusFlow(type, targets = [], metadata = {}) {
+    const flow_id = `${type}-${s.night_status_flows.length + 1}`;
+    const target_seats = [...targets].map(Number).filter(Boolean);
+    s.night_status_flows.push({ id: flow_id, type, targets: target_seats, metadata });
+    const stages = [];
+    for (let seat = 1; seat <= s.total_players; seat++) stages.push({ stage: `status_check_${flow_id}_${seat}`, order: -1, seat: null, subLabel: null, isFake: false });
+    const reveal_targets = metadata.reveal_targets ? [...metadata.reveal_targets].map(Number).filter(Boolean) : target_seats;
+    reveal_targets.forEach((seat, index) => stages.push({ stage: `status_notify_${flow_id}_${seat}`, order: -1, seat: null, subLabel: index, isFake: false }));
+    s.night_queue.unshift(...stages);
+}
 export function getActionsByEffect(effect) { return s.night_actions.filter(a => a.effect === effect && a.status === 'active'); }
 export function getActiveEffectsOn(seat) { return s.night_actions.filter(a => a.status === 'active' && a.resolved_targets.includes(seat)); }
 export function getNightTarget(effect, role) { return getActionsByEffect(effect).find(a => a.role === role)?.resolved_targets[0] || null; }

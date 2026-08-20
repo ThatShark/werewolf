@@ -426,19 +426,6 @@ export function initSetupEvents() {
     style.innerHTML = `.action-selected { background-color: #51c9c1 !important; color: white !important; border: 2px solid #fff !important; transform: scale(1.05); }`;
     document.head.appendChild(style);
 
-    // 主題切換
-    const theme_btn = document.getElementById('btn-theme-toggle');
-    const saved_theme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved_theme);
-    theme_btn.textContent = saved_theme === 'dark' ? '🌙' : '☀️';
-    theme_btn.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        theme_btn.textContent = next === 'dark' ? '🌙' : '☀️';
-        localStorage.setItem('theme', next);
-    });
-
     const count_select = document.getElementById('setting-player-count');
     const setting_board = document.getElementById('setting-board');
     const role_setup_grid = document.getElementById('role-setup-grid');

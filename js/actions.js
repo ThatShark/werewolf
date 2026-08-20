@@ -1,5 +1,5 @@
 // js/actions.js
-import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, wolf_faction, wolf_team_roles, addNightAction, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf } from './core.js';
+import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, wolf_faction, wolf_team_roles, evil_roles, addNightAction, insertNightStatusFlow, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf } from './core.js';
 import { buildNightQueue } from './main.js';
 
 // ==========================================
@@ -26,7 +26,7 @@ const targetSelectStrategy = (ctx) => {
 // ==========================================
 // 策略註冊表 (Strategy Registry)
 // ==========================================
-const inspectionStrategies = {
+export const inspectionStrategies = {
     'awaken_seer': (ctx) => {
         ctx.label = "兩名玩家的陣營為：";
         let targets = [applyTimeWolfReflection(ctx.targetsArr[0], ctx.actorSeat), applyTimeWolfReflection(ctx.targetsArr[1], ctx.actorSeat)];
@@ -52,10 +52,16 @@ const inspectionStrategies = {
         addNightAction(ctx.actorSeat, 'real_fox', 'inspect', [p1, t, p2]);
     },
     'lucky_boy_action': (ctx) => {
-        let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
-        logNightAction(`【幸運兒(${s.merchant_target}號)】查驗了 ${t}號`);
-        if (isPlayerEvil(t)) { ctx.text = "🐺 狼人 (壞人)"; ctx.color = "#e94560"; } else { ctx.text = "🧑‍🌾 好人"; ctx.color = "#00ff88"; }
-        addNightAction(s.merchant_target, ctx.stage, 'inspect', [t]);
+        if ((s.merchant_item === 'check' || s.merchant_item === 'seer') && ctx.targetNum) {
+            let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
+            let isEvil = isPlayerEvil(t);
+            ctx.text = isEvil ? "🐺 狼人 (壞人)" : "🧑‍🌾 好人"; 
+            ctx.color = isEvil ? "#e94560" : "#00ff88";
+            logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】查驗了 ${t}號`);
+            addNightAction(ctx.actorSeat, 'lucky_boy', 'check', [t]);
+            return true;
+        }
+        return false;
     },
     'gray_wolf_action': (ctx) => {
         let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
@@ -111,7 +117,7 @@ const inspectionStrategies = {
     }
 };
 
-const nonInspectionStrategies = {
+export const nonInspectionStrategies = {
     'pleasant_goat': (ctx) => {
         let pg_seat = parseInt(s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === 'pleasant_goat'));
         if (ctx.targetNum) {
@@ -148,12 +154,20 @@ const nonInspectionStrategies = {
     'black_market': (ctx) => { setPersistentState('merchant_target', ctx.targetNum); setPersistentState('merchant_type', ctx.targetNum ? ctx.stage : null); logNightAction(ctx.targetNum ? `【黑市商人】給了 ${ctx.targetNum}號` : `【黑市商人】未發動`); if (ctx.targetNum) addNightAction(ctx.actorSeat, ctx.stage, 'grant', [ctx.targetNum], { item: s.merchant_item }); },
     'miracle_merchant': (ctx) => { setPersistentState('merchant_target', ctx.targetNum); setPersistentState('merchant_type', ctx.targetNum ? ctx.stage : null); logNightAction(ctx.targetNum ? `【奇蹟商人】給了 ${ctx.targetNum}號` : `【奇蹟商人】未發動`); if (ctx.targetNum) addNightAction(ctx.actorSeat, ctx.stage, 'grant', [ctx.targetNum], { item: s.merchant_item }); },
     'lucky_boy_action': (ctx) => {
-        if (s.merchant_type === 'black_market') { logNightAction(`【幸運兒(${s.merchant_target}號)】獲得黑市商人技能，暫時無法發動`); } else {
-            if (ctx.targetNum) {
-                if (s.merchant_item === 'poison') addNightAction(ctx.actorSeat, 'lucky_boy', 'poison', [ctx.targetNum]);
-                if (s.merchant_item === 'guard') addNightAction(ctx.actorSeat, 'lucky_boy', 'protect', [ctx.targetNum]);
+        if (!ctx.targetNum) {
+            logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】選擇不使用技能`);
+            return;
+        }
+        if (s.merchant_type === 'black_market') { 
+            logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】獲得黑市商人技能，暫時無法發動`); 
+        } else {
+            if (s.merchant_item === 'poison') {
+                logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】對 ${ctx.targetNum} 號使用了毒藥`);
+                addNightAction(ctx.actorSeat, 'lucky_boy', 'poison', [ctx.targetNum]);
+            } else if (s.merchant_item === 'guard' || s.merchant_item === 'shield') {
+                logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】守護了 ${ctx.targetNum} 號`);
+                addNightAction(ctx.actorSeat, 'lucky_boy', 'guard', [ctx.targetNum]);
             }
-            logNightAction(ctx.targetNum ? `【幸運兒(${s.merchant_target}號)】使用了技能對 ${ctx.targetNum}號` : `【幸運兒(${s.merchant_target}號)】未使用技能`);
         }
     },
     'wolf': (ctx) => {
@@ -186,7 +200,10 @@ const nonInspectionStrategies = {
     },
     'super_black_market': (ctx) => {
         if (ctx.targetsArr.length === 0) { logNightAction(`【超級黑市商人】未發動技能`); } else {
-            setPersistentState('sp_merchant_targets', ctx.targetsArr); let gifts = ['查驗', '毒藥', '獵槍'];
+            const sp_gifts = ['seer', 'poison', 'gun'];
+            setPersistentState('sp_merchant_targets', ctx.targetsArr);
+            setPersistentState('sp_merchant_gifts', ctx.targetsArr.map((seat, index) => ({ seat, label: String.fromCharCode(65 + index), gift: sp_gifts[index] })));
+            let gifts = ['查驗', '毒藥', '獵槍'];
             ctx.targetsArr.forEach((t, i) => {
                 logNightAction(`【超級黑市商人】給了 ${t}號 → ${gifts[i]}`);
                 if (gifts[i] === '獵槍') {
@@ -195,7 +212,7 @@ const nonInspectionStrategies = {
                 }
             });
             if (ctx.targetsArr.every(t => !wolf_faction.includes(s.player_roles[t]))) { setPersistentState('is_sp_merchant_turns_evil', true); logNightAction(`【超級黑市商人】三位幸運兒皆好人，商人將於天亮後變為狼人陣營`); }
-            addNightAction(ctx.actorSeat, 'super_black_market', 'grant_multiple', ctx.targetsArr, { gifts: ['seer', 'poison', 'gun'] });
+            addNightAction(ctx.actorSeat, 'super_black_market', 'grant_multiple', ctx.targetsArr, { gifts: sp_gifts });
         }
     },
     'treasure_master': (ctx) => {
@@ -303,7 +320,7 @@ export function resolveNonInspectionAction() {
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
     
     let needs_result_roles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'snake_seer', 'demon'];
-    if (s.current_stage === 'lucky_boy_action' && s.merchant_item === 'seer' && s.merchant_type !== 'black_market') needs_result_roles.push('lucky_boy_action');
+    if (s.current_stage === 'lucky_boy_action' && (s.merchant_item === 'seer' || s.merchant_item === 'check') && s.merchant_type !== 'black_market') needs_result_roles.push('lucky_boy_action');
     if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') needs_result_roles.push('gray_wolf_action');
     if (s.current_stage === 'machine_wolf' && !s.machine_wolf_learn_target) needs_result_roles.push('machine_wolf');
 
@@ -322,4 +339,22 @@ export function resolveNonInspectionAction() {
     const strategy = nonInspectionStrategies[s.current_stage];
     if (strategy) strategy(ctx);
     else console.warn(`[Action] No non-inspection strategy found for stage: ${s.current_stage}`);
+
+    if (s.current_stage === 'black_market' || s.current_stage === 'miracle_merchant') {
+        if (ctx.targetNum) {
+            const reveal_targets = evil_roles.includes(s.player_roles[ctx.targetNum]) ? [] : [ctx.targetNum];
+            insertNightStatusFlow('merchant', [ctx.targetNum], { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets });
+        }
+    }
+    if (s.current_stage === 'super_black_market' && ctx.targetsArr.length) insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts });
+    if (s.current_stage === 'cupid' && ctx.targetsArr.length === 2) {
+        setPersistentState('cupid_lovers', ctx.targetsArr);
+        insertNightStatusFlow('lovers', ctx.targetsArr);
+    }
+    if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage) && ctx.targetNum) {
+        insertNightStatusFlow('gargoyle_conversion', [ctx.targetNum]);
+    }
+    if (s.current_stage === 'ghost_bride' && ctx.targetNum) insertNightStatusFlow('ghost_groom', [ctx.targetNum]);
+    if (s.current_stage === 'ghost_bride_couple' && ctx.targetNum) insertNightStatusFlow('ghost_witness', [ctx.targetNum]);
+    if (s.current_stage === 'wolf' && s.is_seed_wolf_infecting && ctx.targetNum) insertNightStatusFlow('seed_wolf', [ctx.targetNum]);
 }
