@@ -1,5 +1,5 @@
 // js/actions.js
-import { s, getStageVoiceName, applyTimeWolfReflection, wolf_faction, wolf_team_roles, addNightAction, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf } from './core.js';
+import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, wolf_faction, wolf_team_roles, addNightAction, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf } from './core.js';
 import { buildNightQueue } from './main.js';
 
 // ==========================================
