@@ -108,6 +108,10 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             s.player_roles[i] = roles_arr[i - 1];
             s.player_status[i] = { poisoned: false, injured: false, isWhiteCatFlipped: false, isVWK: false, deathReason: null };
         }
+        if (s.current_board.id === '12_treasure_hunter') {
+            s.spare_cards = roles_arr.slice(s.total_players);
+            s.discarded_roles = [...s.spare_cards];
+        }
         s.current_viewing_seat = 1;
         renderRandomRoleView(btn_start_night);
     } else {
@@ -343,17 +347,24 @@ function handleStartNight(count_select, setting_board) {
                 error_msg += `${s.ROLE_DICT[role_id].name}: 配置數量錯誤\n`;
             }
         }
-        if (!is_match && s.current_board.id !== '12_thief_cupid' && s.current_board.id !== '10_mask_night') return alert(error_msg);
+        const boards_with_spare_cards = ['10_mask_night', '12_thief_cupid', '12_treasure_hunter'];
+        if (!is_match && !boards_with_spare_cards.includes(s.current_board.id)) return alert(error_msg);
+        if (boards_with_spare_cards.includes(s.current_board.id)) {
+            for (const [role_id, count] of Object.entries(current_counts)) {
+                if (count > (s.current_board.roles[role_id] || 0)) return alert(error_msg);
+            }
+        }
     }
 
-    if (s.current_board.id === '12_thief_cupid') {
+    if (['10_mask_night', '12_thief_cupid', '12_treasure_hunter'].includes(s.current_board.id)) {
         s.spare_cards = [];
         let temp_board = { ...s.current_board.roles };
         for (let i = 1; i <= 12; i++) temp_board[s.player_roles[i]]--;
         for (let r in temp_board) {
             while (temp_board[r] > 0) { s.spare_cards.push(r); temp_board[r]--; }
         }
-        if (s.spare_cards.filter(r => wolf_faction.includes(r)).length === 2) {
+        s.discarded_roles = [...s.spare_cards];
+        if (s.current_board.id === '12_thief_cupid' && s.spare_cards.filter(r => wolf_faction.includes(r)).length === 2) {
             alert("底牌為雙狼，此局必須重開！");
             document.getElementById('btn-reset').click();
             return;
@@ -474,13 +485,4 @@ export function initSetupEvents() {
     btn_start_night.addEventListener('click', () => handleStartNight(count_select, setting_board));
 
     document.getElementById('btn-cancel-lock').addEventListener('click', () => lock_modal.classList.add('hidden'));
-    document.getElementById('btn-confirm-lock').addEventListener('click', () => {
-        lock_modal.classList.add('hidden');
-        screen_setup.classList.add('hidden');
-        screen_night.classList.remove('hidden');
-        number_pad.classList.add('hidden');
-        document.getElementById('night-role-title').textContent = "🐺 黑夜降臨";
-        night_instruction.textContent = "請大家閉上眼睛...";
-        speak("天黑請閉眼。", runNextNightRole);
-    });
 }

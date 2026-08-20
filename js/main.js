@@ -1,11 +1,12 @@
 // js/main.js
-import { s, getStageVoiceName, wolf_team_roles, evil_roles, speak, resetGameState, vibrate, getActiveEffectsOn, getActionsByEffect, getNightTarget, getNightTargets } from './core.js';
+import { s, getStageVoiceName, wolf_team_roles, evil_roles, speak, resetGameState, resetNightState, vibrate, getActiveEffectsOn, getActionsByEffect, getNightTarget, removeDeathEvent, logNightAction, findNearestWolf } from './core.js';
 import { resetSelections } from './night.js';
-import { calculateNightDeaths, proceedDayResultRender } from './day.js';
+import { calculateNightDeaths, generateDayReport, killPlayerDuringDay } from './day.js';
 import { initSetupEvents } from './setup.js';
 import { initSheriffScreen, initSheriffEvents } from './sheriff.js';
 import { resolveInspectionResult, resolveNonInspectionAction } from './actions.js';
 import { renderRolePanel } from './roleUI.js';
+import { triggerTricksterVoteSection } from './vote.js';
 
 export function generateSpeechOrder(candidates_array) {
     let pool = candidates_array ? [...candidates_array] : [];
@@ -20,110 +21,144 @@ export function generateSpeechOrder(candidates_array) {
     return `請從 【 ${start_player} 號 】 玩家開始<br>以 【 ${direction} 】 進行發言。`;
 }
 
-function generateFallbackQueue(active_roles) {
-    let order_map = {};
-    active_roles.forEach(role => {
-        let orders = s.ROLE_DICT[role]?.wakeOrder;
-        if (orders) {
-            orders.forEach(o => {
-                if (!order_map[o]) order_map[o] = new Set();
-                order_map[o].add(role);
-            });
-        }
-    });
-
-    let q = [];
-    let active_order_arr = Object.keys(order_map).map(Number).sort((a, b) => a - b);
-    
-    active_order_arr.forEach(order => {
-        if (order === 3350) return;
-        let roles = Array.from(order_map[order]);
-        if (order === 750) q.push('ghost_bride_couple');
-        else if (order === 790) q.push('ghost_bride_witness');
-        else if (order === 800) q.push('lovers_meet');
-        else if (order === 900) q.push('wolf_brother_meet');
-        else if (order === 2000) q.push('gray_wolf_steal');
-        else if (order === 4400) q.push('gray_wolf_action');
-        else if (order === 2700) { if (roles.some(role => wolf_team_roles.includes(role))) q.push('wolves'); }
-        else if (order === 2800) q.push('awaken_wolf_king_gun');
-        else if (order === 2900) q.push('wolf_gun_confirm');
-        else if (order === 3600) q.push('lucky_boy_action');
-        else if (order === 3400) q.push('awaken_witch_assistant_action');
-        else if (order === 4700) q.push('awaken_dreamwalker_result');
-        else q.push(roles[0]);
-    });
-    return q;
+function revealDeferredSpeechOrder() {
+    if (!s.defer_speech_order_until_shooting) return;
+    s.speech_order_text = generateSpeechOrder(null);
+    s.defer_speech_order_until_shooting = false;
 }
 
 export function buildNightQueue() {
     s.night_queue = [];
-    s.night_actions = []; // 每個夜晚開始時重置夜間行動紀錄
     const active_roles = Object.values(s.player_roles);
     let queue_list = [];
 
-    if (!s.current_board.wake_queue) s.current_board.wake_queue = generateFallbackQueue(active_roles);
+    let moonWolfSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'moon_wolf');
+    if (moonWolfSeat && !s.final_killed.includes(parseInt(moonWolfSeat))) {
+        let seat = parseInt(moonWolfSeat);
+        let findAlive = (start, direction) => {
+            let current = start;
+            do {
+                current += direction;
+                if (current < 1) current = s.total_players;
+                if (current > s.total_players) current = 1;
+            } while (current !== start && s.final_killed.includes(current));
+            return current;
+        };
+        let left = findAlive(seat, -1); let right = findAlive(seat, 1);
+        const godRoles = ['seer', 'witch', 'hunter', 'guard', 'dreamwalker', 'awaken_dreamwalker', 'awaken_idiot', 'crow', 'knight', 'demon_hunter', 'magician', 'alchemist', 'psychic', 'pure_white', 'awaken_seer', 'awaken_witch', 'awaken_hunter', 'bear', 'pufferfish', 'white_cat', 'celebrity', 'penguin', 'charmer'];
+        s.moon_wolf_roar = godRoles.includes(s.player_roles[left]) || godRoles.includes(s.player_roles[right]);
+    }
 
-    s.current_board.wake_queue.forEach((qItem, index) => {
-        if (qItem === 'wolves') {
-            if (active_roles.some(role => wolf_team_roles.includes(role))) {
-                let stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf';
-                queue_list.push({ stage, order: index, seat: null, subLabel: null, isFake: false });
-            }
-        } else if (qItem === 'lovers_meet') {
-            if (s.discarded_roles.includes('cupid')) queue_list.push({ stage: 'lovers_meet', order: index, seat: null, subLabel: null, isFake: true });
-        } else {
-            if (active_roles.includes(qItem)) queue_list.push({ stage: qItem, order: index, seat: null, subLabel: null, isFake: false });
-            else if (s.discarded_roles.includes(qItem) && ['seer', 'witch', 'hunter', 'cupid', 'guard', 'idiot'].includes(qItem)) {
-                queue_list.push({ stage: qItem, order: index, seat: null, subLabel: null, isFake: true });
-            }
-        }
+    let activeRolesSeats = {};
+    Object.entries(s.player_roles).forEach(([seat, role]) => {
+        if (!activeRolesSeats[role]) activeRolesSeats[role] = [];
+        activeRolesSeats[role].push(parseInt(seat));
     });
+    Object.values(activeRolesSeats).forEach(arr => arr.sort((a, b) => a - b));
+    let usedSeats = {};
 
-    queue_list.forEach(q => {
-        if (q.stage === 'seer' || q.stage === 'shadow_seer' || q.stage === 'seer_A' || q.stage === 'seer_B') {
+    const wake_queue = s.current_board?.wake_queue || [];
+    const hasWakeStep = (...steps) => steps.some(step => wake_queue.includes(step));
+
+    wake_queue.forEach((qItem, index) => {
+        let stage = qItem; let isFake = false; let seat = null; let subLabel = null;
+
+        // 【修復】：支援板子裡狼人寫成 "wolf" 或 "wolves"
+        if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet'].includes(qItem)) {
+            stage = qItem;
+            if (qItem === 'wolves' || qItem === 'wolf') {
+                stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf';
+                if (!active_roles.some(r => wolf_team_roles.includes(r))) return;
+            } else if (qItem === 'lucky_player') {
+                stage = 'lucky_boy_action'; if (!active_roles.includes('miracle_merchant') && !active_roles.includes('super_black_market')) return;
+            } else if (qItem === 'assistants') {
+                stage = 'awaken_witch_assistant_action'; if (!active_roles.includes('awaken_witch')) return;
+            } else if (qItem === 'couple' || qItem === 'lovers_meet') {
+                stage = 'lovers_meet'; if (!active_roles.includes('cupid') && !active_roles.includes('thief')) return; 
+            } else if (qItem === 'infected') {
+                stage = 'zombie_infected'; if (!active_roles.includes('zombie')) return;
+            } else if (qItem === 'ghost_bride_and_groom') {
+                stage = 'ghost_bride_couple'; if (!active_roles.includes('ghost_bride')) return;
+            } else if (qItem === 'marriage_witness') {
+                stage = 'ghost_bride_witness'; if (!active_roles.includes('ghost_bride')) return;
+            } else if (qItem === 'fanatic') {
+                stage = 'fanatic_action'; if (!active_roles.includes('jack_ripper')) return;
+            } else if (qItem === 'wolf_brother_meet') {
+                if (!active_roles.includes('wolf_brother')) return;
+            } else if (qItem === 'big_gray_wolf_meet') {
+                if (!active_roles.includes('big_gray_wolf')) return;
+            } else if (qItem === 'gift_receiver') {
+                if (!active_roles.includes('pandora')) return;
+                stage = 'pandora_gift_receiver';
+            }
+        } else {
+            let baseRole = qItem;
+            let match = qItem.match(/^(.+)_([A-Z])$/);
+            if (match && !s.ROLE_DICT[qItem]) {
+                baseRole = match[1];
+                subLabel = match[2];
+            }
+
+            if (activeRolesSeats[baseRole]) {
+                let usedCount = usedSeats[baseRole] || 0;
+                if (usedCount < activeRolesSeats[baseRole].length) {
+                    seat = activeRolesSeats[baseRole][usedCount];
+                    usedSeats[baseRole] = usedCount + 1;
+                    stage = baseRole;
+                } else return; 
+            } else if (s.discarded_roles.includes(baseRole) && ['seer', 'witch', 'hunter', 'cupid', 'guard', 'idiot'].includes(baseRole)) {
+                isFake = true; stage = baseRole;
+            } else return; 
+        }
+
+        if (stage === 'seer' || stage === 'shadow_seer') {
             let s_a = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'seer_A');
             let s_b = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'seer_B');
             let shadow = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'shadow_seer');
             let seer_seat = Object.keys(s.player_roles).find(k => ['seer', 'pure_white', 'real_fox', 'psychic', 'awaken_seer'].includes(s.player_roles[k]));
             
-            if (q.stage === 'seer' && s_a) { q.seat = s_a; q.subLabel = 'A'; }
-            else if (q.stage === 'seer' && seer_seat) { q.seat = seer_seat; q.stage = s.player_roles[seer_seat]; }
-            else if (q.stage === 'shadow_seer') {
-                if (s_b) { q.seat = s_b; q.stage = 'seer'; q.subLabel = 'B'; }
-                else if (shadow) { q.seat = shadow; q.stage = 'shadow_seer'; }
-            }
+            if (stage === 'seer' && s_a) { seat = parseInt(s_a); subLabel = 'A'; }
+            else if (stage === 'seer' && seer_seat) { seat = parseInt(seer_seat); stage = s.player_roles[seer_seat]; }
+            else if (stage === 'shadow_seer') { if (s_b) { seat = parseInt(s_b); stage = 'seer'; subLabel = 'B'; } else if (shadow) { seat = parseInt(shadow); stage = 'shadow_seer'; } }
         }
+
+        queue_list.push({ stage, order: index, seat, subLabel, isFake });
+        if (qItem === 'gift_receiver') queue_list.push({ stage: 'pandora_knife_action', order: index + 0.5, seat: null, subLabel: null, isFake: false });
     });
 
-    if (active_roles.includes('ghost_bride')) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_groom_${i}`, order: 720, seat: null, subLabel: null, isFake: false });
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_witness_${i}`, order: 770, seat: null, subLabel: null, isFake: false });
+    let dynamic_order = wake_queue.length; 
+    
+    if (active_roles.includes('big_gray_wolf') && hasWakeStep('big_gray_wolf_meet')) {
+        queue_list.push({ stage: 'big_gray_wolf_meet', order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (s.current_board?.id === '12_puppet') queue_list.push({ stage: 'puppet_select', order: 2699, seat: null, subLabel: null, isFake: false });
-    if (active_roles.includes('zombie')) queue_list.push({ stage: 'zombie_infected', order: 150, seat: null, subLabel: null, isFake: false });
-    if (active_roles.some(r => ['black_market', 'miracle_merchant'].includes(r))) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_luckyboy_${i}`, order: 3550, seat: null, subLabel: null, isFake: false });
+    if (active_roles.includes('ghost_bride') && hasWakeStep('ghost_bride_and_groom')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_groom_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (active_roles.includes('pandora')) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_pandora_${i}`, order: 4650, seat: null, subLabel: null, isFake: false });
+    if (active_roles.includes('ghost_bride') && hasWakeStep('marriage_witness')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_witness_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (active_roles.includes('super_black_market')) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_sp_lucky_${i}`, order: 3650, seat: null, subLabel: null, isFake: false });
+    if (s.current_board?.id === '12_puppet' && hasWakeStep('puppet_select')) queue_list.push({ stage: 'puppet_select', order: dynamic_order++, seat: null, subLabel: null, isFake: false });
+    if (active_roles.some(r => ['black_market', 'miracle_merchant'].includes(r)) && hasWakeStep('lucky_player')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_luckyboy_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (active_roles.includes('awaken_witch')) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_assistant_${i}`, order: 3380, seat: null, subLabel: null, isFake: false });
+    if (active_roles.includes('pandora') && hasWakeStep('gift_receiver')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_pandora_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    let has_other_notify_roles = active_roles.some(r => ['cupid', 'seed_wolf'].includes(r));
-    if (has_other_notify_roles) {
-        let base_notify_pos = active_roles.includes('seed_wolf') ? 2750 : 350;
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_general_${i}`, order: base_notify_pos, seat: null, subLabel: null, isFake: false });
+    if (active_roles.includes('super_black_market') && hasWakeStep('lucky_player')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_sp_lucky_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (active_roles.includes('awaken_gargoyle') || active_roles.includes('awaken_gargoyle_A') || active_roles.includes('awaken_gargoyle_B') || active_roles.includes('awaken_dreamwalker')) {
-        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_end_${i}`, order: 9900, seat: null, subLabel: null, isFake: false });
+    if (active_roles.includes('awaken_witch') && hasWakeStep('assistants')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_assistant_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
     }
-    if (s.current_board?.id === '12_variable_wolf' && active_roles.includes('bear')) {
+    if (active_roles.some(r => ['cupid', 'seed_wolf'].includes(r)) && hasWakeStep('cupid', 'seed_wolf')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_general_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
+    }
+    if (active_roles.some(r => ['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'awaken_dreamwalker'].includes(r)) && hasWakeStep('notify_end')) {
+        for (let i = 1; i <= s.total_players; i++) queue_list.push({ stage: `notify_end_${i}`, order: dynamic_order++, seat: null, subLabel: null, isFake: false });
+    }
+    if (s.current_board?.id === '12_variable_wolf' && active_roles.includes('bear') && hasWakeStep('bear')) {
         let b_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear');
-        queue_list.push({ stage: 'bear', order: 4500, seat: b_seat, subLabel: null, isFake: false });
+        queue_list.push({ stage: 'bear', order: dynamic_order++, seat: b_seat, subLabel: null, isFake: false });
     }
 
     queue_list.sort((a, b) => a.order - b.order);
@@ -142,14 +177,12 @@ export function showDayResult() {
     if (btn_show_crow) btn_show_crow.classList.add('hidden');
 
     let alch_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'alchemist');
-    
-    // 改從 night_actions 抓取狼刀目標
     let w_target = getNightTarget('kill', 'wolf');
 
     const alchemist_call_section = document.getElementById('alchemist-call-section');
     const day_result_content = document.getElementById('day-result-content');
 
-    if (alch_seat && !s.is_alchemist_snake_used && !s.primary_killed.includes(parseInt(alch_seat))) {
+    if (alch_seat && !s.is_alchemist_snake_used && !s.final_killed.includes(parseInt(alch_seat))) {
         let order_html = s.speech_order_text ? `<div style="background:#16213e; padding:10px; border-radius:6px; margin: 15px 0;"><span style="color:#00ff88; font-size:18px; font-weight:bold;">🗣️ 發言順序：<br>${s.speech_order_text}</span></div>` : "";
 
         alchemist_call_section.innerHTML = `
@@ -180,11 +213,12 @@ export function showDayResult() {
                 const finishAlchemist = (saved) => {
                     alchemist_call_section.classList.add('hidden');
                     if (saved) {
-                        s.primary_killed = s.primary_killed.filter(k => k !== parseInt(w_target));
-                        s.chain_killed = []; s.final_killed = [...s.primary_killed];
+                        removeDeathEvent(w_target); 
                         s.is_alchemist_snake_used = true;
-                        s.night_action_log.push(`【煉金魔女】使用了法老之蛇，救活了 ${w_target}號`);
-                    } else s.night_action_log.push(`【煉金魔女】未發動法老之蛇`);
+                        logNightAction(`【煉金魔女】使用了法老之蛇，救活了 ${w_target}號`);
+                        s.death_events = s.death_events.filter(e => e.source !== 'chain');
+                        import('./day.js').then(module => module.handleChainDeaths());
+                    } else logNightAction(`【煉金魔女】未發動法老之蛇`);
                     speak("煉金魔女請閉眼，三秒後所有玩家睜眼，三、二、一。", () => { day_result_content.classList.remove('hidden'); proceedDayResultRender(); });
                 };
 
@@ -197,6 +231,83 @@ export function showDayResult() {
 
     day_result_content.classList.remove('hidden');
     proceedDayResultRender();
+}
+
+export function proceedDayResultRender() {
+    let report = generateDayReport();
+    if (report.shootersQueue.length === 0) revealDeferredSpeechOrder();
+
+    let crowTarget = getNightTarget('curse_vote', 'crow');
+    if (crowTarget) document.getElementById('btn-show-crow').classList.remove('hidden');
+
+    let htmlOutput = report.bearRoarText + report.extraText;
+    if (report.isPeaceful) { htmlOutput += "<span style='color:#00ff88;'>🎉 昨晚是平安夜，沒有人死亡！</span>"; } 
+    else {
+        htmlOutput += `<span style='color:#e94560;'>💀 昨晚死亡的是：${report.killedSeats.join(' 號、')} 號</span>`;
+        if (report.isSnakeWin) htmlOutput += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
+    }
+    if (s.is_pandora_win) htmlOutput += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 潘朵拉使用希望之光，獲得勝利！</span>`;
+
+    if (s.speech_order_text) htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+    document.getElementById('day-result').innerHTML = htmlOutput;
+    
+    if (report.shootersQueue.length > 0) processNextShooter(); else triggerTricksterVoteSection();
+}
+
+export function processNextShooter() {
+    if (s.day_shooters_queue.length === 0) {
+        revealDeferredSpeechOrder();
+        document.getElementById('day-skill-section').classList.add('hidden');
+        if (s.speech_order_text) {
+            let dayResult = document.getElementById('day-result');
+            if (dayResult && !dayResult.innerHTML.includes('發言順序')) dayResult.innerHTML += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+        }
+        triggerTricksterVoteSection();
+        return;
+    }
+
+    document.getElementById('btn-reset').classList.add('hidden');
+    const currentShooter = s.day_shooters_queue[0];
+    const section = document.getElementById('day-skill-section');
+    section.classList.remove('hidden');
+    document.getElementById('day-skill-notice').textContent = `🎯 【 ${currentShooter.seat} 號 】玩家，請問是否發動技能？`;
+    let pad = document.getElementById('day-skill-pad'); pad.innerHTML = '';
+
+    const finishShooterTurn = () => {
+        let sorted_final_killed = [...s.final_killed].sort((a, b) => a - b);
+        let dayResultStr = `<span style='color:#e94560;'>💀 本局目前死亡名單：${sorted_final_killed.join(' 號、')} 號</span>` + (s.speech_order_text ? `<br><br><span style="color:#51c9c1;">🗣️ ${s.speech_order_text}</span>` : "");
+        if (s.is_snake_win) dayResultStr += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 千年之戀達成！<br>許仙與白蛇雙雙殉情，直接獲勝！</span>`;
+        if (s.is_pandora_win) dayResultStr += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 潘朵拉使用希望之光，獲得勝利！</span>`;
+        document.getElementById('day-result').innerHTML = dayResultStr;
+        s.day_shooters_queue.shift(); processNextShooter();
+    };
+
+    let troubleTarget = getNightTarget('trouble', 'troublemaker');
+    if (troubleTarget === currentShooter.seat && ['hunter', 'awaken_hunter'].includes(currentShooter.role)) {
+        logNightAction(`【${currentShooter.seat}號獵人】被搗蛋鬼耍寶，開槍帶走自己`);
+        s.day_shooters_queue.shift(); processNextShooter();
+        return;
+    }
+
+    if (currentShooter.role === 'awaken_hunter') {
+        pad.innerHTML = `<button class="num-btn" id="btn-hunter-asc" style="grid-column: span 2; font-size: 18px;">順序 (號碼遞增)</button><button class="num-btn" id="btn-hunter-desc" style="grid-column: span 2; font-size: 18px;">逆序 (號碼遞減)</button>`;
+        document.getElementById('btn-hunter-asc').onclick = () => { let t = findNearestWolf(currentShooter.seat, 1); if (t) killPlayerDuringDay(t, true, true, 'awaken_hunter'); finishShooterTurn(); };
+        document.getElementById('btn-hunter-desc').onclick = () => { let t = findNearestWolf(currentShooter.seat, -1); if (t) killPlayerDuringDay(t, true, true, 'awaken_hunter'); finishShooterTurn(); };
+        document.getElementById('btn-day-skill-skip').onclick = finishShooterTurn; document.getElementById('btn-day-skill-confirm').classList.add('hidden');
+        return;
+    }
+
+    let selectedDayTarget = null;
+    for (let i = 1; i <= s.total_players; i++) {
+        const btn = document.createElement('button'); btn.classList.add('num-btn'); btn.textContent = i;
+        if (s.final_killed.includes(i)) { btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; } 
+        else {
+            btn.onclick = () => { document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedDayTarget = i; document.getElementById('btn-day-skill-confirm').classList.remove('hidden'); };
+        }
+        pad.appendChild(btn);
+    }
+    document.getElementById('btn-day-skill-skip').onclick = finishShooterTurn;
+    document.getElementById('btn-day-skill-confirm').onclick = () => { document.getElementById('btn-day-skill-confirm').classList.add('hidden'); killPlayerDuringDay(selectedDayTarget, true, true, currentShooter.role); finishShooterTurn(); };
 }
 
 export function runNextNightRole() {
@@ -224,13 +335,23 @@ export function runNextNightRole() {
         speak(morning_voice, () => {
             if (document.getElementById('setting-sheriff').checked) {
                 document.getElementById('screen-night').classList.add('hidden'); document.getElementById('screen-sheriff').classList.remove('hidden'); initSheriffScreen();
-            } else { s.speech_order_text = generateSpeechOrder(null); showDayResult(); }
+            } else { s.speech_order_text = null; s.defer_speech_order_until_shooting = true; showDayResult(); }
         });
         return;
     }
 
     let next_task = s.night_queue.shift();
     s.current_stage = next_task.stage; s.current_actor_seat = next_task.seat; s.current_sub_label = next_task.subLabel; s.is_fake_wake = next_task.isFake;
+
+    if (s.current_stage === 'pandora_gift_receiver') {
+        if (!s.pandora_target) return runNextNightRole();
+        s.current_stage = `notify_pandora_${s.pandora_target}`;
+    }
+    if (s.current_stage === 'pandora_knife_action') {
+        if (s.pandora_gift !== 'knife' || !s.pandora_target || s.player_roles[s.pandora_target] === 'pandora') return runNextNightRole();
+        s.current_stage = 'pandora_knife';
+        s.current_actor_seat = parseInt(s.pandora_target);
+    }
 
     if (s.is_fake_wake) {
         let fake_name = s.ROLE_DICT[s.current_stage]?.name || getStageVoiceName(s.current_stage, s.current_sub_label);
@@ -242,7 +363,6 @@ export function runNextNightRole() {
 
     if (s.current_stage === 'lucky_boy_action' && (!s.merchant_target || evil_roles.includes(s.player_roles[s.merchant_target]))) return runNextNightRole();
     
-    // 改用 actions 取出毒藥目標和攝夢目標
     let witchPoisonTarget = getNightTarget('poison', 'witch') || getNightTarget('poison', 'awaken_witch');
     if (s.current_stage === 'awaken_witch_assistant_action' && (!s.awk_witch_assistant || !witchPoisonTarget)) return runNextNightRole();
     
@@ -264,11 +384,14 @@ export function runNextNightRole() {
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
     let is_vwk_turn = actor_seat && s.player_status[actor_seat]?.isVWK;
 
+    if (actor_seat && s.player_status[actor_seat]?.isConvertedWolf && s.current_stage !== 'wolf') return runNextNightRole();
+
+    if (actor_seat && s.player_status[actor_seat]?.isPandoraPoisoned) return runNextNightRole();
     if (s.seed_wolf_target === parseInt(actor_seat)) {
         let name = getStageVoiceName(s.current_stage, s.current_sub_label); let base_role = s.current_stage.replace('_A', '').replace('_B', '');
         night_role_title.textContent = `${s.ROLE_DICT[base_role]?.icon || '🎭'} ${name}行動 (已被感染)`; night_instruction.innerHTML = `<span style="color:#e94560; font-weight:bold;">你已被感染成狼人，原技能失效。</span><br>請等待自動閉眼...`;
         number_pad.classList.add('hidden'); action_pad.classList.add('hidden'); btn_confirm_action.classList.add('hidden'); btn_optional_skip.classList.add('hidden');
-        s.night_action_log.push(`【${name}】已被種狼感染，跳過技能`);
+        logNightAction(`【${name}】已被種狼感染，跳過技能`);
         speak(`${name}請睜眼。`, () => { setTimeout(() => { speak(`${name}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000)); }, 3000 + Math.random() * 2000); }); return;
     }
 
@@ -323,8 +446,8 @@ export function runNextNightRole() {
         number_pad.classList.add('hidden'); btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼"; speak(`熊請睜眼。`); return;
     }
 
-    let auto_close_stages = ['wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'ghost_bride_witness'];
-    if (auto_close_stages.includes(s.current_stage)) {
+    let auto_close_stages = ['wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'ghost_bride_witness', 'big_gray_wolf_meet', 'wolf_brother_meet'];
+    if (auto_close_stages.includes(s.current_stage) || (s.current_stage === 'machine_wolf' && s.machine_wolf_learn_target)) {
         if (s.current_stage === 'wolf_gun_confirm') {
             night_role_title.textContent = "🐺 三小狼確認分槍";
             let awkWolfGunTarget = getNightTarget('grant_gun', 'awaken_wolf_king');
@@ -335,11 +458,25 @@ export function runNextNightRole() {
             let couple = [gb, s.ghost_bride_groom].sort((a, b) => a - b);
             night_instruction.innerHTML = `這對鬼魅夫妻是：<br><span style='color:#e94560; font-size: 24px; font-weight:bold;'>${couple[0]}號 與 ${couple[1]}號</span><br><span style='color:#a2a8d3; font-size: 14px;'>(你不知道誰是新娘誰是新郎)</span>`;
         } else if (s.current_stage === 'hidden_wolf') {
-            night_role_title.textContent = "🐺😶‍🌫️ 隱狼確認"; let w = Object.keys(s.player_roles).filter(k => evil_roles.includes(s.player_roles[k]) && s.player_roles[k] !== 'hidden_wolf');
+            night_role_title.textContent = "🐺😶‍🌫️ 隱狼確認"; let w = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]) && s.player_roles[k] !== 'hidden_wolf');
             night_instruction.innerHTML = `狼人陣營同伴是：<br><span style="color:#e94560;">${w.length ? w.join(', ') + ' 號' : '無'}</span>`;
         } else if (s.current_stage === 'eclipse_maid') {
             night_role_title.textContent = "🌞 蝕日侍女確認"; let w = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
             night_instruction.innerHTML = `狼人陣營同伴是：<br><span style="color:#e94560;">${w.length ? w.join(', ') + ' 號' : '無'}</span>`;
+        } else if (s.current_stage === 'big_gray_wolf_meet') {
+            night_role_title.textContent = "🐺 大灰狼與小狼相認";
+            let bgw = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'big_gray_wolf');
+            let wolves = Object.keys(s.player_roles).filter(k => ['wolf', 'little_gray_wolf'].includes(s.player_roles[k]));
+            night_instruction.innerHTML = `大灰狼是：<span style='color:#e94560; font-weight:bold;'>${bgw}號</span><br>小狼是：<span style='color:#e94560; font-weight:bold;'>${wolves.length ? wolves.join(', ') : '無'}號</span>`;
+        } else if (s.current_stage === 'wolf_brother_meet') {
+            night_role_title.textContent = "🐺 狼兄狼弟相認";
+            let wb = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_brother');
+            let wbl = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_brother_little');
+            night_instruction.innerHTML = `狼兄是：<span style='color:#e94560; font-weight:bold;'>${wb}號</span><br>狼弟是：<span style='color:#e94560; font-weight:bold;'>${wbl}號</span>`;
+        } else if (s.current_stage === 'machine_wolf') {
+            let learnedRole = s.player_roles[s.machine_wolf_learn_target];
+            night_role_title.textContent = "🤖🐺 機械狼確認學習結果";
+            night_instruction.innerHTML = `你學習到的身分是：<br><span style="color:#fca311; font-size:24px; font-weight:bold;">${s.ROLE_DICT[learnedRole]?.name || learnedRole}</span><br><br>不會使用該身分的技能。`;
         } else {
             if (s.current_stage === 'lovers_meet') night_role_title.textContent = "💕 情侶相認";
             if (s.current_stage === 'wolf_meet') night_role_title.textContent = "🐺 狼隊相認";
@@ -349,18 +486,10 @@ export function runNextNightRole() {
 
         let v = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf_meet' && Object.values(s.player_roles).includes('little_girl')) v = "狼隊和小女孩";
+        else if (s.current_stage === 'big_gray_wolf_meet') v = "大灰狼與小狼";
+        else if (s.current_stage === 'wolf_brother_meet') v = "狼兄狼弟";
+        
         speak(`${v}請睜眼。`);
-        return;
-    }
-
-    if (s.current_stage === 'wolf_brother_meet') {
-        night_role_title.textContent = "🐺 狼兄狼弟相認";
-        let wb = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_brother');
-        let wbl = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_brother_little');
-        night_instruction.innerHTML = `狼兄是：<span style='color:#e94560; font-weight:bold;'>${wb}號</span><br>狼弟是：<span style='color:#e94560; font-weight:bold;'>${wbl}號</span>`;
-        number_pad.classList.add('hidden');
-        btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼";
-        speak(`狼兄狼弟請睜眼. `);
         return;
     }
 
@@ -377,6 +506,7 @@ export function runNextNightRole() {
 
     if (s.current_stage === 'awaken_witch_assistant_action') {
         night_role_title.textContent = "👤 協助者確認";
+        let witchPoisonTarget = getNightTarget('poison', 'witch') || getNightTarget('poison', 'awaken_witch');
         night_instruction.innerHTML = `覺醒女巫選擇毒殺：<span style='color:#e94560; font-weight:bold; font-size:24px;'>${witchPoisonTarget} 號</span><br>請問你是否同意這項行動？`;
         number_pad.classList.add('hidden'); action_pad.innerHTML = ''; action_pad.classList.remove('hidden');
 
@@ -395,6 +525,10 @@ export function runNextNightRole() {
     night_screen.classList.remove('night-fade-in');
     void night_screen.offsetWidth;
     night_screen.classList.add('night-fade-in');
+    
+    let needs_result_roles = ['seer', 'drunk_seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'snake_seer', 'demon'];
+    if (s.current_stage === 'machine_wolf' && !s.machine_wolf_learn_target) needs_result_roles.push('machine_wolf');
+    
     renderRolePanel(is_stolen, is_vwk_turn, actor_seat);
 
     let voice_name = getStageVoiceName(s.current_stage, s.current_sub_label);
@@ -403,7 +537,6 @@ export function runNextNightRole() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-
     initSetupEvents();
     initSheriffEvents();
 
@@ -468,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (s.current_board.id === '12_shadow' && parseInt(s.current_actor_seat) === s.shadow_seer_seat) {
                 role_log += ' (燈影)';
             }
-            s.night_action_log.push(`【${role_log}】被恐懼，跳過技能`);
+            logNightAction(`【${role_log}】被恐懼，跳過技能`);
 
             btn_confirm_action.classList.add('hidden');
             action_pad.innerHTML = ''; action_pad.classList.add('hidden');
@@ -479,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (s.is_current_role_frozen) {
             let role_log = getStageVoiceName(s.current_stage, s.current_sub_label);
-            s.night_action_log.push(`【${role_log}】被冰凍，跳過技能`);
+            logNightAction(`【${role_log}】被冰凍，跳過技能`);
 
             btn_confirm_action.classList.add('hidden');
             action_pad.innerHTML = ''; action_pad.classList.add('hidden');
@@ -493,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
             night_instruction.textContent = "請閉眼等待...";
             let agree_text = s.awk_witch_assistant_agreed ? "同意" : "不同意";
             let witchPoisonTarget = getActionsByEffect('poison').find(a => ['witch', 'awaken_witch'].includes(a.role))?.resolved_targets[0];
-            s.night_action_log.push(`【覺醒女巫】對 ${witchPoisonTarget}號 使用毒藥 (指派 ${s.awk_witch_assistant}號 協助，他 ${agree_text})`);
+            logNightAction(`【覺醒女巫】對 ${witchPoisonTarget}號 使用毒藥 (指派 ${s.awk_witch_assistant}號 協助，他 ${agree_text})`);
             if (!s.awk_witch_assistant_agreed) {
                 let poisonAction = getActionsByEffect('poison').find(a => a.role === 'awaken_witch');
                 if (poisonAction) poisonAction.status = 'cancelled';
@@ -502,25 +635,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'ghost_bride_witness', 'hunter', 'bear'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) {
+        if (['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'ghost_bride_witness', 'bear', 'big_gray_wolf_meet'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) {
             btn_confirm_action.classList.add('hidden');
             action_pad.innerHTML = ''; action_pad.classList.add('hidden');
             night_instruction.textContent = "請閉眼等待...";
 
-            if (s.current_stage === 'wolf_meet') s.night_action_log.push(`【狼人】互相確認身分，首夜不刀人`);
-            if (s.current_stage === 'hidden_wolf') s.night_action_log.push(`【隱狼】確認了狼人陣營隊友`);
-            if (s.current_stage === 'eclipse_maid') s.night_action_log.push(`【蝕日侍女】確認了狼人陣營隊友`);
+            if (s.current_stage === 'wolf_meet') logNightAction(`【狼人】互相確認身分，首夜不刀人`);
+            if (s.current_stage === 'hidden_wolf') logNightAction(`【隱狼】確認了狼人陣營隊友`);
+            if (s.current_stage === 'eclipse_maid') logNightAction(`【蝕日侍女】確認了狼人陣營隊友`);
 
             let v = getStageVoiceName(s.current_stage, s.current_sub_label);
             if (s.current_stage === 'wolf_meet' && Object.values(s.player_roles).includes('little_girl')) v = "狼隊和小女孩";
+            else if (s.current_stage === 'big_gray_wolf_meet') v = "大灰狼與小狼";
 
             speak(`${v}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
             return;
         }
 
-        let needs_result_roles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'machine_wolf', 'snake_seer', 'demon'];
+        let needs_result_roles = ['seer', 'drunk_seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'snake_seer', 'demon'];
         if (s.current_stage === 'lucky_boy_action' && s.merchant_item === 'seer' && s.merchant_type !== 'black_market') needs_result_roles.push('lucky_boy_action');
         if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') needs_result_roles.push('gray_wolf_action');
+        if (s.current_stage === 'machine_wolf' && !s.machine_wolf_learn_target) needs_result_roles.push('machine_wolf');
 
         if (needs_result_roles.includes(s.current_stage) && s.selected_number !== 'skip' && !s.is_showing_result) {
             number_pad.classList.add('hidden');
@@ -593,8 +728,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (s.player_status[i].isWhiteCatFlipped) status_strs.push("🐱 已翻牌");
             if (s.player_status[i].isVWK) status_strs.push("🎭 百變狼王");
 
+            if (s.sp_grave_keeper_heir === i) status_strs.push("⚰️ 超級守墓人繼承人");
+            if (s.puppet_target === i) status_strs.push("🪆 傀儡目標");
+            if (s.shadow_seer_seat === i) status_strs.push("💡 燈影預言家");
+
             if (s.merchant_target === i) {
-                let item_map = { 'seer': '預查', 'poison': '毒藥', 'guard': '護盾', 'gun': '槍' };
+                let item_map = { 'seer': '查驗', 'poison': '毒藥', 'guard': '護盾', 'gun': '槍' };
                 status_strs.push(`🎁 幸運兒 (${item_map[s.merchant_item] || '無'})`);
             }
 
@@ -658,5 +797,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let t_calc = document.getElementById('trickster-calc'); if (t_calc) t_calc.remove();
         document.getElementById('crow-record-panel').classList.add('hidden');
         document.getElementById('screen-day').classList.add('hidden'); document.getElementById('screen-start').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-confirm-lock').addEventListener('click', () => {
+        const lock_modal = document.getElementById('lock-modal');
+        const screen_setup = document.getElementById('screen-setup');
+        const screen_night = document.getElementById('screen-night');
+        lock_modal.classList.add('hidden');
+        screen_setup.classList.add('hidden');
+        screen_night.classList.remove('hidden');
+        document.getElementById('number-pad').classList.add('hidden');
+        document.getElementById('night-role-title').textContent = "🐺 黑夜降臨";
+        document.getElementById('night-instruction').textContent = "請大家閉上眼睛...";
+        
+        // 【修復】：重置完昨晚狀態後，強制重新建立今晚的喚醒名單
+        resetNightState();
+        buildNightQueue();
+        
+        speak("天黑請閉眼。", runNextNightRole);
     });
 });

@@ -1,5 +1,6 @@
 // js/vote.js
 import { s, getNightTargets } from './core.js';
+import { killPlayerDuringDay } from './day.js';
 
 export function triggerTricksterVoteSection() {
     const day_result_content = document.getElementById('day-result-content');
@@ -13,6 +14,7 @@ export function triggerTricksterVoteSection() {
             <p style="color:#a2a8d3;">請輸入實際得票最高的玩家編號：</p>
             <div id="trickster-numpad" class="grid-container"></div>
             <div id="trickster-result" class="hidden" style="margin-top:15px; font-size:24px; font-weight:bold; color:#00ff88;"></div>
+            <button id="btn-end-vote" class="primary-btn hidden" style="margin-top:15px;">完成放逐投票結算</button>
         `;
         day_result_content.insertBefore(trickster_div, btn_reset);
 
@@ -32,11 +34,25 @@ export function triggerTricksterVoteSection() {
 
                 document.getElementById('trickster-result').textContent = `實際被放逐出局的是：【 ${exiled} 號 】`;
                 document.getElementById('trickster-result').classList.remove('hidden');
+                document.getElementById('btn-end-vote').classList.remove('hidden');
                 document.querySelectorAll('#trickster-numpad .num-btn').forEach(btn => btn.classList.remove('selected'));
                 b.classList.add('selected');
+                
+                s.current_voted_out = exiled; 
             };
             t_pad.appendChild(b);
         }
+
+        document.getElementById('btn-end-vote').onclick = () => {
+            document.getElementById('btn-end-vote').classList.add('hidden');
+            
+            // 【修復4：詭術師換票後真正執行死亡與連鎖結算】
+            if (s.current_voted_out) {
+                killPlayerDuringDay(s.current_voted_out, false, true, 'vote', true);
+            }
+            checkWhiteCatDeath();
+        };
+
     }
     btn_reset.classList.remove('hidden');
 }

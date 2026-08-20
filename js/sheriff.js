@@ -72,7 +72,8 @@ export function initSheriffEvents() {
     });
 
     document.getElementById('btn-no-sheriff-candidates').addEventListener('click', () => {
-        s.speech_order_text = generateSpeechOrder(null);
+        s.speech_order_text = null;
+        s.defer_speech_order_until_shooting = true;
         screen_sheriff.classList.add('hidden');
         showDayResult();
     });

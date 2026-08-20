@@ -65,7 +65,9 @@
 ## 規則參考文件
 
 各板子的完整規則（職業介紹、夜間睜眼順序、法官主持流程、Q&A）存放於：
-#[[file:.kiro/steering/狼人殺各版子.md]]
+#[[file:proposal/狼人殺各版子 前.md]]
+#[[file:proposal/狼人殺各版子 中.md]]
+#[[file:proposal/狼人殺各版子 後.md]]
 
 新增或修改角色邏輯時，應對照該文件中對應板子的章節確認規則正確性。
 
@@ -139,7 +141,7 @@
 
 ### 程式碼品質
 
-- 避免魔法數字：wakeOrder 數值應在 `data.json` 集中管理，程式碼中以有意義的 stage 名稱引用
+- 避免魔法數字：wake_queue 應在 `data.json` 集中管理，程式碼中以有意義的 stage 名稱引用
 - 複雜的結算邏輯應附帶區塊註解，說明對應的遊戲規則（例如「// 規則：奶穿判定」）
 - 當某角色的邏輯超過 50 行，考慮抽成獨立函式並以角色名命名（如 `handleGrayWolfAction()`）
 
@@ -151,11 +153,11 @@
 - UI 以行動裝置為主要考量（觸控友善、字體夠大）
 - 所有使用者看到的文字使用繁體中文
 - 程式碼註解使用繁體中文
-- 角色相關的硬編碼數值（wakeOrder、陣營歸屬）集中在 `data.json` 或 `core.js` 頂層
+- 角色相關的硬編碼數值（wake_queue_、陣營歸屬）集中在 `data.json` 或 `core.js` 頂層
 
 ### 夜晚流程
 
-- 夜晚行動順序由 `ROLE_DICT` 中的 `wakeOrder` 數值決定，數字越小越早行動
+- 夜晚行動順序由 `ROLE_DICT` 中的 `wake_queue` 數值決定，佇列越前越早行動
 - `nightQueue` 在每夜開始時根據場上存活角色動態建立
 - 每個角色行動結束後呼叫 `runNextNightRole()` 推進佇列
 
@@ -174,4 +176,4 @@
 5. 在 `actions.js` 的 `resolveNonInspectionAction` 中加入結果寫入邏輯
 6. 在 `day.js` 的 `calculateNightDeaths` 中加入結算邏輯（如適用）
 7. 在對應的 `BOARD_CONFIGS` 板子中加入角色配置
-8. 對照 `.kiro/steering/狼人殺各版子.md` 中的規則確認實作正確性
+8. 對照 `proposal/狼人殺各版子 前.md`、`proposal/狼人殺各版子 中.md`、`proposal/狼人殺各版子 後.md` 中的規則確認實作正確性

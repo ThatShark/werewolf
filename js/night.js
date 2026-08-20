@@ -1,5 +1,5 @@
 // js/night.js
-import { s, wolf_faction, wolf_team_roles, evil_roles, getActualTarget, applyTimeWolfReflection, vibrate, getNightTarget, getNightTargets } from './core.js';
+import { s, wolf_faction, wolf_team_roles, evil_roles, vibrate, getNightTarget, getNightTargets } from './core.js';
 
 export function resetSelections() {
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
@@ -21,6 +21,9 @@ export function createNumberPad() {
         let divinerMark = getNightTarget('mark', 'diviner');
         let alchFogs = getNightTargets('mark', 'alchemist');
 
+        if (s.current_stage === 'alchemist' && s.final_killed.includes(i)) is_disabled = true;
+        if (['seer', 'drunk_seer', 'seer_A', 'seer_B', 'psychic', 'pure_white', 'awaken_seer', 'fool_seer', 'snake_seer'].includes(s.current_stage) && s.final_killed.includes(i)) is_disabled = true;
+
         if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
             if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty', 'demon', 'medusa', 'evil_merchant', 'phantom_king'].includes(s.player_roles[i])) is_disabled = true;
             if (divinerMark) { let dm = parseInt(divinerMark); let p1 = dm - 1 < 1 ? s.total_players : dm - 1; let p2 = dm + 1 > s.total_players ? 1 : dm + 1; if (i !== dm && i !== p1 && i !== p2) is_disabled = true; }
@@ -28,7 +31,7 @@ export function createNumberPad() {
         }
 
         if (i === actual_current_actor_seat) {
-            const cannot_select_self = ['witch', 'awaken_witch', 'seer', 'seer_A', 'seer_B', 'fool_seer', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow', 'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal', 'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer', 'jack_ripper', 'war_wolf', 'demon', 'medusa', 'evil_merchant', 'phantom_king', 'penguin', 'celebrity', 'light_count', 'super_grave_keeper', 'troublemaker'];
+            const cannot_select_self = ['witch', 'awaken_witch', 'seer', 'drunk_seer', 'seer_A', 'seer_B', 'fool_seer', 'bear', 'psychic', 'pure_white', 'dreamwalker', 'awaken_dreamwalker', 'black_market', 'miracle_merchant', 'crow', 'nightmare', 'gargoyle', 'machine_wolf', 'wolf_beauty', 'awaken_wolf_beauty', 'wolf_witch', 'gray_wolf_steal', 'half_blood', 'awaken_lonely_girl', 'ghost_bride', 'ghost_bride_couple', 'snake_seer', 'jack_ripper', 'war_wolf', 'demon', 'medusa', 'evil_merchant', 'phantom_king', 'pandora_knife', 'penguin', 'celebrity', 'light_count', 'super_grave_keeper', 'troublemaker'];
             if (cannot_select_self.includes(s.current_stage)) is_disabled = true;
         }
 
