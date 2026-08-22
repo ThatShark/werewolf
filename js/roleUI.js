@@ -39,12 +39,12 @@ export function renderRolePanel(isStolen, isVWKTurn, actorSeat) {
 roleHandlers['_info_only'] = (ctx) => {
     let roleData = s.ROLE_DICT[s.current_stage] || {};
     ctx.nightRoleTitle.textContent = `${roleData.icon || '🎭'} ${roleData.name || s.current_stage}確認`;
-    
+
     let instruction = "請確認你的狀態或隊友。";
     let customHTML = "";
 
     // 在這裡集中管理所有「純相認/純確認」的文案與對象，不汙染 data.json
-    switch(s.current_stage) {
+    switch (s.current_stage) {
         case 'wolf_meet':
             instruction = "請狼隊伍互相確認身分 (首夜不刀人)。";
             break;
@@ -313,16 +313,51 @@ roleHandlers['wolf'] = (ctx) => {
     let alch_text = alchFogs.length > 0 ? `<br><span style="color:#fca311;">⚠️ 煉金魔女已施放迷霧，只能從 ${alchFogs.sort().join(', ')} 號中擊殺</span>` : '';
     nightRoleTitle.textContent = has_lg ? "🐺 狼隊與小女孩行動" : "🐺 狼人行動";
 
+    // 💡 新增：將名單與標記狀態拉成一個共用的變數
+    let wolf_list_html = `<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`;
+
     if (Object.values(s.player_roles).includes('seed_wolf')) {
-        nightInstruction.innerHTML += "請選擇行動模式："; numberPad.classList.add('hidden');
+        // 💡 初始狀態就加上 wolf_list_html
+        nightInstruction.innerHTML += `請選擇行動模式：${wolf_list_html}`; 
+        numberPad.classList.add('hidden');
+        
         let customPanel = document.createElement('div'); customPanel.id = 'custom-action-panel'; customPanel.style = "display: flex; gap: 10px; width: 100%; justify-content: center; margin-bottom: 15px;";
-        let btnKill = document.createElement('button'); btnKill.className = 'primary-btn'; btnKill.textContent = "一般刀人"; let btnInfect = document.createElement('button'); btnInfect.className = 'special-btn'; btnInfect.textContent = "發動感染"; let btnSkip = document.createElement('button'); btnSkip.className = 'secondary-btn'; btnSkip.textContent = "空刀 (不擊殺)"; customPanel.appendChild(btnKill); customPanel.appendChild(btnInfect); customPanel.appendChild(btnSkip); numberPad.parentNode.insertBefore(customPanel, numberPad);
-        btnKill.onclick = () => { s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); nightInstruction.innerHTML = `請選擇擊殺目標：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`; };
-        btnInfect.onclick = () => { s.is_seed_wolf_infecting = true; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } }); btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); nightInstruction.innerHTML = `請選擇要感染的目標：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`; };
-        btnSkip.onclick = () => { s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = 'skip'; btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected'); numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認"; nightInstruction.innerHTML = "請選擇行動模式："; };
+        let btnKill = document.createElement('button'); btnKill.className = 'primary-btn'; btnKill.textContent = "一般刀人"; 
+        let btnInfect = document.createElement('button'); btnInfect.className = 'special-btn'; btnInfect.textContent = "發動感染"; 
+        let btnSkip = document.createElement('button'); btnSkip.className = 'secondary-btn'; btnSkip.textContent = "空刀 (不擊殺)"; 
+        
+        customPanel.appendChild(btnKill); customPanel.appendChild(btnInfect); customPanel.appendChild(btnSkip); 
+        numberPad.parentNode.insertBefore(customPanel, numberPad);
+        
+        btnKill.onclick = () => { 
+            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; 
+            btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); 
+            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); 
+            // 💡 點擊後顯示
+            nightInstruction.innerHTML = `請選擇擊殺目標：${wolf_list_html}`; 
+        };
+        
+        btnInfect.onclick = () => { 
+            s.is_seed_wolf_infecting = true; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; 
+            document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } }); 
+            btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); 
+            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); 
+            // 💡 點擊後顯示
+            nightInstruction.innerHTML = `請選擇要感染的目標：${wolf_list_html}`; 
+        };
+        
+        btnSkip.onclick = () => { 
+            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = 'skip'; 
+            btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected'); 
+            numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認"; 
+            // 💡 點擊後顯示
+            nightInstruction.innerHTML = `請選擇行動模式：${wolf_list_html}`; 
+        };
+        
         if (alchFogs.length > 0) btnSkip.classList.add('hidden');
     } else {
-        nightInstruction.innerHTML += `請點擊擊殺目標號碼 (或空刀)：<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`;
+        // 💡  一般模式也直接用變數
+        nightInstruction.innerHTML += `請點擊擊殺目標號碼 (或空刀)：${wolf_list_html}`;
         btnOptionalSkip.textContent = "空刀 (不擊殺)"; btnOptionalSkip.classList.remove('hidden');
         if (alchFogs.length > 0) btnOptionalSkip.classList.add('hidden');
     }
@@ -374,7 +409,7 @@ roleHandlers['_notify'] = (ctx) => {
         const status_text_element = document.createElement('p');
         status_text_element.style = "font-size: 24px; font-weight: bold; margin: 0;";
         status_text_element.innerHTML = status_text;
-        status_text_element.style.color = messages.length ? "#fca311" : "#a2a8d3"; 
+        status_text_element.style.color = messages.length ? "#fca311" : "#a2a8d3";
         status_box.appendChild(status_text_element); actionPad.appendChild(status_box);
         btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = phase === 'check' ? "確認並閉眼" : "了解並閉眼";
         return;
@@ -396,7 +431,7 @@ roleHandlers['_notify'] = (ctx) => {
         if (notify_type === 'notify_general') { if (s.cupid_lovers.includes(seat)) msgs.push("你是情侶 💕"); if (s.seed_wolf_target === seat) msgs.push(`你被種狼感染成了狼人！🐺`); }
         if (notify_type === 'notify_end') { if (s.awk_gargoyle_target === seat || s.awk_gargoyle_target_a === seat || s.awk_gargoyle_target_b === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`); }
         let resBox = document.createElement('div'); resBox.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
-        let txt = document.createElement('p'); txt.style = "font-size: 24px; font-weight: bold; margin: 0;"; txt.innerHTML = msgs.length ? msgs.join('<br>') : "無特殊狀態"; txt.style.color = msgs.length ? "#fca311" : "#a2a8d3"; 
+        let txt = document.createElement('p'); txt.style = "font-size: 24px; font-weight: bold; margin: 0;"; txt.innerHTML = msgs.length ? msgs.join('<br>') : "無特殊狀態"; txt.style.color = msgs.length ? "#fca311" : "#a2a8d3";
         resBox.appendChild(txt); actionPad.appendChild(resBox);
         btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "了解並閉眼";
     };

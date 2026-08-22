@@ -129,7 +129,7 @@ export function addNightAction(actor, role, effect, targets, metadata = {}) { s.
 export function insertNightStatusFlow(type, targets = [], metadata = {}) {
     const flow_id = `${type}-${s.night_status_flows.length + 1}`;
     const target_seats = [...targets].map(Number).filter(Boolean);
-    s.night_status_flows.push({ id: flow_id, type, targets: target_seats, metadata });
+    s.night_status_flows.push({ id: flow_id, type, targets: target_seats, metadata, processed: false });
     const stages = [];
     for (let seat = 1; seat <= s.total_players; seat++) stages.push({ stage: `status_check_${flow_id}_${seat}`, order: -1, seat: null, subLabel: null, isFake: false });
     const reveal_targets = metadata.reveal_targets ? [...metadata.reveal_targets].map(Number).filter(Boolean) : target_seats;

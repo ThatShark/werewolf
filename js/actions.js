@@ -350,17 +350,30 @@ export function resolveNonInspectionAction() {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('merchant', targets, { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets: [] });
     }
-    if (s.current_stage === 'super_black_market' && ctx.targetsArr.length) insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts });
-    if (s.current_stage === 'cupid' && ctx.targetsArr.length === 2) {
-        setPersistentState('cupid_lovers', ctx.targetsArr);
-        insertNightStatusFlow('lovers', ctx.targetsArr);
+    if (s.current_stage === 'super_black_market') {
+        insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts });
     }
-    if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage) && ctx.targetNum) {
-        insertNightStatusFlow('gargoyle_conversion', [ctx.targetNum]);
+
+    if (s.current_stage === 'cupid') {
+        if (ctx.targetsArr.length === 2) setPersistentState('cupid_lovers', ctx.targetsArr);
+        insertNightStatusFlow('lovers', ctx.targetsArr.length === 2 ? ctx.targetsArr : []);
     }
-    if (s.current_stage === 'ghost_bride' && ctx.targetNum) insertNightStatusFlow('ghost_groom', [ctx.targetNum]);
-    if (s.current_stage === 'ghost_bride_couple' && ctx.targetNum) insertNightStatusFlow('ghost_witness', [ctx.targetNum]);
-    if (s.current_stage === 'wolf' && s.is_seed_wolf_infecting && ctx.targetNum) insertNightStatusFlow('seed_wolf', [ctx.targetNum]);
+    
+    if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
+        insertNightStatusFlow('gargoyle_conversion', ctx.targetNum ? [ctx.targetNum] : []);
+    }
+
+    if (s.current_stage === 'ghost_bride') {
+        insertNightStatusFlow('ghost_groom', ctx.targetNum ? [ctx.targetNum] : []);
+    }
+    if (s.current_stage === 'ghost_bride_couple') {
+        insertNightStatusFlow('ghost_witness', ctx.targetNum ? [ctx.targetNum] : []);
+    }
+
+    if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
+        let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
+        insertNightStatusFlow('seed_wolf', targets);
+    }
     
     if (s.current_stage === 'pandora') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];

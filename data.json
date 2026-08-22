@@ -1320,6 +1320,7 @@
                 },
                 "wake_queue": [
                     "wolves",
+                    "take_turns",
                     "witch",
                     "hunter"
                 ]
@@ -1359,6 +1360,7 @@
                     "penguin",
                     "celebrity",
                     "wolves",
+                    "take_turns",
                     "witch",
                     "hunter"
                 ]
@@ -3124,6 +3126,7 @@
                 },
                 "wake_queue": [
                     "wolves",
+                    "take_turns",
                     "witch",
                     "real_fox"
                 ]
@@ -3143,6 +3146,7 @@
                 "wake_queue": [
                     "guard",
                     "wolves",
+                    "take_turns",
                     "witch",
                     "seer"
                 ]
@@ -3163,6 +3167,7 @@
                 "wake_queue": [
                     "guard",
                     "wolves",
+                    "take_turns",
                     "hidden_wolf",
                     "witch",
                     "seer",
@@ -3184,6 +3189,7 @@
                 "wake_queue": [
                     "guard",
                     "wolves",
+                    "take_turns",
                     "witch",
                     "seer",
                     "hunter"
@@ -3226,6 +3232,7 @@
                 "wake_queue": [
                     "charmer",
                     "wolves",
+                    "take_turns",
                     "wolf_beauty",
                     "witch",
                     "seer"
@@ -3955,7 +3962,9 @@
                 },
                 "wake_queue": [
                     "ghost_bride",
+                    "take_turns",
                     "ghost_bride_and_groom",
+                    "take_turns",
                     "marriage_witness",
                     "guard",
                     "wolves",

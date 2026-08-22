@@ -136,7 +136,7 @@ function resolveWolfKills(validProtects, pgGuards, validSaves, validDreams, idio
             let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
             let isIdiotProtected = idiotProtects.some(a => a.resolved_targets.includes(target)) || (awakenIdiotSeat && parseInt(awakenIdiotSeat) === target);
             let targetRole = s.player_roles[target]; let diesToWolf = false;
-            
+
             // 資料驅動：讀取 JSON 中的規則
             let rules = s.ROLE_DICT[targetRole] || {};
 
@@ -157,7 +157,7 @@ function resolvePoisons(validProtects, validDreams, immuneToNightDamageTargets) 
     getActionsByEffect('poison').forEach(poisonAction => {
         let target = poisonAction.resolved_targets[0]; let targetRole = s.player_roles[target];
         let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
-        
+
         // 資料驅動：讀取 JSON 的毒藥免疫規則
         let rules = s.ROLE_DICT[targetRole] || {};
 
@@ -270,10 +270,10 @@ export function calculateNightDeaths() {
     if (demonHunterTarget) {
         let dhSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'demon_hunter');
         let targetRole = s.player_roles[demonHunterTarget];
-        
-        let isTargetEvil = isWolfRole(targetRole); 
+
+        let isTargetEvil = isWolfRole(targetRole);
         if (targetRole === 'war_wolf') isTargetEvil = false; // 戰狼免疫神職技能
-        
+
         if (isTargetEvil) { addDeathEvent(demonHunterTarget, 'demon_hunter', '獵魔人狩獵'); }
         else if (dhSeat) { addDeathEvent(parseInt(dhSeat), 'demon_hunter', '狩獵好人反噬'); }
     }
@@ -380,10 +380,10 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true, sourc
         s.player_status[seat].injured = true;
         return;
     }
-    
+
     // 資料驅動：取代原本寫死的 ['ghost_rider', 'demon', 'war_wolf']，改用 JSON 的 immune_gun
     if (isShot && rules.immune_gun) return;
-    
+
     if (role === 'white_cat' && !s.player_status[seat]?.isWhiteCatFlipped) {
         if (!s.player_status[seat]) s.player_status[seat] = {};
         s.player_status[seat].isWhiteCatFlipped = true;
@@ -465,7 +465,7 @@ export function generateDayReport() {
 
     let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear');
     const isSeatWolfForBear = (seatId) => {
-        if (!seatId || s.final_killed.includes(seatId)) return false; 
+        if (!seatId || s.final_killed.includes(seatId)) return false;
         let role = s.player_roles[seatId];
         if (role === 'treasure_master' && s.is_treasure_hunter_evil) return true;
         return isEvilRole(role);
@@ -512,7 +512,7 @@ export function generateDayReport() {
         s.death_events.forEach(e => {
             let seat = e.seat;
             let role = s.player_roles[seat];
-            if (['狼刀', '被開槍帶走'].includes(e.reason) && canPlayerShoot(seat, role)) {
+            if (['狼刀', '被開槍帶走', '奶穿', '大野狼擊殺'].includes(e.reason) && canPlayerShoot(seat, role)) {
                 s.day_shooters_queue.push({ seat, role });
                 if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role });
             }

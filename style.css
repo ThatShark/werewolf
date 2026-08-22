@@ -323,6 +323,10 @@ button:active:not(:disabled) {
     border-radius: var(--radius-md);
     font-size: 18px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* gap: 8px; */
 }
 
 .role-select-btn:active:not(:disabled) {

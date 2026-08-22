@@ -64,7 +64,10 @@ export function buildNightQueue() {
     wake_queue.forEach((qItem, index) => {
         let stage = qItem; let isFake = false; let seat = null; let subLabel = null;
 
-        if (qItem === 'take_turns') return; 
+        if (qItem === 'take_turns') {
+            queue_list.push({ stage: 'take_turns', order: index, seat: null, subLabel: null, isFake: false });
+            return;
+        }
 
         // 群體與特定機制轉換
         if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet'].includes(qItem)) {
@@ -338,6 +341,25 @@ export function runNextNightRole() {
 
     let next_task = s.night_queue.shift();
     s.current_stage = next_task.stage; s.current_actor_seat = next_task.seat; s.current_sub_label = next_task.subLabel; s.is_fake_wake = next_task.isFake;
+
+    if (s.current_stage === 'take_turns') {
+        let unprocessed = s.night_status_flows.filter(f => !f.processed);
+        if (unprocessed.length > 0) {
+            let stages = [];
+            unprocessed.forEach(flow => {
+                flow.processed = true;
+                for (let seat = 1; seat <= s.total_players; seat++) {
+                    stages.push({ stage: `status_check_${flow.id}_${seat}`, order: -1, seat: null, subLabel: null, isFake: false });
+                }
+                const reveal_targets = flow.metadata.reveal_targets ? [...flow.metadata.reveal_targets].map(Number).filter(Boolean) : flow.targets;
+                reveal_targets.forEach((seat, index) => {
+                    stages.push({ stage: `status_notify_${flow.id}_${seat}`, order: -1, seat: null, subLabel: index, isFake: false });
+                });
+            });
+            s.night_queue.unshift(...stages);
+        }
+        return runNextNightRole();
+    }
 
     if (s.current_stage === 'pandora_gift_receiver') {
         if (!s.pandora_target) return runNextNightRole();

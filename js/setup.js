@@ -12,10 +12,29 @@ function openRoleModal(role_setup_grid) {
     const role_modal = document.getElementById('role-modal');
     modal_role_options.innerHTML = '';
     for (const role_id of Object.keys(s.current_board.roles)) {
+        // 1. 取得去掉 _A, _B 等尾綴後的基礎角色 ID
+        const base_role_id = role_id.replace(/_[A-Z]$/, '');
+
+        // 2. 防呆：確保基礎角色存在於字典中
+        if (!s.ROLE_DICT[base_role_id]) {
+            console.error(`找不到角色: ${base_role_id}`);
+            continue;
+        }
+
         const btn = document.createElement('button');
         btn.classList.add('role-select-btn');
-        btn.innerHTML = `${s.ROLE_DICT[role_id].icon} ${s.ROLE_DICT[role_id].name}`;
+        
+        // 3. 讓按鈕顯示帶有 A, B 區分的名稱（例如：預言家 A），方便法官辨識
+        let displayName = s.ROLE_DICT[base_role_id].name;
+        const suffixMatch = role_id.match(/_([A-Z])$/);
+        if (suffixMatch) {
+            displayName += ` ${suffixMatch[1]}`; 
+        }
+
+        // 4. 設定內容與置中排版
+        btn.innerHTML = `${s.ROLE_DICT[base_role_id].icon} ${displayName}`;
         btn.addEventListener('click', () => {
+            // 5. 存入陣列時，必須存「原始的 role_id」(例如 seer_A)
             s.player_roles[s.current_editing_seat] = role_id;
             const grid_btn = role_setup_grid.children[s.current_editing_seat - 1];
             grid_btn.dataset.status = 'set';
@@ -36,10 +55,7 @@ function renderRandomRoleView(btn_start_night) {
         return;
     }
     let disp_role = s.player_roles[s.current_viewing_seat];
-    let display_role_key = disp_role;
-    if (s.current_board?.id === '12_shadow' && (disp_role === 'seer_A' || disp_role === 'seer_B')) {
-        display_role_key = 'seer';
-    }
+    let display_role_key = disp_role.replace(/_[A-Z]$/, '');
 
     container.innerHTML = `
         <button id="btn-view-role" class="num-btn" style="width:100%; padding:30px; font-size:22px;">點擊查看 ${s.current_viewing_seat} 號 身分</button>
