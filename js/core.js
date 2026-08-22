@@ -5,7 +5,7 @@ export const s = {
     player_roles: {}, player_status: {}, spare_cards: [], discarded_roles: [], initial_thief_seat: null, thief_chosen_role: null, vwk_seat: null, shadow_seer_seat: null,
     night_queue: [], current_stage: null, current_actor_seat: null, current_sub_label: null, current_viewing_seat: 1, selected_number: null, selected_numbers_arr: [],
     is_showing_result: false, is_fake_wake: false, is_current_role_feared: false, is_current_role_frozen: false, night_action_log: [], speech_order_text: null, defer_speech_order_until_shooting: false, sheriff_candidates: [],
-    
+
     night_actions: [], death_events: [], final_killed: [],
 
     prev_dream_target: null, sp_grave_keeper_heir: null, puppet_target: null, half_blood_target: null, wild_child_target: null, lonely_girl_target: null,
@@ -20,47 +20,56 @@ export const s = {
     player_genders: {}, sleeping_beauty_seat: null, is_sleeping_beauty_active: true
 };
 
-Object.defineProperty(s, 'primary_killed', { get: function() { return this.death_events.filter(e => e.source !== 'chain' && e.source !== 'vote').map(e => e.seat); } });
-Object.defineProperty(s, 'chain_killed', { get: function() { return this.death_events.filter(e => e.source === 'chain').map(e => e.seat); } });
-// 【修復】：總死亡名單 = 過去已死的人 + 今晚死的人
+Object.defineProperty(s, 'primary_killed', { get: function () { return this.death_events.filter(e => e.source !== 'chain' && e.source !== 'vote').map(e => e.seat); } });
+Object.defineProperty(s, 'chain_killed', { get: function () { return this.death_events.filter(e => e.source === 'chain').map(e => e.seat); } });
 
-export const wolf_faction = ['wolf', 'wolf_king', 'white_wolf_king', 'ghost_rider', 'wolf_beauty', 'blood_moon', 'snow_wolf', 'wolf_brother', 'awaken_wolf_king', 'wolf_witch', 'nightmare', 'wolf_crow', 'awaken_wolf_beauty', 'night_noble', 'time_wolf', 'trickster', 'wolf_sorcerer', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_bad_wolf', 'seed_wolf', 'big_gray_wolf', 'little_gray_wolf', 'war_wolf', 'moon_wolf', 'assassin', 'warden', 'phantom_king', 'medusa', 'black_bat', 'pumpkin', 'evil_merchant', 'demon', 'dark_messenger'];
-export const evil_roles = [...wolf_faction, 'hidden_wolf', 'gargoyle', 'machine_wolf', 'phantom', 'night_mentor', 'eclipse_maid', 'mask_wolf', 'gray_wolf', 'wolf_servant', 'snake_phantom', 'snake_seer', 'troublemaker', 'anubis', 'super_black_market', 'wolf_brother_little'];
-export const wolf_team_roles = wolf_faction.filter(role => !['wolf_crow', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_gray_wolf'].includes(role));
+// ==========================================
+// 資料驅動型態判斷工具 (Data-Driven Helpers)
+// ==========================================
+export function isWolfRole(role) {
+    return s.ROLE_DICT[role]?.faction === 'wolf' || s.ROLE_DICT[role]?.type === 'wolf';
+}
 
-export const ROLE_RULES = {
-    wolf: { seer_result: 'evil' }, little_gray_wolf: { seer_result: 'evil' }, wolf_king: { seer_result: 'evil' }, white_wolf_king: { seer_result: 'evil' }, 
-    wolf_beauty: { seer_result: 'evil' }, awaken_wolf_beauty: { seer_result: 'evil' }, blood_moon: { seer_result: 'evil' }, wolf_brother: { seer_result: 'evil' }, 
-    awaken_wolf_king: { seer_result: 'evil' }, wolf_witch: { seer_result: 'evil' }, nightmare: { seer_result: 'evil' }, wolf_crow: { seer_result: 'evil' }, 
-    night_noble: { seer_result: 'evil' }, time_wolf: { seer_result: 'evil' }, trickster: { seer_result: 'evil' }, wolf_sorcerer: { seer_result: 'evil' }, 
-    awaken_gargoyle: { seer_result: 'evil' }, awaken_gargoyle_A: { seer_result: 'evil' }, awaken_gargoyle_B: { seer_result: 'evil' }, big_bad_wolf: { seer_result: 'evil' }, 
-    seed_wolf: { seer_result: 'evil' }, big_gray_wolf: { seer_result: 'evil' }, gray_wolf: { seer_result: 'evil' }, wolf_servant: { seer_result: 'evil' }, 
-    assassin: { seer_result: 'evil' }, warden: { seer_result: 'evil' }, phantom_king: { seer_result: 'evil' }, medusa: { seer_result: 'evil' }, 
-    black_bat: { seer_result: 'evil' }, evil_merchant: { seer_result: 'evil' }, dark_messenger: { seer_result: 'evil' },
-    ghost_rider: { seer_result: 'evil', immune_night_kill: true, immune_poison: true },
-    demon: { seer_result: 'evil', immune_night_kill: true, immune_poison: true },
-    war_wolf: { seer_result: 'evil', immune_god_skills: true },
-    snow_wolf: { seer_result: 'good' }, hidden_wolf: { seer_result: 'good' }, wolf_brother_little: { seer_result: 'good' },
-    machine_wolf: { seer_result: 'dynamic' }, gargoyle: { seer_result: 'evil' }, pumpkin: { seer_result: 'dynamic' },
-    curse_fox: { seer_result: 'good', immune_night_kill: true },
-    phantom: { seer_result: 'evil' }, snake_phantom: { seer_result: 'evil' }, snake_seer: { seer_result: 'evil' },
-    night_mentor: { seer_result: 'evil' }, eclipse_maid: { seer_result: 'evil' }, mask_wolf: { seer_result: 'evil', immune_poison: true },
-    troublemaker: { seer_result: 'evil' }, anubis: { seer_result: 'evil' }, super_black_market: { seer_result: 'evil' },
-    treasure_master: { seer_result: 'dynamic' }, jack_ripper: { seer_result: 'good' },
-    demon_hunter: { seer_result: 'good', immune_poison: true }, dancer: { seer_result: 'good', immune_poison: true },
-};
+export function isEvilRole(role) {
+    let rData = s.ROLE_DICT[role];
+    if (!rData) return false;
+    return rData.faction === 'wolf' || rData.faction === 'third_party' || rData.seer_result === 'evil';
+}
 
+// 取得會跟著狼隊一起行動的角色
+export function getWolfTeamRoles() {
+    let roles = [];
+    for (let rId in s.ROLE_DICT) {
+        if (isWolfRole(rId)) {
+            // 排除特定不跟狼隊伍一起刀人的獨立狼
+            if (!['wolf_crow', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_gray_wolf', 'gargoyle'].includes(rId)) {
+                roles.push(rId);
+            }
+        }
+    }
+    return roles;
+}
+
+// 取代原本依賴 ROLE_RULES 的查驗邏輯
 export function isPlayerEvil(seat, visited = new Set()) {
     if (visited.has(seat)) return true;
     visited.add(seat);
 
-    let role = s.player_roles[seat]; let rules = ROLE_RULES[role] || { seer_result: 'good' };
+    let role = s.player_roles[seat];
+    let rData = s.ROLE_DICT[role] || {};
+    
     if (seat === s.puppet_target) return true;
     if (s.player_status[seat]?.isVWK) return true;
-    if (role === 'pumpkin') { let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); if (gs && !s.final_killed.includes(parseInt(gs))) return false; return true; }
+    if (role === 'pumpkin') { 
+        let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); 
+        if (gs && !s.final_killed.includes(parseInt(gs))) return false; 
+        return true; 
+    }
     if (role === 'treasure_master') return s.is_treasure_hunter_evil;
     if (role === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
-    return rules.seer_result === 'evil';
+    
+    // 直接讀取 JSON 中設定的查驗結果
+    return rData.seer_result === 'evil';
 }
 
 export function logNightAction(msg) { s.night_action_log.push(msg); }
@@ -81,8 +90,8 @@ export function resetGameState() {
     s.sp_grave_keeper_heir = null; s.puppet_target = null; s.half_blood_target = null; s.wild_child_target = null; s.lonely_girl_target = null;
     s.seed_wolf_target = null; s.awk_gargoyle_target = null; s.awk_gargoyle_target_a = null; s.awk_gargoyle_target_b = null; s.rust_sword_infected_target = null; s.awk_wolf_gun_target = null;
     s.ghost_bride_groom = null; s.ghost_bride_witness = null; s.shadow_master_target = null; s.phantom_targets = []; s.cupid_lovers = []; s.acted_players = []; s.zombie_infected = [];
-    s.is_time_wolf_reflection_used = false; s.has_ghost_rider_reflected = false; s.did_white_cat_flip_last_night = false; s.is_pufferfish_triggered = false; s.is_alchemist_snake_used = false;
-    s.phantom_known_wolf = null; s.merchant_item = null; s.merchant_type = null; s.awk_witch_step = null; s.awk_witch_assistant = null; s.awk_witch_assistant_agreed = null; s.is_snake_win = false; s.is_pandora_win = false;
+    s.is_time_wolf_reflection_used = false; s.is_seed_wolf_infecting = false; s.has_ghost_rider_reflected = false; s.did_white_cat_flip_last_night = false; s.is_pufferfish_triggered = false;
+    s.is_alchemist_snake_used = false; s.phantom_known_wolf = null; s.merchant_item = null; s.merchant_type = null; s.awk_witch_step = null; s.awk_witch_assistant = null; s.awk_witch_assistant_agreed = null; s.is_snake_win = false; s.is_pandora_win = false;
     s.gray_wolf_stolen_player = null; s.gray_wolf_stolen_skill = null; s.gray_wolf_guess = null; s.machine_wolf_learn_target = null; s.evil_merchant_gun_target = null;
     s.pandora_target = null; s.pandora_pool = null; s.pandora_gift = null; s.sp_merchant_targets = []; s.sp_merchant_gifts = []; s.is_sp_merchant_turns_evil = false; s.treasure_hunter_choice = null; s.is_treasure_hunter_evil = false;
     s.night_status_flows = [];
@@ -92,11 +101,11 @@ export function resetGameState() {
 }
 
 export function resetNightState() {
-    s.death_events = []; // 清空「昨晚」的死亡紀錄
-    s.night_queue = []; 
-    s.night_actions = []; 
-    s.night_action_log = []; 
-    s.day_shooters_queue = []; 
+    s.death_events = [];
+    s.night_queue = [];
+    s.night_actions = [];
+    s.night_action_log = [];
+    s.day_shooters_queue = [];
     s.moon_wolf_roar = null;
     s.is_seed_wolf_infecting = false;
     s.night_status_flows = [];
@@ -107,10 +116,10 @@ export function speak(text, callback) { const utterance = new SpeechSynthesisUtt
 
 export function getStageVoiceName(stage, sub_label) {
     if (stage === 'seer') return sub_label ? `預言家${sub_label}` : '預言家';
-    if (stage === 'awaken_witch') return '覺醒女巫'; if (stage === 'awaken_wolf_king_gun') return '覺醒狼王'; if (stage === 'wolf_gun_confirm') return '三小狼'; 
-    if (stage === 'wolf' || stage === 'wolf_meet') return '狼人'; if (stage === 'lovers_meet') return '情侶'; if (stage === 'wolf_brother_meet') return '狼兄狼弟'; 
-    if (stage === 'lucky_boy_action') return '幸運兒'; if (stage === 'awaken_witch_assistant_action') return '協助者'; if (stage === 'variable_wolf_king') return '百變狼王'; 
-    if (stage === 'ghost_bride_couple') return '鬼魅新娘與新郎'; if (stage === 'ghost_bride_witness') return '證婚人'; if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人'; 
+    if (stage === 'awaken_witch') return '覺醒女巫'; if (stage === 'awaken_wolf_king_gun') return '覺醒狼王'; if (stage === 'wolf_gun_confirm') return '三小狼';
+    if (stage === 'wolf' || stage === 'wolf_meet') return '狼人'; if (stage === 'lovers_meet') return '情侶'; if (stage === 'wolf_brother_meet') return '狼兄狼弟';
+    if (stage === 'lucky_boy_action') return '幸運兒'; if (stage === 'awaken_witch_assistant_action') return '協助者'; if (stage === 'variable_wolf_king') return '百變狼王';
+    if (stage === 'ghost_bride_couple') return '鬼魅新娘與新郎'; if (stage === 'ghost_bride_witness') return '證婚人'; if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人';
     if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '灰太狼'; if (stage === 'zombie_infected') return '感染者'; if (stage === 'fanatic_action') return '狂熱粉';
     if (stage.startsWith('notify_')) return `${stage.split('_').pop()}號`;
     return s.ROLE_DICT[stage]?.name || stage;
@@ -152,7 +161,7 @@ export function removeDeathEvent(seat) {
 export function applyTimeWolfReflection(target_seat, actor_seat) {
     let twTarget = getNightTarget('mark', 'time_wolf');
     if (!target_seat || !twTarget || !actor_seat) return target_seat;
-    if (target_seat === twTarget && !s.is_time_wolf_reflection_used && !evil_roles.includes(s.player_roles[actor_seat])) {
+    if (target_seat === twTarget && !s.is_time_wolf_reflection_used && !isEvilRole(s.player_roles[actor_seat])) {
         setPersistentState('is_time_wolf_reflection_used', true); return parseInt(actor_seat);
     }
     return target_seat;
@@ -186,7 +195,7 @@ export function findNearestWolf(start_seat, dir) {
     for (let i = 0; i < s.total_players; i++) {
         curr += dir;
         if (curr > s.total_players) curr = 1; if (curr < 1) curr = s.total_players;
-        if (!s.final_killed.includes(curr) && evil_roles.includes(s.player_roles[curr])) return curr;
+        if (!s.final_killed.includes(curr) && isWolfRole(s.player_roles[curr])) return curr;
     }
     return null;
 }

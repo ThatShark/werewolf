@@ -1,4 +1,5 @@
-import { s, wolf_faction, wolf_team_roles, speak } from './core.js';
+// js/setup.js
+import { s, speak, isWolfRole, getWolfTeamRoles } from './core.js';
 import { buildNightQueue, runNextNightRole } from './main.js';
 
 // ==========================================
@@ -198,7 +199,7 @@ function renderGenderPanel() {
         let m = Object.values(s.player_genders).filter(g => g === 'male').length;
         let f = Object.values(s.player_genders).filter(g => g === 'female').length;
         let half = s.total_players / 2;
-        count_el.textContent = `男：${m}/${half}　女：${f}/${half}`;
+        count_el.textContent = `男：${m}/${half} 女：${f}/${half}`;
         count_el.style.color = (m === half && f === half) ? 'var(--color-success)' : 'var(--color-text-muted)';
     }
 }
@@ -364,7 +365,7 @@ function handleStartNight(count_select, setting_board) {
             while (temp_board[r] > 0) { s.spare_cards.push(r); temp_board[r]--; }
         }
         s.discarded_roles = [...s.spare_cards];
-        if (s.current_board.id === '12_thief_cupid' && s.spare_cards.filter(r => wolf_faction.includes(r)).length === 2) {
+        if (s.current_board.id === '12_thief_cupid' && s.spare_cards.filter(r => isWolfRole(r)).length === 2) {
             alert("底牌為雙狼，此局必須重開！");
             document.getElementById('btn-reset').click();
             return;
@@ -383,7 +384,7 @@ function handleStartNight(count_select, setting_board) {
         s.player_status[s.vwk_seat].isVWK = true;
     }
 
-    let w_seats = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
+    let w_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
     if (w_seats.length > 0) s.phantom_known_wolf = w_seats[Math.floor(Math.random() * w_seats.length)];
 
     let thief_key = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'thief');

@@ -1,5 +1,5 @@
 // js/actions.js
-import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, wolf_faction, wolf_team_roles, evil_roles, addNightAction, insertNightStatusFlow, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf } from './core.js';
+import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, addNightAction, insertNightStatusFlow, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf, isWolfRole, isEvilRole, getWolfTeamRoles } from './core.js';
 import { buildNightQueue } from './main.js';
 
 // ==========================================
@@ -46,7 +46,9 @@ export const inspectionStrategies = {
     'real_fox': (ctx) => {
         ctx.label = "查驗範圍的陣營為："; let t = ctx.targetNum;
         let p1 = t - 1 < 1 ? s.total_players : t - 1; let p2 = t + 1 > s.total_players ? 1 : t + 1;
-        let has_wolf = wolf_faction.includes(s.player_roles[t]) || wolf_faction.includes(s.player_roles[p1]) || wolf_faction.includes(s.player_roles[p2]) || t === s.seed_wolf_target || p1 === s.seed_wolf_target || p2 === s.seed_wolf_target;
+        const isWolf = (seat) => isWolfRole(s.player_roles[seat]) || seat === s.seed_wolf_target;
+        let has_wolf = isWolf(t) || isWolf(p1) || isWolf(p2);
+        
         if (has_wolf) { ctx.text = "🐺 有狼人"; ctx.color = "#e94560"; } else { ctx.text = "🧑‍🌾 無狼人"; ctx.color = "#00ff88"; }
         logNightAction(`【${ctx.logName}】查驗了 ${t}號 範圍`);
         addNightAction(ctx.actorSeat, 'real_fox', 'inspect', [p1, t, p2]);
@@ -84,7 +86,7 @@ export const inspectionStrategies = {
     },
     'demon': (ctx) => {
         let t = ctx.targetNum;
-        let is_god = !['villager', 'alpaca', 'old_hooligan', 'high_villager', 'very_good', 'rabbit', 'twins'].includes(s.player_roles[t]) && !evil_roles.includes(s.player_roles[t]) && !wolf_faction.includes(s.player_roles[t]);
+        let is_god = s.ROLE_DICT[s.player_roles[t]]?.type === 'god';
         ctx.text = is_god ? "⚡ 神牌" : "🧑‍🌾 民牌"; ctx.color = is_god ? "#fca311" : "#00ff88";
         logNightAction(`【惡魔】查驗了 ${t}號 → ${is_god ? '神牌' : '民牌'}`);
         addNightAction(ctx.actorSeat, 'demon', 'inspect', [t]);
@@ -135,7 +137,7 @@ export const nonInspectionStrategies = {
         let pgAntiTheft = getNightTarget('anti_theft', 'pleasant_goat') || getNightTarget('guard_and_anti_theft', 'pleasant_goat');
         if (!s.gray_wolf_stolen_player || s.gray_wolf_stolen_player === pgAntiTheft) { logNightAction(`【灰太狼】偷取失敗 (目標被防盜或未選擇)`); }
         else if (tr === 'pleasant_goat') { logNightAction(`【灰太狼】發現目標是喜羊羊，猜測其使用了：${s.gray_wolf_guess === 'guard' ? '守護' : '防盜'}`); addNightAction(ctx.actorSeat, 'gray_wolf', 'guess', [s.gray_wolf_stolen_player], { guess: s.gray_wolf_guess }); }
-        else if (['wolf', 'little_gray_wolf'].includes(tr)) { logNightAction(`【灰太狼】偷取失敗 (目標為狼人)`); }
+        else if (isWolfRole(tr)) { logNightAction(`【灰太狼】偷取失敗 (目標為狼人)`); }
         else if (s.gray_wolf_stolen_skill === 'witch' && ctx.targetNum) { let wt = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat); logNightAction(`【灰太狼(偷取女巫)】對 ${wt}號 使用了毒藥`); addNightAction(ctx.actorSeat, 'gray_wolf', 'poison', [wt]); }
         else if (s.gray_wolf_stolen_skill === 'guard' && ctx.targetNum) { let gt = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat); logNightAction(`【灰太狼(偷取守衛)】守護了 ${gt}號`); addNightAction(ctx.actorSeat, 'gray_wolf', 'protect', [gt]); }
         else if (s.gray_wolf_stolen_skill === 'dreamwalker' && ctx.targetNum) { let dt = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat); logNightAction(`【灰太狼(偷取攝夢人)】攝夢了 ${dt}號`); addNightAction(ctx.actorSeat, 'gray_wolf', 'dream', [dt]); }
@@ -211,13 +213,14 @@ export const nonInspectionStrategies = {
                     s.player_status[t].hasSuperBlackMarketGun = true;
                 }
             });
-            if (ctx.targetsArr.every(t => !wolf_faction.includes(s.player_roles[t]))) { setPersistentState('is_sp_merchant_turns_evil', true); logNightAction(`【超級黑市商人】三位幸運兒皆好人，商人將於天亮後變為狼人陣營`); }
+            if (ctx.targetsArr.every(t => !isWolfRole(s.player_roles[t]))) { setPersistentState('is_sp_merchant_turns_evil', true); logNightAction(`【超級黑市商人】三位幸運兒皆好人，商人將於天亮後變為狼人陣營`); }
             addNightAction(ctx.actorSeat, 'super_black_market', 'grant_multiple', ctx.targetsArr, { gifts: sp_gifts });
         }
     },
     'treasure_master': (ctx) => {
         if (s.treasure_hunter_choice) {
-            let has_wolf = s.spare_cards.some(r => wolf_faction.includes(r)); setPersistentState('is_treasure_hunter_evil', has_wolf);
+            let has_wolf = s.spare_cards.some(r => isWolfRole(r)); 
+            setPersistentState('is_treasure_hunter_evil', has_wolf);
             logNightAction(`【盜寶大師】選擇了 ${s.ROLE_DICT[s.treasure_hunter_choice]?.name || s.treasure_hunter_choice}`);
             addNightAction(ctx.actorSeat, 'treasure_master', 'choose_role', [], { chosen_role: s.treasure_hunter_choice });
             let chosen_order = s.ROLE_DICT[s.treasure_hunter_choice]?.wakeOrder?.[0] || 9999;
@@ -319,12 +322,13 @@ export function resolveInspectionResult() {
 export function resolveNonInspectionAction() {
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
     
-    let needs_result_roles = ['seer', 'real_fox', 'awaken_seer', 'gargoyle', 'psychic', 'pure_white', 'fool_seer', 'wolf_witch', 'snake_seer', 'demon'];
-    if (s.current_stage === 'lucky_boy_action' && (s.merchant_item === 'seer' || s.merchant_item === 'check') && s.merchant_type !== 'black_market') needs_result_roles.push('lucky_boy_action');
-    if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') needs_result_roles.push('gray_wolf_action');
-    if (s.current_stage === 'machine_wolf' && !s.machine_wolf_learn_target) needs_result_roles.push('machine_wolf');
+    let baseRole = s.current_stage.replace(/_[AB]$/, '');
+    let isInspection = s.ROLE_DICT[baseRole]?.ui_type === 'inspection';
+    
+    if (s.current_stage === 'lucky_boy_action' && (s.merchant_item === 'seer' || s.merchant_item === 'check') && s.merchant_type !== 'black_market') isInspection = true;
+    if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') isInspection = true;
 
-    if (needs_result_roles.includes(s.current_stage) && s.selected_number === 'skip') {
+    if (isInspection && s.selected_number === 'skip') {
         logNightAction(`【${getStageVoiceName(s.current_stage, s.current_sub_label)}】跳過技能`); return;
     }
 
@@ -338,13 +342,13 @@ export function resolveNonInspectionAction() {
 
     const strategy = nonInspectionStrategies[s.current_stage];
     if (strategy) strategy(ctx);
-    else console.warn(`[Action] No non-inspection strategy found for stage: ${s.current_stage}`);
+    else if (!isInspection && s.ROLE_DICT[baseRole]?.ui_type !== 'info_only' && !s.current_stage.startsWith('status_') && !s.current_stage.startsWith('notify_')) {
+        console.warn(`[Action] No non-inspection strategy found for stage: ${s.current_stage}`);
+    }
 
     if (s.current_stage === 'black_market' || s.current_stage === 'miracle_merchant') {
-        if (ctx.targetNum) {
-            const reveal_targets = evil_roles.includes(s.player_roles[ctx.targetNum]) ? [] : [ctx.targetNum];
-            insertNightStatusFlow('merchant', [ctx.targetNum], { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets });
-        }
+        let targets = ctx.targetNum ? [ctx.targetNum] : [];
+        insertNightStatusFlow('merchant', targets, { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets: [] });
     }
     if (s.current_stage === 'super_black_market' && ctx.targetsArr.length) insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts });
     if (s.current_stage === 'cupid' && ctx.targetsArr.length === 2) {
@@ -357,4 +361,13 @@ export function resolveNonInspectionAction() {
     if (s.current_stage === 'ghost_bride' && ctx.targetNum) insertNightStatusFlow('ghost_groom', [ctx.targetNum]);
     if (s.current_stage === 'ghost_bride_couple' && ctx.targetNum) insertNightStatusFlow('ghost_witness', [ctx.targetNum]);
     if (s.current_stage === 'wolf' && s.is_seed_wolf_infecting && ctx.targetNum) insertNightStatusFlow('seed_wolf', [ctx.targetNum]);
+    
+    if (s.current_stage === 'pandora') {
+        let targets = ctx.targetNum ? [ctx.targetNum] : [];
+        insertNightStatusFlow('pandora', targets, { reveal_targets: [] });
+    }
+    
+    if (s.current_stage === 'zombie') {
+        insertNightStatusFlow('zombie', ctx.targetsArr, { reveal_targets: [] });
+    }
 }

@@ -1,5 +1,5 @@
 // js/day.js
-import { s, wolf_faction, wolf_team_roles, evil_roles, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, ROLE_RULES } from './core.js';
+import { s, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, isWolfRole, isEvilRole, getWolfTeamRoles } from './core.js';
 
 function checkSnakeWin(dead1, dead2) {
     let r1 = s.player_roles[dead1]; let r2 = s.player_roles[dead2];
@@ -44,7 +44,7 @@ function applyDisableRules() {
     let troubleActions = getActionsByEffect('trouble');
     if (troubleActions.length > 0) {
         let tSeat = troubleActions[0].resolved_targets[0];
-        s.night_actions.forEach(a => { if (a.actor === tSeat || (a.actor === 'wolves' && wolf_team_roles.includes(s.player_roles[tSeat]))) { if (['protect', 'poison', 'inspect', 'kill'].includes(a.effect)) { a.resolved_targets = [tSeat]; } } });
+        s.night_actions.forEach(a => { if (a.actor === tSeat || (a.actor === 'wolves' && getWolfTeamRoles().includes(s.player_roles[tSeat]))) { if (['protect', 'poison', 'inspect', 'kill'].includes(a.effect)) { a.resolved_targets = [tSeat]; } } });
     }
 
     let medusaActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'petrify');
@@ -56,21 +56,21 @@ function applyDisableRules() {
     let fearActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'fear');
     if (fearActions.length > 0) {
         let fTarget = fearActions[0].resolved_targets[0];
-        if (wolf_team_roles.includes(s.player_roles[fTarget])) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因恐懼無法刀人"));
+        if (getWolfTeamRoles().includes(s.player_roles[fTarget])) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因恐懼無法刀人"));
         else s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被夢魘恐懼"));
     }
 
     let freezeActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'freeze');
     if (freezeActions.length > 0) {
         let fTarget = freezeActions[0].resolved_targets[0];
-        if (wolf_team_roles.includes(s.player_roles[fTarget])) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因冰凍無法刀人"));
+        if (getWolfTeamRoles().includes(s.player_roles[fTarget])) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因冰凍無法刀人"));
         else s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被企鵝冰凍"));
     }
 
     let foxCharmActions = getActionsByEffect('charm').filter(a => a.role === 'fox');
     if (foxCharmActions.length > 0) {
         let fcTarget = foxCharmActions[0].resolved_targets[0];
-        if (wolf_faction.includes(s.player_roles[fcTarget])) {
+        if (isWolfRole(s.player_roles[fcTarget])) {
             s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因被子狐魅惑空刀"));
         }
     }
@@ -80,8 +80,8 @@ function applyGlobalProtections() {
     if (s.sleeping_beauty_seat && s.is_sleeping_beauty_active) {
         let sb = s.sleeping_beauty_seat; let sbRole = s.player_roles[sb];
         if (['witch', 'awaken_witch'].includes(sbRole)) s.night_actions.filter(a => a.actor === sb && a.effect === 'poison').forEach(a => cancelAction(a.id, "睡美人女巫無法用毒"));
-        if (wolf_team_roles.includes(sbRole)) {
-            let alive_wolves = Object.keys(s.player_roles).filter(k => wolf_team_roles.includes(s.player_roles[k]));
+        if (getWolfTeamRoles().includes(sbRole)) {
+            let alive_wolves = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
             if (alive_wolves.every(k => parseInt(k) === sb)) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊全體沉睡"));
         }
         if (sbRole === 'silence_elder') s.night_actions.filter(a => a.effect === 'silence').forEach(a => cancelAction(a.id, "睡美人禁言長老無效"));
@@ -99,10 +99,10 @@ function resolveInspectionDeaths() {
     let validInspects = getActionsByEffect('inspect');
     let pureWhiteInspect = validInspects.find(a => a.role === 'pure_white');
     let wolfWitchInspect = validInspects.find(a => a.role === 'wolf_witch');
-    
+
     if (pureWhiteInspect) {
         let target = pureWhiteInspect.resolved_targets[0];
-        if (wolf_faction.includes(s.player_roles[target])) addDeathEvent(target, 'pure_white', '查驗致死(純白之女)');
+        if (isWolfRole(s.player_roles[target])) addDeathEvent(target, 'pure_white', '查驗致死(純白之女)');
     }
     if (wolfWitchInspect) {
         let target = wolfWitchInspect.resolved_targets[0];
@@ -136,13 +136,15 @@ function resolveWolfKills(validProtects, pgGuards, validSaves, validDreams, idio
             let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
             let isIdiotProtected = idiotProtects.some(a => a.resolved_targets.includes(target)) || (awakenIdiotSeat && parseInt(awakenIdiotSeat) === target);
             let targetRole = s.player_roles[target]; let diesToWolf = false;
-            let rules = ROLE_RULES[targetRole] || {};
+            
+            // 資料驅動：讀取 JSON 中的規則
+            let rules = s.ROLE_DICT[targetRole] || {};
 
-            if (isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target) || targetRole === 'war_wolf') { } 
-            else if (rules.immune_night_kill) { } 
-            else if (rules.immune_god_skills && killAction.role !== 'wolf' && killAction.role !== 'big_bad_wolf') { } 
-            else if (getActionsByEffect('invincible').find(a => a.role === 'phantom_king') && targetRole === 'phantom_king') { } 
-            else if (isSaved && isGuarded) { addDeathEvent(target, 'wolf', '奶穿'); diesToWolf = true; } 
+            if (isDreamed || isIdiotProtected || immuneToNightDamageTargets.includes(target) || targetRole === 'war_wolf') { }
+            // 取代原本硬編碼的惡靈/惡魔判定，改讀免疫狼刀或夜晚擊殺的 JSON 屬性
+            else if (rules.immune_wolf_kill || rules.immune_night_kill) { }
+            else if (getActionsByEffect('invincible').find(a => a.role === 'phantom_king') && targetRole === 'phantom_king') { }
+            else if (isSaved && isGuarded) { addDeathEvent(target, 'wolf', '奶穿'); diesToWolf = true; }
             else if (!isSaved && !isGuarded) { addDeathEvent(target, killAction.metadata?.source === 'big_bad_wolf' ? 'big_bad_wolf' : 'wolf', killAction.metadata?.source === 'big_bad_wolf' ? '大野狼擊殺' : '狼刀'); diesToWolf = true; }
 
             if (diesToWolf && targetRole === 'pufferfish') s.is_pufferfish_triggered = true;
@@ -155,11 +157,12 @@ function resolvePoisons(validProtects, validDreams, immuneToNightDamageTargets) 
     getActionsByEffect('poison').forEach(poisonAction => {
         let target = poisonAction.resolved_targets[0]; let targetRole = s.player_roles[target];
         let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
-        let rules = ROLE_RULES[targetRole] || {};
+        
+        // 資料驅動：讀取 JSON 的毒藥免疫規則
+        let rules = s.ROLE_DICT[targetRole] || {};
 
-        if (targetRole === 'dreamwalker' && s.player_status[target]?.isVWK) {}
-        else if (rules.immune_poison || isDreamed || immuneToNightDamageTargets.includes(target) || (getActionsByEffect('invincible').find(a=>a.role==='phantom_king') && targetRole === 'phantom_king')) {}
-        else if (rules.immune_god_skills) {}
+        if (targetRole === 'dreamwalker' && s.player_status[target]?.isVWK) { }
+        else if (rules.immune_poison || isDreamed || immuneToNightDamageTargets.includes(target) || (getActionsByEffect('invincible').find(a => a.role === 'phantom_king') && targetRole === 'phantom_king')) { }
         else if (targetRole === 'old_hooligan') s.player_status[target].poisoned = true;
         else addDeathEvent(target, 'witch', '毒殺');
     });
@@ -267,8 +270,11 @@ export function calculateNightDeaths() {
     if (demonHunterTarget) {
         let dhSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'demon_hunter');
         let targetRole = s.player_roles[demonHunterTarget];
-        let isTargetEvil = wolf_faction.includes(targetRole); if (targetRole === 'war_wolf') isTargetEvil = false;
-        if (isTargetEvil) { addDeathEvent(demonHunterTarget, 'demon_hunter', '獵魔人狩獵'); } 
+        
+        let isTargetEvil = isWolfRole(targetRole); 
+        if (targetRole === 'war_wolf') isTargetEvil = false; // 戰狼免疫神職技能
+        
+        if (isTargetEvil) { addDeathEvent(demonHunterTarget, 'demon_hunter', '獵魔人狩獵'); }
         else if (dhSeat) { addDeathEvent(parseInt(dhSeat), 'demon_hunter', '狩獵好人反噬'); }
     }
 
@@ -282,7 +288,7 @@ export function calculateNightDeaths() {
     let beautySeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_beauty');
     let vwkBeautySeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'bear') ? s.vwk_seat : null;
     [beautySeat, vwkBeautySeat].forEach(seat => {
-        let bTarget = (seat === vwkBeautySeat) ? getActionsByEffect('charm').find(a=>a.metadata?.is_vwk)?.resolved_targets[0] : getNightTarget('charm', 'wolf_beauty');
+        let bTarget = (seat === vwkBeautySeat) ? getActionsByEffect('charm').find(a => a.metadata?.is_vwk)?.resolved_targets[0] : getNightTarget('charm', 'wolf_beauty');
         if (seat && s.primary_killed.includes(parseInt(seat))) {
             if (bTarget && s.player_roles[bTarget] !== 'old_hooligan' && !s.is_pufferfish_triggered) {
                 addDeathEvent(bTarget, 'chain', '狼美人殉情');
@@ -290,7 +296,7 @@ export function calculateNightDeaths() {
         }
     });
 
-    if (s.merchant_target && evil_roles.includes(s.player_roles[s.merchant_target])) {
+    if (s.merchant_target && isEvilRole(s.player_roles[s.merchant_target])) {
         let merchSeat = Object.keys(s.player_roles).find(k => ['black_market', 'miracle_merchant'].includes(s.player_roles[k]));
         if (merchSeat && !s.primary_killed.includes(parseInt(merchSeat))) {
             addDeathEvent(parseInt(merchSeat), 'system', '給狼技能反噬');
@@ -311,7 +317,7 @@ export function handleChainDeaths() {
     [dwSeat, vwkDreamSeat].forEach(seat => {
         let dreamTarget = null;
         if (seat == dwSeat) dreamTarget = getNightTarget('dream', 'dreamwalker');
-        else if (seat == vwkDreamSeat) dreamTarget = getActionsByEffect('dream').find(a=>a.metadata?.is_vwk)?.resolved_targets[0];
+        else if (seat == vwkDreamSeat) dreamTarget = getActionsByEffect('dream').find(a => a.metadata?.is_vwk)?.resolved_targets[0];
 
         if (seat && s.final_killed.includes(parseInt(seat)) && dreamTarget && !s.final_killed.includes(dreamTarget)) {
             addDeathEvent(dreamTarget, 'chain', '連帶死亡(被攝夢)');
@@ -321,13 +327,13 @@ export function handleChainDeaths() {
     const normalizedTargets = (s.phantom_targets || []).map(Number);
     if (normalizedTargets.length === 2) {
         const [p1, p2] = normalizedTargets;
-        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) { addDeathEvent(p2, 'chain', '連帶死亡(尋香綁定)'); s.phantom_targets = []; checkSnakeWin(p1, p2); } 
+        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) { addDeathEvent(p2, 'chain', '連帶死亡(尋香綁定)'); s.phantom_targets = []; checkSnakeWin(p1, p2); }
         else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) { addDeathEvent(p1, 'chain', '連帶死亡(尋香綁定)'); s.phantom_targets = []; checkSnakeWin(p1, p2); }
     }
 
     if (s.cupid_lovers.length === 2) {
         let [p1, p2] = s.cupid_lovers;
-        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) { addDeathEvent(p2, 'chain', '連帶死亡(情侶殉情)'); s.cupid_lovers = []; } 
+        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) { addDeathEvent(p2, 'chain', '連帶死亡(情侶殉情)'); s.cupid_lovers = []; }
         else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) { addDeathEvent(p1, 'chain', '連帶死亡(情侶殉情)'); s.cupid_lovers = []; }
     }
 
@@ -335,7 +341,7 @@ export function handleChainDeaths() {
         let gbKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride');
         if (gbKey) {
             let gSeat = parseInt(gbKey);
-            if (s.final_killed.includes(gSeat) && !s.final_killed.includes(s.ghost_bride_groom)) { addDeathEvent(s.ghost_bride_groom, 'chain', '連帶死亡(新郎殉情)'); } 
+            if (s.final_killed.includes(gSeat) && !s.final_killed.includes(s.ghost_bride_groom)) { addDeathEvent(s.ghost_bride_groom, 'chain', '連帶死亡(新郎殉情)'); }
             else if (s.final_killed.includes(s.ghost_bride_groom) && !s.final_killed.includes(gSeat)) { addDeathEvent(gSeat, 'chain', '連帶死亡(新郎死亡)'); }
         }
     }
@@ -343,17 +349,17 @@ export function handleChainDeaths() {
     let adSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_dreamwalker'));
     let awkDreamwalkerTarget = getNightTarget('dream', 'awaken_dreamwalker');
     if (adSeat && s.final_killed.includes(adSeat) && awkDreamwalkerTarget && !s.final_killed.includes(awkDreamwalkerTarget)) {
-        addDeathEvent(awkDreamwalkerTarget, 'chain', '連帶死亡(夢語者)');
+        addDeathEvent(awkDreamwalkerTarget, 'chain', '連帶死亡(被覺醒攝夢)');
     }
 
     let celebKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
-    let celebTarget = getActionsByEffect('protect').find(a=>a.metadata?.mode==='celebrity')?.resolved_targets[0];
+    let celebTarget = getActionsByEffect('protect').find(a => a.metadata?.mode === 'celebrity')?.resolved_targets[0];
     if (celebKey && s.final_killed.includes(parseInt(celebKey)) && celebTarget && !s.final_killed.includes(celebTarget)) {
         if (s.player_roles[celebTarget] !== 'war_wolf') { addDeathEvent(celebTarget, 'chain', '連帶死亡(名媛殉情)'); }
     }
 
     let medusaKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'medusa');
-    let medusaTarget = getActionsByEffect('disable').find(a=>a.metadata?.mode==='petrify')?.resolved_targets[0];
+    let medusaTarget = getActionsByEffect('disable').find(a => a.metadata?.mode === 'petrify')?.resolved_targets[0];
     if (medusaKey && s.final_killed.includes(parseInt(medusaKey)) && medusaTarget && !s.final_killed.includes(medusaTarget)) {
         addDeathEvent(medusaTarget, 'chain', '連帶死亡(梅杜莎石化)');
     }
@@ -365,19 +371,23 @@ export function handleChainDeaths() {
 
 export function killPlayerDuringDay(seat, isShot = false, canShoot = true, source = 'day', isVote = false) {
     seat = parseInt(seat);
-    if (!seat || s.final_killed.includes(seat)) return; 
+    if (!seat || s.final_killed.includes(seat)) return;
     let role = s.player_roles[seat];
+    let rules = s.ROLE_DICT[role] || {};
 
-    if (isShot && role === 'old_hooligan') { 
+    if (isShot && role === 'old_hooligan') {
         if (!s.player_status[seat]) s.player_status[seat] = {};
-        s.player_status[seat].injured = true; 
-        return; 
+        s.player_status[seat].injured = true;
+        return;
     }
-    if (isShot && ['ghost_rider', 'demon', 'war_wolf'].includes(role)) return;
-    if (role === 'white_cat' && !s.player_status[seat]?.isWhiteCatFlipped) { 
+    
+    // 資料驅動：取代原本寫死的 ['ghost_rider', 'demon', 'war_wolf']，改用 JSON 的 immune_gun
+    if (isShot && rules.immune_gun) return;
+    
+    if (role === 'white_cat' && !s.player_status[seat]?.isWhiteCatFlipped) {
         if (!s.player_status[seat]) s.player_status[seat] = {};
-        s.player_status[seat].isWhiteCatFlipped = true; 
-        return; 
+        s.player_status[seat].isWhiteCatFlipped = true;
+        return;
     }
 
     let awkBeautyTarget = getNightTarget('charm', 'awaken_wolf_beauty');
@@ -393,9 +403,9 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true, sourc
         let isStolen = (s.gray_wolf_stolen_player === seat && s.gray_wolf_stolen_player !== pgAntiTheft);
 
         if ((isShot && (role === 'awaken_hunter' || (role === 'hunter' && s.player_status[seat]?.isVWK) || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role) || s.awk_wolf_gun_target === seat || s.evil_merchant_gun_target === seat)) || (!isShot && source === 'vote' && (s.player_status[seat]?.hasPandoraDayGun || s.player_status[seat]?.hasSuperBlackMarketGun))) {
-            if (!(role === 'hunter' && isStolen)) { 
-                s.day_shooters_queue.push({ seat, role: !isShot && source === 'vote' ? 'pandora_day_gun' : role }); 
-                if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role }); 
+            if (!(role === 'hunter' && isStolen)) {
+                s.day_shooters_queue.push({ seat, role: !isShot && source === 'vote' ? 'pandora_day_gun' : role });
+                if (role === 'awaken_wolf_king' && s.awk_wolf_gun_target === null) s.day_shooters_queue.push({ seat, role });
             }
         }
     }
@@ -411,27 +421,27 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true, sourc
     if ((role === 'dreamwalker' || seat === vwkDreamSeat) && dreamTarget && !s.final_killed.includes(dreamTarget)) {
         killPlayerDuringDay(dreamTarget, false, false, 'chain');
     }
-    
+
     if ((s.phantom_targets || []).map(Number).length === 2) {
-        const normalizedTargets = (s.phantom_targets || []).map(Number); 
+        const normalizedTargets = (s.phantom_targets || []).map(Number);
         const currentSeat = Number(seat);
         if (normalizedTargets.includes(currentSeat)) {
-            const [t1, t2] = normalizedTargets; 
+            const [t1, t2] = normalizedTargets;
             const other = t1 === currentSeat ? t2 : t1;
-            if (!s.final_killed.includes(other)) { 
-                s.phantom_targets = []; 
-                killPlayerDuringDay(other, false, false, 'chain'); 
-                checkSnakeWin(currentSeat, other); 
+            if (!s.final_killed.includes(other)) {
+                s.phantom_targets = [];
+                killPlayerDuringDay(other, false, false, 'chain');
+                checkSnakeWin(currentSeat, other);
             }
         }
     }
 
-    if (s.cupid_lovers.includes(seat)) { 
-        let other = s.cupid_lovers[0] === seat ? s.cupid_lovers[1] : s.cupid_lovers[0]; 
-        if (!s.final_killed.includes(other)) { 
-            s.cupid_lovers = []; 
-            killPlayerDuringDay(other, false, false, 'chain'); 
-        } 
+    if (s.cupid_lovers.includes(seat)) {
+        let other = s.cupid_lovers[0] === seat ? s.cupid_lovers[1] : s.cupid_lovers[0];
+        if (!s.final_killed.includes(other)) {
+            s.cupid_lovers = [];
+            killPlayerDuringDay(other, false, false, 'chain');
+        }
     }
 
     if (s.ghost_bride_groom && s.ghost_bride_witness) {
@@ -450,15 +460,15 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true, sourc
 export function generateDayReport() {
     if (s.rust_sword_infected_target && !s.final_killed.includes(s.rust_sword_infected_target)) { addDeathEvent(s.rust_sword_infected_target, 'system', '鏽劍感染死亡'); }
 
-    // 【修復】：只抓取「今晚死亡」的名單（排除白天放逐或過去死亡的人）
     let tonight_deaths = s.death_events.filter(e => e.source !== 'vote').map(e => e.seat);
     let report = { bearRoarText: "", extraText: "", isPeaceful: tonight_deaths.length === 0, killedSeats: [], shootersQueue: [], isSnakeWin: s.is_snake_win };
 
     let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear');
     const isSeatWolfForBear = (seatId) => {
-        if (!seatId || s.final_killed.includes(seatId)) return false; let role = s.player_roles[seatId];
+        if (!seatId || s.final_killed.includes(seatId)) return false; 
+        let role = s.player_roles[seatId];
         if (role === 'treasure_master' && s.is_treasure_hunter_evil) return true;
-        return evil_roles.includes(role);
+        return isEvilRole(role);
     };
     const getAdjacent = (seat) => {
         let left = seat - 1; while (left !== seat) { if (left < 1) left = s.total_players; if (!s.final_killed.includes(left)) break; left--; }
@@ -470,7 +480,7 @@ export function generateDayReport() {
     if (bearSeat && !s.final_killed.includes(parseInt(bearSeat))) {
         if (s.seed_wolf_target !== parseInt(bearSeat)) {
             let { left, right } = getAdjacent(parseInt(bearSeat)); let hasWolf = isSeatWolfForBear(left) || isSeatWolfForBear(right);
-            if (s.player_status[bearSeat]?.isVWK) { let vwkCharm = getActionsByEffect('charm').find(a=>a.metadata?.is_vwk)?.resolved_targets[0]; if (vwkCharm) hasWolf = isSeatWolfForBear(vwkCharm); hasWolf = !hasWolf; }
+            if (s.player_status[bearSeat]?.isVWK) { let vwkCharm = getActionsByEffect('charm').find(a => a.metadata?.is_vwk)?.resolved_targets[0]; if (vwkCharm) hasWolf = isSeatWolfForBear(vwkCharm); hasWolf = !hasWolf; }
             if (hasWolf) bearDidRoar = true;
         }
     }
