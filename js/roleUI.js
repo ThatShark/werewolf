@@ -365,45 +365,48 @@ roleHandlers['wolf'] = (ctx) => {
 
 roleHandlers['_notify'] = (ctx) => {
     const { btnConfirmAction, numberPad, actionPad, nightRoleTitle, nightInstruction } = ctx;
-    const status_match = s.current_stage.match(/^status_(check|notify)_(.+)_(\d+)$/);
-    if (status_match) {
-        const [, phase, flow_id, seat_text] = status_match; const seat = parseInt(seat_text);
-        const flow = s.night_status_flows.find(item => item.id === flow_id);
-        const is_selected_target = flow?.targets?.includes(seat);
+
+    // 處理 1~12 號輪流確認狀態的 UI
+    const group_match = s.current_stage.match(/^status_check_group_(\d+)$/);
+    if (group_match) {
+        const seat = parseInt(group_match[1]);
         const messages = [];
-        if (flow?.type === 'merchant' && is_selected_target && !isEvilRole(s.player_roles[seat])) {
-            if (flow.metadata.merchant_type === 'black_market') {
-                const item_names = { seer: '預言家查驗', poison: '女巫毒藥', guard: '守衛護盾', gun: '獵人的槍' };
-                messages.push(`你是幸運兒，獲得【${item_names[flow.metadata.gift] || '未知技能'}】`);
-                messages.push('此技能今晚不能使用');
-            } else {
-                messages.push(`你是幸運兒！🎁`);
+
+        // 掃描所有狀態流，找出屬於這個號碼的狀態
+        s.night_status_flows.forEach(flow => {
+            const is_selected_target = flow.targets.includes(seat);
+            if (flow.type === 'merchant' && is_selected_target && !isPlayerWolfFaction(seat)) {
+                if (flow.metadata.merchant_type === 'black_market') {
+                    const item_names = { seer: '預言家查驗', poison: '女巫毒藥', guard: '守衛護盾', gun: '獵人的槍' };
+                    messages.push(`你是幸運兒，獲得【${item_names[flow.metadata.gift] || '未知技能'}】`);
+                    messages.push('此技能今晚不能使用');
+                } else {
+                    messages.push(`你是幸運兒！🎁`);
+                }
             }
-        }
-        if (flow?.type === 'super_black_market') {
-            const gift = flow.metadata.gifts?.find(item => item.seat === seat);
-            const item_names = { seer: '預言家查驗', poison: '女巫毒藥', gun: '獵人的槍' };
-            if (gift) messages.push(`你是幸運兒 ${gift.label}，獲得【${item_names[gift.gift]}】`);
-        }
-        if (flow?.type === 'lovers' && is_selected_target) messages.push('你是情侶 💕');
-        if (flow?.type === 'assistant' && is_selected_target) messages.push('你是覺醒女巫的協助者');
-        if (flow?.type === 'gargoyle_conversion' && is_selected_target) messages.push('你被覺醒石像鬼轉化成狼人！🐺');
-        if (flow?.type === 'ghost_groom' && is_selected_target) messages.push('你是鬼魅新娘的新郎 🤵');
-        if (flow?.type === 'ghost_witness' && is_selected_target) messages.push('你是證婚人 🕊️');
-        if (flow?.type === 'seed_wolf' && is_selected_target) messages.push('你被種狼感染成了狼人！🐺');
+            if (flow.type === 'super_black_market') {
+                const gift = flow.metadata.gifts?.find(item => item.seat === seat);
+                const item_names = { seer: '預言家查驗', poison: '女巫毒藥', gun: '獵人的槍' };
+                if (gift) messages.push(`你是幸運兒 ${gift.label}，獲得【${item_names[gift.gift]}】`);
+            }
+            if (flow.type === 'lovers' && is_selected_target) messages.push('你是情侶 💕');
+            if (flow.type === 'assistant' && is_selected_target) messages.push('你是覺醒女巫的協助者');
+            if (flow.type === 'gargoyle_conversion' && is_selected_target) messages.push('你被覺醒石像鬼轉化成狼人！🐺');
+            if (flow.type === 'ghost_groom' && is_selected_target) messages.push('你是鬼魅新娘的新郎 🤵');
+            if (flow.type === 'ghost_witness' && is_selected_target) messages.push('你是證婚人 🕊️');
+            if (flow.type === 'seed_wolf' && is_selected_target) messages.push('你被種狼感染成了狼人！🐺');
+            if (flow.type === 'pandora' && is_selected_target) {
+                const gift_names = { knife: '一把刀', poison: '一滴毒', hope_light: '希望之光', day_gun: '日槍' };
+                messages.push(`你從潘朵拉的魔盒中獲得：【${gift_names[s.pandora_gift] || '未知技能'}】`);
+            }
+        });
 
         const status_text = messages.length ? messages.join('<br>') : '沒有特殊身份';
         numberPad.classList.add('hidden'); actionPad.classList.remove('hidden'); actionPad.innerHTML = '';
-        if (phase === 'check') {
-            nightRoleTitle.textContent = `${seat}號確認狀態`;
-            nightInstruction.textContent = "請確認自己的狀態：";
-        } else {
-            const wake_names = { merchant: '幸運兒', super_black_market: '幸運兒', lovers: '情侶', assistant: '協助者', gargoyle_conversion: '覺醒石像鬼轉化者', ghost_groom: '新郎', ghost_witness: '證婚人', seed_wolf: '感染者' };
-            const gift = flow?.metadata?.gifts?.find(item => item.seat === seat);
-            const wake_name = flow?.type === 'super_black_market' && gift ? `幸運兒 ${gift.label}` : (wake_names[flow?.type] || '特殊身份');
-            nightRoleTitle.textContent = `${wake_name}請睜眼`;
-            nightInstruction.textContent = "請確認你的身份，完成後閉眼。";
-        }
+        
+        nightRoleTitle.textContent = `${seat}號確認狀態`;
+        nightInstruction.textContent = "請確認自己的狀態：";
+        
         const status_box = document.createElement('div');
         status_box.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
         const status_text_element = document.createElement('p');
@@ -411,30 +414,33 @@ roleHandlers['_notify'] = (ctx) => {
         status_text_element.innerHTML = status_text;
         status_text_element.style.color = messages.length ? "#fca311" : "#a2a8d3";
         status_box.appendChild(status_text_element); actionPad.appendChild(status_box);
-        btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = phase === 'check' ? "確認並閉眼" : "了解並閉眼";
+        btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認並閉眼";
         return;
     }
 
-    let seat = parseInt(s.current_stage.split('_').pop()); let notify_type = s.current_stage.substring(0, s.current_stage.lastIndexOf('_'));
-    nightRoleTitle.textContent = `${seat}號確認狀態`; nightInstruction.textContent = "請點擊下方按鈕確認狀態："; numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
-    let btnView = document.createElement('button'); btnView.className = 'primary-btn'; btnView.style.width = '200px'; btnView.textContent = "查看狀態"; actionPad.appendChild(btnView);
-    btnView.onclick = () => {
-        actionPad.innerHTML = ''; let msgs = [];
-        if (notify_type === 'notify_groom' && s.ghost_bride_groom === seat) msgs.push(`你是鬼魅新娘的新郎 🤵`);
-        if (notify_type === 'notify_witness' && s.ghost_bride_witness === seat) msgs.push(`你是證婚人 🕊️`);
-        if (notify_type === 'notify_luckyboy' && s.merchant_target === seat && !isEvilRole(s.player_roles[seat])) msgs.push(`你是幸運兒 🎁`);
-        if (notify_type === 'notify_pandora' && s.pandora_target === seat) {
-            const gift_names = { knife: '魔盒之刀', poison: '魔盒之毒', hope_light: '希望之光', day_gun: '日槍' };
-            msgs.push(`你從潘朵拉的魔盒中獲得：【${gift_names[s.pandora_gift] || '未知技能'}】`);
-        }
-        if (notify_type === 'notify_assistant' && s.awk_witch_assistant === seat) msgs.push(`你是女巫的協助者`);
-        if (notify_type === 'notify_general') { if (s.cupid_lovers.includes(seat)) msgs.push("你是情侶 💕"); if (s.seed_wolf_target === seat) msgs.push(`你被種狼感染成了狼人！🐺`); }
-        if (notify_type === 'notify_end') { if (s.awk_gargoyle_target === seat || s.awk_gargoyle_target_a === seat || s.awk_gargoyle_target_b === seat) msgs.push(`你被覺醒石像鬼轉化了！🦇`); }
-        let resBox = document.createElement('div'); resBox.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
-        let txt = document.createElement('p'); txt.style = "font-size: 24px; font-weight: bold; margin: 0;"; txt.innerHTML = msgs.length ? msgs.join('<br>') : "無特殊狀態"; txt.style.color = msgs.length ? "#fca311" : "#a2a8d3";
-        resBox.appendChild(txt); actionPad.appendChild(resBox);
+    // 單獨叫醒環節 (例如覺醒石像鬼轉化通知)
+    const notify_match = s.current_stage.match(/^status_notify_(.+)_(\d+)$/);
+    if (notify_match) {
+        const [, flow_id, seat_text] = notify_match; const seat = parseInt(seat_text);
+        const flow = s.night_status_flows.find(item => item.id === flow_id);
+        const wake_names = { merchant: '幸運兒', super_black_market: '幸運兒', lovers: '情侶', assistant: '協助者', gargoyle_conversion: '覺醒石像鬼轉化者', ghost_groom: '新郎', ghost_witness: '證婚人', seed_wolf: '感染者' };
+        const gift = flow?.metadata?.gifts?.find(item => item.seat === seat);
+        const wake_name = flow?.type === 'super_black_market' && gift ? `幸運兒 ${gift.label}` : (wake_names[flow?.type] || '特殊身份');
+        
+        nightRoleTitle.textContent = `${wake_name}請睜眼`;
+        nightInstruction.textContent = "請確認你的身份，完成後閉眼。";
+        numberPad.classList.add('hidden'); actionPad.classList.remove('hidden'); actionPad.innerHTML = '';
+        
+        const status_box = document.createElement('div');
+        status_box.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
+        const status_text_element = document.createElement('p');
+        status_text_element.style = "font-size: 24px; font-weight: bold; margin: 0;";
+        status_text_element.innerHTML = "請確認你的新身份或狀態";
+        status_text_element.style.color = "#fca311";
+        status_box.appendChild(status_text_element); actionPad.appendChild(status_box);
         btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "了解並閉眼";
-    };
+        return;
+    }
 };
 
 roleHandlers['hunter'] = (ctx) => {

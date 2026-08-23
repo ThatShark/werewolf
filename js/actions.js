@@ -1,5 +1,5 @@
 // js/actions.js
-import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, addNightAction, insertNightStatusFlow, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf, isWolfRole, isEvilRole, getWolfTeamRoles } from './core.js';
+import { s, getStageVoiceName, applyTimeWolfReflection, getNightTarget, addNightAction, insertNightStatusFlow, isPlayerEvil, logNightAction, setPersistentState, convertPlayerToWolf, isWolfRole } from './core.js';
 import { buildNightQueue } from './main.js';
 
 // ==========================================
@@ -276,9 +276,9 @@ export const nonInspectionStrategies = {
     'pandora_knife': createSingleTargetStrategy('pandora', 'kill', '用魔盒之刀擊殺了', '未使用魔盒之刀', false, { source: 'pandora' }),
     'wolf_beauty': createSingleTargetStrategy('wolf_beauty', 'charm', '魅惑了', '未魅惑'),
     'awaken_wolf_beauty': createSingleTargetStrategy('awaken_wolf_beauty', 'charm', '魅惑了', '未魅惑', false, { type: 'awaken' }),
-    'awaken_gargoyle': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target', ctx.targetNum); convertPlayerToWolf(ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle', 'convert', '轉化了', '未轉化')(ctx); },
-    'awaken_gargoyle_A': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target_a', ctx.targetNum); convertPlayerToWolf(ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle_A', 'convert', '轉化了', '未轉化')(ctx); },
-    'awaken_gargoyle_B': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target_b', ctx.targetNum); convertPlayerToWolf(ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle_B', 'convert', '轉化了', '未轉化')(ctx); },
+    'awaken_gargoyle': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target', ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle', 'convert', '轉化了', '未轉化')(ctx); },
+    'awaken_gargoyle_A': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target_a', ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle_A', 'convert', '轉化了', '未轉化')(ctx); },
+    'awaken_gargoyle_B': (ctx) => { if (ctx.targetNum) { setPersistentState('awk_gargoyle_target_b', ctx.targetNum); } createSingleTargetStrategy('awaken_gargoyle_B', 'convert', '轉化了', '未轉化')(ctx); },
     'awaken_dreamwalker': createSingleTargetStrategy('awaken_dreamwalker', 'dream', '指定了', '未發動', false, { type: 'awaken' }),
     'medusa': createSingleTargetStrategy('medusa', 'disable', '石化了', '未石化', false, { mode: 'petrify' }),
     'evil_merchant': (ctx) => { setPersistentState('evil_merchant_gun_target', ctx.targetNum || null); createSingleTargetStrategy('evil_merchant', 'grant_gun', '把獵槍給了', '未分槍')(ctx); },
@@ -346,35 +346,43 @@ export function resolveNonInspectionAction() {
         console.warn(`[Action] No non-inspection strategy found for stage: ${s.current_stage}`);
     }
 
+    // 商人系列：原本就已經有傳入 reveal_targets: []
     if (s.current_stage === 'black_market' || s.current_stage === 'miracle_merchant') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('merchant', targets, { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets: [] });
     }
+    
+    // 超級黑市商人：補上 reveal_targets: []
     if (s.current_stage === 'super_black_market') {
-        insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts });
-    }
-
-    if (s.current_stage === 'cupid') {
-        if (ctx.targetsArr.length === 2) setPersistentState('cupid_lovers', ctx.targetsArr);
-        insertNightStatusFlow('lovers', ctx.targetsArr.length === 2 ? ctx.targetsArr : []);
+        insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts, reveal_targets: [] });
     }
     
+    // 💡 邱比特：補上 reveal_targets: [] (後續有專屬的情侶睜眼階段)
+    if (s.current_stage === 'cupid') {
+        if (ctx.targetsArr.length === 2) setPersistentState('cupid_lovers', ctx.targetsArr);
+        insertNightStatusFlow('lovers', ctx.targetsArr.length === 2 ? ctx.targetsArr : [], { reveal_targets: [] });
+    }
+    
+    // 覺醒石像鬼 (這個保留通知，因為它沒有 take_turns)
     if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
         insertNightStatusFlow('gargoyle_conversion', ctx.targetNum ? [ctx.targetNum] : []);
     }
-
+    
+    // 💡 鬼魅新娘系列：補上 reveal_targets: [] (後續有專屬的睜眼階段)
     if (s.current_stage === 'ghost_bride') {
-        insertNightStatusFlow('ghost_groom', ctx.targetNum ? [ctx.targetNum] : []);
+        insertNightStatusFlow('ghost_groom', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
     }
     if (s.current_stage === 'ghost_bride_couple') {
-        insertNightStatusFlow('ghost_witness', ctx.targetNum ? [ctx.targetNum] : []);
-    }
-
-    if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
-        let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
-        insertNightStatusFlow('seed_wolf', targets);
+        insertNightStatusFlow('ghost_witness', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
     }
     
+    // 💡 種狼：補上 reveal_targets: [] (這樣輪流睜眼完就會直接進入下一個身分！)
+    if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
+        let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
+        insertNightStatusFlow('seed_wolf', targets, { reveal_targets: [] });
+    }
+    
+    // 潘朵拉與殭屍：原本就已經有傳入 reveal_targets: []
     if (s.current_stage === 'pandora') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('pandora', targets, { reveal_targets: [] });

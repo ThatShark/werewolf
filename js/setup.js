@@ -1,5 +1,5 @@
 // js/setup.js
-import { s, speak, isWolfRole, getWolfTeamRoles } from './core.js';
+import { s, isWolfRole, getWolfTeamRoles } from './core.js';
 import { buildNightQueue, runNextNightRole } from './main.js';
 
 // ==========================================

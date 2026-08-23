@@ -106,7 +106,7 @@
             "icon": "🤖",
             "faction": "wolf",
             "type": "lone_wolf",
-            "seer_result": "evil",
+            "seer_result": "dynamic",
             "ui_type": "inspection",
             "max_targets": 1,
             "min_targets": 1,
@@ -1717,7 +1717,8 @@
                     "awaken_gargoyle",
                     "witch",
                     "seer",
-                    "awaken_dreamwalker"
+                    "awaken_dreamwalker",
+                    "take_turns"
                 ]
             },
             {
@@ -1938,7 +1939,8 @@
                     "witch",
                     "seer",
                     "hunter",
-                    "psychic"
+                    "psychic",
+                    "take_turns"
                 ]
             },
             {
@@ -2741,7 +2743,8 @@
                     "witch",
                     "seer",
                     "hunter",
-                    "awaken_dreamwalker"
+                    "awaken_dreamwalker",
+                    "take_turns"
                 ]
             },
             {
@@ -3817,7 +3820,8 @@
                     "witch",
                     "seer",
                     "hunter",
-                    "psychic"
+                    "psychic",
+                    "take_turns"
                 ]
             },
             {

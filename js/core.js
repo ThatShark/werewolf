@@ -30,10 +30,45 @@ export function isWolfRole(role) {
     return s.ROLE_DICT[role]?.faction === 'wolf' || s.ROLE_DICT[role]?.type === 'wolf';
 }
 
-export function isEvilRole(role) {
-    let rData = s.ROLE_DICT[role];
-    if (!rData) return false;
-    return rData.faction === 'wolf' || rData.faction === 'third_party' || rData.seer_result === 'evil';
+// 判斷「實質狼人陣營」的函式
+export function isPlayerWolfFaction(seat) {
+    seat = parseInt(seat);
+    let role = s.player_roles[seat];
+    let rData = s.ROLE_DICT[role] || {};
+    
+    // 狀態轉換 (包含被感染、覺醒石像鬼轉化、百變狼王)
+    if (s.player_status[seat]?.isConvertedWolf) return true;
+    if (s.player_status[seat]?.isVWK) return true;
+    if (seat === s.awk_gargoyle_target || seat === s.awk_gargoyle_target_a || seat === s.awk_gargoyle_target_b) return true;
+    
+    // 盜寶大師的動態陣營
+    if (role === 'treasure_master') return s.is_treasure_hunter_evil;
+    
+    // 預設陣營判斷
+    return rData.faction === 'wolf';
+}
+
+// 💡 升級 isPlayerEvil，專注於「查驗結果」
+export function isPlayerEvil(seat, visited = new Set()) {
+    if (visited.has(seat)) return true;
+    visited.add(seat);
+    seat = parseInt(seat);
+
+    // 如果實質上是狼人陣營，查驗必定是壞人 (除了雪狼、隱狼等特殊狼在 JSON 裡 seer_result 是 good)
+    let role = s.player_roles[seat];
+    let rData = s.ROLE_DICT[role] || {};
+
+    if (seat === s.puppet_target) return true; // 傀儡查殺
+    if (isPlayerWolfFaction(seat) && rData.seer_result !== 'good') return true;
+
+    if (role === 'pumpkin') { 
+        let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); 
+        if (gs && !s.final_killed.includes(parseInt(gs))) return false; 
+        return true; 
+    }
+    if (role === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
+    
+    return rData.seer_result === 'evil';
 }
 
 // 取得會跟著狼隊一起行動的角色
@@ -54,17 +89,15 @@ export function getWolfTeamRoles() {
 export function isPlayerEvil(seat, visited = new Set()) {
     if (visited.has(seat)) return true;
     visited.add(seat);
+    seat = parseInt(seat);
 
     let role = s.player_roles[seat];
     let rData = s.ROLE_DICT[role] || {};
     
     if (seat === s.puppet_target) return true;
     if (s.player_status[seat]?.isVWK) return true;
-    if (role === 'pumpkin') { 
-        let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); 
-        if (gs && !s.final_killed.includes(parseInt(gs))) return false; 
-        return true; 
-    }
+    if (seat === s.awk_gargoyle_target || seat === s.awk_gargoyle_target_a || seat === s.awk_gargoyle_target_b) return true;
+
     if (role === 'treasure_master') return s.is_treasure_hunter_evil;
     if (role === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
     
@@ -130,11 +163,13 @@ export function insertNightStatusFlow(type, targets = [], metadata = {}) {
     const flow_id = `${type}-${s.night_status_flows.length + 1}`;
     const target_seats = [...targets].map(Number).filter(Boolean);
     s.night_status_flows.push({ id: flow_id, type, targets: target_seats, metadata, processed: false });
-    const stages = [];
-    for (let seat = 1; seat <= s.total_players; seat++) stages.push({ stage: `status_check_${flow_id}_${seat}`, order: -1, seat: null, subLabel: null, isFake: false });
-    const reveal_targets = metadata.reveal_targets ? [...metadata.reveal_targets].map(Number).filter(Boolean) : target_seats;
-    reveal_targets.forEach((seat, index) => stages.push({ stage: `status_notify_${flow_id}_${seat}`, order: -1, seat: null, subLabel: index, isFake: false }));
-    s.night_queue.unshift(...stages);
+
+    if (metadata.immediate_notify) {
+        const stages = [];
+        const reveal_targets = metadata.reveal_targets ? [...metadata.reveal_targets].map(Number).filter(Boolean) : target_seats;
+        reveal_targets.forEach((seat, index) => stages.push({ stage: `status_notify_${flow_id}_${seat}`, order: -1, seat: null, subLabel: index, isFake: false }));
+        s.night_queue.unshift(...stages);
+    }
 }
 export function getActionsByEffect(effect) { return s.night_actions.filter(a => a.effect === effect && a.status === 'active'); }
 export function getActiveEffectsOn(seat) { return s.night_actions.filter(a => a.status === 'active' && a.resolved_targets.includes(seat)); }
@@ -161,7 +196,7 @@ export function removeDeathEvent(seat) {
 export function applyTimeWolfReflection(target_seat, actor_seat) {
     let twTarget = getNightTarget('mark', 'time_wolf');
     if (!target_seat || !twTarget || !actor_seat) return target_seat;
-    if (target_seat === twTarget && !s.is_time_wolf_reflection_used && !isEvilRole(s.player_roles[actor_seat])) {
+    if (target_seat === twTarget && !s.is_time_wolf_reflection_used && !isPlayerWolfFaction(actor_seat)) {
         setPersistentState('is_time_wolf_reflection_used', true); return parseInt(actor_seat);
     }
     return target_seat;

@@ -1,5 +1,5 @@
 // js/night.js
-import { s, getNightTarget, getNightTargets, isEvilRole, getWolfTeamRoles, vibrate } from './core.js';
+import { s, getNightTarget, getNightTargets, getWolfTeamRoles, vibrate } from './core.js';
 
 export function resetSelections() {
     document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
@@ -55,7 +55,7 @@ export function createNumberPad() {
             
             let valid_seats = [...new Set(adjacent_seats)].filter(seat => {
                 let targetRoleData = s.ROLE_DICT[s.player_roles[seat]] || {};
-                return !w_seats.includes(seat) && !isEvilRole(s.player_roles[seat]) && targetRoleData.faction !== 'third_party';
+                return targetRoleData.faction === 'good' && !s.player_status[seat]?.isConvertedWolf;
             });
             if (!valid_seats.includes(i)) is_disabled = true;
         }

@@ -1,5 +1,5 @@
 // js/day.js
-import { s, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, isWolfRole, isEvilRole, getWolfTeamRoles } from './core.js';
+import { s, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, isWolfRole, isPlayerWolfFaction, getWolfTeamRoles, isPlayerEvil } from './core.js';
 
 function checkSnakeWin(dead1, dead2) {
     let r1 = s.player_roles[dead1]; let r2 = s.player_roles[dead2];
@@ -19,8 +19,11 @@ export function canPlayerShoot(seat, role = s.player_roles[seat]) {
     let isStolen = s.gray_wolf_stolen_player === parseInt(seat) && s.gray_wolf_stolen_player !== pgAntiTheft;
     let isSleeping = s.sleeping_beauty_seat && s.is_sleeping_beauty_active && parseInt(seat) === s.sleeping_beauty_seat;
     let isCharmed = getNightTarget('charm', 'wolf_beauty') === parseInt(seat);
+    // 💡 增加判斷：被種狼或覺醒石像鬼轉化的玩家
+    let isConverted = s.player_status[seat]?.isConvertedWolf;
 
-    if (nightmareTarget === parseInt(seat) || witchPoisonTarget === parseInt(seat) || isStolen || isSleeping || isCharmed) return false;
+    // 將 isConverted 與夢魘、毒藥並列，絕對封鎖開槍
+    if (nightmareTarget === parseInt(seat) || witchPoisonTarget === parseInt(seat) || isStolen || isSleeping || isCharmed || isConverted) return false;
     return role === 'awaken_hunter'
         || (role === 'hunter' && s.player_status[seat]?.isVWK)
         || ['hunter', 'wolf_king', 'awaken_wolf_king'].includes(role)
@@ -296,7 +299,7 @@ export function calculateNightDeaths() {
         }
     });
 
-    if (s.merchant_target && isEvilRole(s.player_roles[s.merchant_target])) {
+    if (s.merchant_target && isPlayerWolfFaction(s.player_roles[s.merchant_target])) {
         let merchSeat = Object.keys(s.player_roles).find(k => ['black_market', 'miracle_merchant'].includes(s.player_roles[k]));
         if (merchSeat && !s.primary_killed.includes(parseInt(merchSeat))) {
             addDeathEvent(parseInt(merchSeat), 'system', '給狼技能反噬');
@@ -463,12 +466,10 @@ export function generateDayReport() {
     let tonight_deaths = s.death_events.filter(e => e.source !== 'vote').map(e => e.seat);
     let report = { bearRoarText: "", extraText: "", isPeaceful: tonight_deaths.length === 0, killedSeats: [], shootersQueue: [], isSnakeWin: s.is_snake_win };
 
-    let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear');
+    let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear' || s.player_status[k]?.convertedFromRole === 'bear');
     const isSeatWolfForBear = (seatId) => {
-        if (!seatId || s.final_killed.includes(seatId)) return false;
-        let role = s.player_roles[seatId];
-        if (role === 'treasure_master' && s.is_treasure_hunter_evil) return true;
-        return isEvilRole(role);
+       if (!seatId || s.final_killed.includes(seatId)) return false;
+        return isPlayerEvil(seatId);
     };
     const getAdjacent = (seat) => {
         let left = seat - 1; while (left !== seat) { if (left < 1) left = s.total_players; if (!s.final_killed.includes(left)) break; left--; }
