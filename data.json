@@ -8,8 +8,7 @@
             "seer_result": "evil",
             "ui_type": "custom_panel",
             "max_targets": 1,
-            "min_targets": 1,
-            "can_select_self": true
+            "min_targets": 1
         },
         "wolf_king": {
             "name": "狼王",
@@ -17,7 +16,8 @@
             "faction": "wolf",
             "type": "wolf",
             "seer_result": "evil",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["shoot_on_death"]
         },
         "white_wolf_king": {
             "name": "白狼王",
@@ -34,8 +34,7 @@
             "type": "wolf",
             "seer_result": "evil",
             "ui_type": "none",
-            "immune_poison": true,
-            "immune_gun": true
+            "tags": ["cannot_be_wolf_target", "immune_poison", "immune_gun", "reflect_inspection_and_poison"]
         },
         "seed_wolf": {
             "name": "種狼",
@@ -52,8 +51,7 @@
             "type": "wolf",
             "seer_result": "evil",
             "ui_type": "none",
-            "immune_poison": true,
-            "immune_gun": true
+            "tags": ["immune_poison", "immune_gun"]
         },
         "wolf_beauty": {
             "name": "狼美人",
@@ -64,7 +62,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["cannot_be_wolf_target", "substitute_death"]
         },
         "snow_wolf": {
             "name": "雪狼",
@@ -121,7 +120,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["shoot_on_death"]
         },
         "phantom": {
             "name": "尋香魅影",
@@ -143,7 +143,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["cannot_be_wolf_target", "substitute_death"]
         },
         "awaken_gargoyle": {
             "name": "覺醒石像鬼",
@@ -274,7 +275,7 @@
             "type": "lone_wolf",
             "seer_result": "evil",
             "ui_type": "none",
-            "immune_poison": true
+            "tags": ["immune_poison"]
         },
         "big_bad_wolf": {
             "name": "大野狼",
@@ -301,7 +302,8 @@
             "faction": "wolf",
             "type": "wolf",
             "seer_result": "evil",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["has_moon_roar_mechanic"]
         },
         "demon": {
             "name": "惡魔",
@@ -313,8 +315,7 @@
             "max_targets": 1,
             "min_targets": 1,
             "can_select_self": false,
-            "immune_poison": true,
-            "immune_gun": true
+            "tags": ["cannot_be_wolf_target", "immune_poison", "immune_gun"]
         },
         "troublemaker": {
             "name": "搗蛋鬼",
@@ -363,7 +364,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["cannot_be_wolf_target"]
         },
         "black_bat": {
             "name": "黑蝙蝠",
@@ -393,7 +395,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["cannot_be_wolf_target"]
         },
         "phantom_king": {
             "name": "怪盜狼王",
@@ -401,7 +404,8 @@
             "faction": "wolf",
             "type": "wolf",
             "seer_result": "evil",
-            "ui_type": "custom_panel"
+            "ui_type": "custom_panel",
+            "tags": ["cannot_be_wolf_target"]
         },
         "little_gray_wolf": {
             "name": "小灰灰",
@@ -458,7 +462,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "info_only"
+            "ui_type": "info_only",
+            "tags": ["shoot_on_death"]
         },
         "guard": {
             "name": "守衛",
@@ -515,7 +520,8 @@
             "faction": "good",
             "type": "commoner",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["announce_role_on_day_one"]
         },
         "bear": {
             "name": "熊",
@@ -523,7 +529,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["announce_role_on_day_one"]
         },
         "penguin": {
             "name": "企鵝",
@@ -573,7 +580,7 @@
             "type": "god",
             "seer_result": "good",
             "ui_type": "none",
-            "immune_poison": true
+            "tags": ["immune_poison"]
         },
         "dreamwalker": {
             "name": "攝夢人",
@@ -614,7 +621,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["shoot_on_death"]
         },
         "awaken_dreamwalker": {
             "name": "覺醒攝夢人",
@@ -725,7 +733,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["trigger_pufferfish_flip"]
         },
         "white_cat": {
             "name": "白貓",
@@ -733,7 +742,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["flip_to_survive"]
         },
         "magician": {
             "name": "魔術師",
@@ -752,7 +762,8 @@
             "faction": "good",
             "type": "commoner",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["flip_to_survive"]
         },
         "charmer": {
             "name": "蠱惑師",
@@ -763,7 +774,8 @@
             "ui_type": "target_select",
             "max_targets": 1,
             "min_targets": 1,
-            "can_select_self": false
+            "can_select_self": false,
+            "tags": ["substitute_death"]
         },
         "black_market": {
             "name": "黑市商人",
@@ -783,7 +795,7 @@
             "type": "god",
             "seer_result": "good",
             "ui_type": "none",
-            "immune_poison": true
+            "tags": ["immune_poison"]
         },
         "real_fox": {
             "name": "狐狸",
@@ -859,7 +871,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["trigger_rust_sword_infect"]
         },
         "diviner": {
             "name": "占卜師",
@@ -1036,7 +1049,7 @@
             "type": "third_party",
             "seer_result": "good",
             "ui_type": "none",
-            "immune_wolf_kill": true
+            "tags": ["immune_wolf_kill", "die_when_checked"]
         },
         "awaken_lonely_girl": {
             "name": "覺醒孤獨少女",
@@ -1460,7 +1473,8 @@
                     "witch",
                     "seer",
                     "hunter"
-                ]
+                ],
+                "spare_cards_count": 2
             },
             {
                 "id": "10_white_wolf_knight",
@@ -3716,7 +3730,8 @@
                     "witch",
                     "seer",
                     "hunter"
-                ]
+                ],
+                "spare_cards_count": 2
             },
             {
                 "id": "12_cupid",
@@ -4022,7 +4037,8 @@
                     "witch",
                     "hunter",
                     "psychic"
-                ]
+                ],
+                "spare_cards_count": 3
             },
             {
                 "id": "12_shadow_revenger",

@@ -29,9 +29,19 @@ export function createNumberPad() {
         if (stageRoleData.ui_type === 'inspection' && s.final_killed.includes(i)) is_disabled = true;
 
         if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
-            if (['ghost_rider', 'wolf_beauty', 'awaken_wolf_beauty', 'demon', 'medusa', 'evil_merchant', 'phantom_king'].includes(s.player_roles[i])) is_disabled = true;
-            if (divinerMark) { let dm = parseInt(divinerMark); let p1 = dm - 1 < 1 ? s.total_players : dm - 1; let p2 = dm + 1 > s.total_players ? 1 : dm + 1; if (i !== dm && i !== p1 && i !== p2) is_disabled = true; }
-            if (alchFogs.length > 0 && s.current_stage === 'wolf') { if (!alchFogs.includes(i.toString()) && !alchFogs.includes(i)) is_disabled = true; }
+            const targetRoleData = s.ROLE_DICT[s.player_roles[i]] || {};
+            if (targetRoleData.faction === 'wolf' && targetRoleData.tags?.includes('cannot_be_wolf_target')) {
+                is_disabled = true;
+            }
+            if (divinerMark) {
+                let dm = parseInt(divinerMark);
+                let p1 = dm - 1 < 1 ? s.total_players : dm - 1;
+                let p2 = dm + 1 > s.total_players ? 1 : dm + 1;
+                if (i !== dm && i !== p1 && i !== p2) is_disabled = true;
+            }
+            if (alchFogs.length > 0 && s.current_stage === 'wolf') {
+                if (!alchFogs.includes(i.toString()) && !alchFogs.includes(i)) is_disabled = true;
+            }
         }
 
         // 資料驅動：取代原本近40個角色的不能自選名單
@@ -52,7 +62,7 @@ export function createNumberPad() {
             let adjacent_seats = [];
             all_wolf_seats.forEach(w => { let ws = parseInt(w); adjacent_seats.push(ws - 1 < 1 ? s.total_players : ws - 1, ws + 1 > s.total_players ? 1 : ws + 1); });
             let w_seats = all_wolf_seats.map(k => parseInt(k));
-            
+
             let valid_seats = [...new Set(adjacent_seats)].filter(seat => {
                 let targetRoleData = s.ROLE_DICT[s.player_roles[seat]] || {};
                 return targetRoleData.faction === 'good' && !s.player_status[seat]?.isConvertedWolf;
@@ -79,7 +89,7 @@ export function createNumberPad() {
             const btn_confirm_action = document.getElementById('btn-confirm-action');
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'poison_target') { resetSelections(); btn.classList.add('selected'); s.selected_number = i; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "下一步"; return; }
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'assistant_target') { resetSelections(); btn.classList.add('selected'); s.awk_witch_assistant = parseInt(i); btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認"; return; }
-            
+
             // 資料驅動：處理單選與多選邏輯
             let max_select = stageRoleData.max_targets || 1;
             let min_select = stageRoleData.min_targets !== undefined ? stageRoleData.min_targets : max_select;
@@ -89,8 +99,8 @@ export function createNumberPad() {
                 if (s.selected_numbers_arr.includes(i)) { s.selected_numbers_arr = s.selected_numbers_arr.filter(n => n !== i); btn.classList.remove('selected'); }
                 else if (s.selected_numbers_arr.length < max_select) { s.selected_numbers_arr.push(i); btn.classList.add('selected'); }
                 btn_confirm_action.classList.toggle('hidden', s.selected_numbers_arr.length < min_select); btn_confirm_action.textContent = "確認";
-            } else { 
-                resetSelections(); btn.classList.add('selected'); s.selected_number = i; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認"; 
+            } else {
+                resetSelections(); btn.classList.add('selected'); s.selected_number = i; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認";
             }
         });
         number_pad.appendChild(btn);

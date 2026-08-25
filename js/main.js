@@ -1,5 +1,5 @@
 // js/main.js
-import { s, getStageVoiceName, isPlayerWolfFaction, getWolfTeamRoles, speak, resetGameState, resetNightState, vibrate, getActiveEffectsOn, getActionsByEffect, getNightTarget, insertNightStatusFlow, removeDeathEvent, logNightAction, findNearestWolf } from './core.js';
+import { s, getStageVoiceName, isPlayerWolfFaction, getWolfTeamRoles, speak, delay, resetGameState, resetNightState, vibrate, getActiveEffectsOn, getActionsByEffect, getNightTarget, insertNightStatusFlow, removeDeathEvent, logNightAction, findNearestWolf } from './core.js';
 import { resetSelections } from './night.js';
 import { calculateNightDeaths, generateDayReport, killPlayerDuringDay } from './day.js';
 import { initSetupEvents } from './setup.js';
@@ -313,7 +313,7 @@ function hideNightUIIngame(title = "🌙 夜晚持續中", instruction = "請閉
     if (custom_panel) custom_panel.remove();
 }
 
-export function runNextNightRole() {
+export async function runNextNightRole() {
     const btn_confirm_action = document.getElementById('btn-confirm-action');
     const btn_optional_skip = document.getElementById('btn-optional-skip');
     const number_pad = document.getElementById('number-pad');
@@ -335,11 +335,13 @@ export function runNextNightRole() {
         night_role_title.textContent = "🌅 天亮結算中"; night_instruction.textContent = "法官正在處理昨晚的行動結果...";
         calculateNightDeaths();
         let morning_voice = document.getElementById('setting-sheriff').checked ? "要競選警長的請舉手，三秒後天亮，三、二、一。" : "三秒後天亮，三、二、一。";
-        speak(morning_voice, () => {
-            if (document.getElementById('setting-sheriff').checked) {
-                document.getElementById('screen-night').classList.add('hidden'); document.getElementById('screen-sheriff').classList.remove('hidden'); initSheriffScreen();
-            } else { s.speech_order_text = null; s.defer_speech_order_until_shooting = true; showDayResult(); }
-        });
+
+        await speak(morning_voice);
+        if (document.getElementById('setting-sheriff').checked) {
+            document.getElementById('screen-night').classList.add('hidden'); document.getElementById('screen-sheriff').classList.remove('hidden'); initSheriffScreen();
+        } else {
+            s.speech_order_text = null; s.defer_speech_order_until_shooting = true; showDayResult();
+        }
         return;
     }
 
@@ -381,12 +383,13 @@ export function runNextNightRole() {
         let fake_name = s.ROLE_DICT[s.current_stage]?.name || getStageVoiceName(s.current_stage, s.current_sub_label);
         night_role_title.textContent = `🎭 ${fake_name}行動 (偽裝)`; night_instruction.textContent = "該身分已被棄掉，模擬睜眼等待中...";
         let wait_time = Math.random() * 2000 + 3000;
-        speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請睜眼。`, () => {
-            setTimeout(() => {
-                hideNightUIIngame();
-                speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
-            }, wait_time);
-        });
+
+        await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請睜眼。`);
+        await delay(wait_time);
+        hideNightUIIngame();
+        await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+        await delay(s.role_transition_delay * 1000);
+        runNextNightRole();
         return;
     }
 
@@ -413,21 +416,21 @@ export function runNextNightRole() {
     if (actor_seat && s.player_status[actor_seat]?.isPandoraPoisoned) return runNextNightRole();
 
     if (actor_seat && s.player_status[actor_seat]?.isConvertedWolf && s.current_stage !== 'wolf') {
-        s.is_current_role_converted = true; // 紀錄為被轉化狀態
+        s.is_current_role_converted = true;
         let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
         let base_role = s.current_stage.replace('_A', '').replace('_B', '');
-        
+
         night_role_title.textContent = `${s.ROLE_DICT[base_role]?.icon || '🎭'} ${role_name}行動 (已被轉化)`;
         night_instruction.innerHTML = `<span style="color:#e94560; font-weight:bold;">你已被感染或轉化為狼人陣營，無法發動原技能。</span>`;
-        
+
         number_pad.classList.add('hidden');
         action_pad.classList.add('hidden');
         btn_optional_skip.classList.add('hidden');
-        
+
         btn_confirm_action.classList.remove('hidden');
         btn_confirm_action.textContent = "確認並閉眼";
-        
-        speak(`${role_name}請睜眼。`);
+
+        await speak(`${role_name}請睜眼。`);
         return;
     }
 
@@ -573,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         crow_panel.classList.toggle('hidden');
     };
 
-    btn_confirm_action.addEventListener('click', () => {
+    btn_confirm_action.addEventListener('click', async () => {
         vibrate(20);
 
         let is_real_action = (s.selected_number !== 'skip' && s.selected_number !== null) || s.selected_numbers_arr.length > 0 || s.is_witch_saved || s.current_stage === 'awaken_witch_assistant_action';
@@ -597,7 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
             logNightAction(`【${role_log}】被恐懼，跳過技能`);
 
             hideNightUIIngame();
-            speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
@@ -606,7 +611,9 @@ document.addEventListener('DOMContentLoaded', () => {
             logNightAction(`【${role_log}】被冰凍，跳過技能`);
 
             hideNightUIIngame();
-            speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
@@ -615,7 +622,9 @@ document.addEventListener('DOMContentLoaded', () => {
             logNightAction(`【${role_log}】已被轉化為狼人，跳過技能`);
 
             hideNightUIIngame();
-            speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
@@ -634,14 +643,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (s.current_stage.startsWith('status_check_group_')) {
             hideNightUIIngame("👤 狀態確認", "請閉上眼睛，將裝置傳給下一位玩家...");
-            speak(`${getStatusStageVoice(s.current_stage)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
         // 一般的單獨狀態通知
         if (s.current_stage.startsWith('status_')) {
             hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
-            speak(`${getStatusStageVoice(s.current_stage)}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
@@ -652,7 +665,9 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (s.current_stage === 'big_gray_wolf_meet') v = "大灰狼與小狼";
 
             hideNightUIIngame();
-            speak(`${v}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+            await speak(`${v}請閉眼。`);
+            await delay(s.role_transition_delay * 1000);
+            runNextNightRole();
             return;
         }
 
@@ -695,10 +710,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         resolveNonInspectionAction();
 
-        hideNightUIIngame();
+        hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
         let v = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('little_girl')) v = "狼隊和小女孩";
-        speak(`${v}請閉眼。`, () => setTimeout(runNextNightRole, s.role_transition_delay * 1000));
+
+        await speak(`${v}請閉眼。`);
+        await delay(s.role_transition_delay * 1000);
+        runNextNightRole();
     });
 
     btn_optional_skip.addEventListener('click', () => {

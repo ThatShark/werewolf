@@ -1,6 +1,6 @@
 // js/setup.js
 import { s, isWolfRole, getWolfTeamRoles } from './core.js';
-import { buildNightQueue, runNextNightRole } from './main.js';
+import { buildNightQueue } from './main.js';
 
 // ==========================================
 // 設定頁初始化、角色錄入、隨機發牌、板子選擇、事件綁定
@@ -23,12 +23,12 @@ function openRoleModal(role_setup_grid) {
 
         const btn = document.createElement('button');
         btn.classList.add('role-select-btn');
-        
+
         // 3. 讓按鈕顯示帶有 A, B 區分的名稱（例如：預言家 A），方便法官辨識
         let displayName = s.ROLE_DICT[base_role_id].name;
         const suffixMatch = role_id.match(/_([A-Z])$/);
         if (suffixMatch) {
-            displayName += ` ${suffixMatch[1]}`; 
+            displayName += ` ${suffixMatch[1]}`;
         }
 
         // 4. 設定內容與置中排版
@@ -364,8 +364,8 @@ function handleStartNight(count_select, setting_board) {
                 error_msg += `${s.ROLE_DICT[role_id].name}: 配置數量錯誤\n`;
             }
         }
-        const boards_with_spare_cards = ['10_mask_night', '12_thief_cupid', '12_treasure_hunter'];
-        if (!is_match && !boards_with_spare_cards.includes(s.current_board.id)) return alert(error_msg);
+        const has_spare_cards = s.current_board.spare_cards_count > 0;
+        if (!is_match && !has_spare_cards) return alert(error_msg);
         if (boards_with_spare_cards.includes(s.current_board.id)) {
             for (const [role_id, count] of Object.entries(current_counts)) {
                 if (count > (s.current_board.roles[role_id] || 0)) return alert(error_msg);

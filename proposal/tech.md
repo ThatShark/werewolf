@@ -4,176 +4,117 @@
 
 - 純前端 Web App（無後端、無框架）
 - 原生 JavaScript（ES Modules）
-- 單一 HTML 入口 + CSS 樣式檔
+- **非同步控制 (Async/Await & Promises)**：精準處理語音播報與 UI 轉場時序
+- **資料驅動架構 (Data-Driven Architecture)**：將角色邏輯屬性徹底抽離至靜態 JSON
+- **策略模式 (Strategy Pattern)**：消除冗長的 if-else 分支，統一收斂角色行動
+- 單一 HTML 入口 + CSS 樣式檔 (支援 PWA)
 - Web Speech API 語音播報
-- 靜態 JSON 資料檔（角色字典、板子配置）
 
 ## 檔案結構與分工
 
-```
+```text
 ├── index.html          # 唯一 HTML 入口，所有畫面（screen）以 div 切換顯示/隱藏
-├── style.css           # 全域樣式，深色主題，行動裝置優先
-├── data.json           # 靜態資料：ROLE_DICT（角色定義）、BOARD_CONFIGS（板子配置）
+├── style.css           # 全域樣式，深色主題，CSS 變數集中管理
+├── data.json           # 靜態資料：ROLE_DICT（角色定義/UI型態/免疫屬性）、BOARD_CONFIGS（板子配置）
 └── js/
-    ├── core.js         # 全域狀態物件 (s)、陣營定義、共用工具函式（不操作 DOM）
-    ├── night.js        # 夜晚 UI 互動邏輯（號碼鍵盤生成、選擇重置）
-    ├── day.js          # 白天結算邏輯（死亡計算、連帶死亡鏈、開槍佇列）
+    ├── core.js         # 全域狀態 (s)、陣營判定、Promise 工具函式、行動紀錄器 (addNightAction)
+    ├── night.js        # 夜晚 UI 互動邏輯，依靠 data.json 動態產生號碼鍵盤與選擇限制
+    ├── day.js          # 白天結算邏輯，掃描 Action Queue 進行護盾/毒殺/反傷與連帶死亡遞迴
     ├── setup.js        # 設定頁初始化、角色錄入、隨機發牌、板子選擇、data.json 載入
-    ├── sheriff.js      # 警長競選流程（號碼選擇、發言順序、結果判定）
-    ├── actions.js      # 角色行動結果寫入（查驗結果顯示、非查驗類狀態寫入）
-    ├── roleUI.js       # 角色夜晚面板渲染（根據 currentStage 顯示操作介面）
-    └── main.js         # 主流程骨架：佇列建置、夜晚流程調度、確認/跳過按鈕事件、法官面板、重置
+    ├── sheriff.js      # 警長競選流程（上警名單、發言順序、競選結果）
+    ├── actions.js      # 角色行動結果寫入，採用「策略註冊表」統一處理查驗與技能寫入
+    ├── roleUI.js       # 角色夜晚面板渲染，利用 ui_type 動態分派對應的視圖處理器
+    ├── vote.js         # 白天放逐投票特殊結算（如詭術師換票）
+    └── main.js         # 主流程骨架：async/await 夜晚流程調度、畫面切換、法官面板、重置
 ```
 
 ### 各檔案職責原則
 
 | 檔案 | 負責範圍 |
 |------|---------|
-| `core.js` | 狀態定義、陣營常數、純邏輯工具函式（不操作 DOM） |
-| `night.js` | 夜晚階段的號碼鍵盤 UI 建構與選擇限制規則 |
-| `day.js` | 天亮後的死亡結算邏輯與白天開槍/投票 UI |
-| `setup.js` | 遊戲設定頁面（板子選擇、角色錄入、隨機發牌、進入黑夜前校驗） |
+| `core.js` | 狀態定義、依賴 JSON 的陣營判定、`delay`/`speak` Promise 封裝、夜間行為容器 API |
+| `night.js` | 依據 `max_targets`, `can_select_self`, `ui_type` 等資料驅動變數繪製鍵盤與限制 |
+| `day.js` | 掃描 `getActionsByEffect` 進行死亡結算、管線化 (Pipeline) 的死亡與免疫計算 |
+| `setup.js` | 遊戲設定頁面、動態下拉選單、進入黑夜前配置校驗 |
 | `sheriff.js` | 警長競選流程（上警名單、發言順序、競選結果） |
-| `actions.js` | 確認按鈕按下後的狀態寫入邏輯（每個角色的 resolve） |
-| `roleUI.js` | 每個角色夜晚操作面板的 DOM 渲染（面板按鈕、指示文字） |
-| `main.js` | 遊戲主迴圈骨架、畫面切換調度、事件總入口、法官紀錄面板、重置 |
+| `actions.js` | `inspectionStrategies` 與 `nonInspectionStrategies` 策略註冊表 |
+| `roleUI.js` | 透過字典映射 `ui_type` 到 `_info_only`, `_inspection`, `_target_select` 等通用渲染面板 |
+| `main.js` | 非同步主迴圈 `runNextNightRole`、法官面板更新、遊戲整體推進 |
 
-### 新增檔案的判斷準則
+## 狀態管理與架構升級
 
-- 如果新邏輯屬於「角色面板渲染」→ 放 `roleUI.js`
-- 如果新邏輯屬於「確認按鈕後的狀態寫入」→ 放 `actions.js`
-- 如果新邏輯屬於「夜晚號碼鍵盤選擇限制」→ 放 `night.js`
-- 如果新邏輯屬於「天亮後結算或白天操作」→ 放 `day.js`
-- 如果是純資料運算或跨階段共用 → 放 `core.js`
-- 如果是流程串接或畫面切換 → 放 `main.js`
-- 當單一檔案超過 600 行時，考慮拆分為更細的模組
+所有的狀態變數集中於 `core.js` 的 `s` 物件中，邏輯流動以「隊列驅動」為主，並細分為以下類別：
 
-## 狀態管理
-
-所有遊戲狀態集中在 `core.js` 的 `s` 物件中，依功能分類：
-
-1. **遊戲基礎設定** — `totalPlayers`, `currentBoard`, `ROLE_DICT`, `BOARD_CONFIGS`
-2. **玩家角色配置** — `playerRoles`, `playerStatus`, `spareCards`
-3. **流程控制** — `nightQueue`, `currentStage`, `selectedNumber`, `nightActionLog`
-4. **單一目標追蹤** — `wolfKillTarget`, `witchPoisonTarget`, `seerTarget` 等
-5. **陣列目標** — `magicianSwap`, `cupidLovers`, `phantomTargets` 等
-6. **技能旗標** — `witchSaved`, `pufferfishTriggered` 等布林值
-7. **死亡清單** — `primaryKilled`, `chainKilled`, `finalKilled`
-8. **擴展板子專用** — `pleasantGoatGuard`, `grayWolfStolenPlayer` 等
-9. **第三方陣營** — `cupidLovers`（邱比特情侶）, `phantomTargets`（尋香綁定）, `snakeWin`（千年之戀勝利）, `ghostBrideGroom`/`ghostBrideWitness`（鬼魅新娘）, `halfBloodTarget`（混血兒）, `wildChildTarget`（野孩子）, `lonelyGirlTarget`（覺醒孤獨少女）
-
-## 規則參考文件
-
-各板子的完整規則（職業介紹、夜間睜眼順序、法官主持流程、Q&A）存放於：
-#[[file:proposal/狼人殺各版子 前.md]]
-#[[file:proposal/狼人殺各版子 中.md]]
-#[[file:proposal/狼人殺各版子 後.md]]
-
-新增或修改角色邏輯時，應對照該文件中對應板子的章節確認規則正確性。
+1. **基礎資料與規則** — `total_players`, `current_board`, `ROLE_DICT`, `BOARD_CONFIGS`
+2. **玩家角色配置** — `player_roles`, `player_status`, `spare_cards`, `discarded_roles`
+3. **行動隊列 (Action Queue)** — `night_actions`。所有夜晚操作透過 `addNightAction` 統一寫入，取代零散的布林值，結算時統一查詢交互。
+4. **狀態流轉 (Status Flow)** — `night_status_flows`。處理商人給裝備、感染、轉化、綁定等複雜通知與群體相認機制。
+5. **流程控制** — `night_queue`, `current_stage`, `selected_number`, `night_action_log`
+6. **單一目標追蹤** — `seed_wolf_target`, `awk_gargoyle_target` 等
+7. **第三方與特殊陣營** — `cupid_lovers`（情侶）, `phantom_targets`（尋香綁定）, `ghost_bride_groom`（鬼魅新娘）等
+8. **死亡清單** — `primary_killed`, `chain_killed`, `final_killed`
+9. **非同步流程** — 語音與轉場全數使用 `await speak()` 與 `await delay()`，根除 `setTimeout` 競態條件。
 
 ## 命名規範
 
-### 變數
+### 變數與屬性
 
-- 使用 **snake_case**（單詞之間以 `_` 區隔）
-- 變數名稱應淺顯易懂，能直接看出用途
-- 範例：
-  - `wolf_kill_target` — 狼刀目標
-  - `witch_poison_target` — 女巫毒藥目標
-  - `night_queue` — 夜晚行動佇列
+- 使用 **snake_case**（單詞之間以 `_` 區隔）：`wolf_kill_target`, `night_actions`
+- 布林值 **必須帶助動詞**（is / has / can / was / did）：`is_witch_saved`, `has_gun`, `can_shoot`
 
-#### 角色縮寫規則
+#### 角色與目標縮寫規則
+- 角色名 **不縮寫**，維持完整可讀性。例外前綴：
+  - 「覺醒」→ `awk_`（如 `awk_gargoyle_target`）
+  - 「超級」→ `sp_`（如 `sp_grave_keeper_heir`）
+- 目標後綴規範：
+  - 單一目標統一加 `_target`：`half_blood_target`
+  - 兩人配對用 `_pair` / `_lovers`：`cupid_lovers`
+  - 多人列表用 `_targets` / `_infected`：`phantom_targets`, `zombie_infected`
 
-- 角色名**不縮寫**，維持完整可讀性
-- 例外前綴縮寫：
-  - 「覺醒」→ `awk`（如 `awk_seer_target`）
-  - 「超級」→ `sp`（如 `sp_grave_keeper_target`）
+### 角色識別碼與 JSON 屬性
 
-#### 目標後綴
-
-- 單一目標統一加 `_target`：`guard_target`, `bat_target`, `medusa_target`
-- 兩人配對用 `_pair`：`cupid_pair`, `phantom_pair`
-- 多人列表用 `_list`：`zombie_infected_list`, `fog_target_list`
-
-#### 布林值
-
-- **必須帶助動詞**（is / has / can / was / did）
-- 範例：`is_witch_saved`, `has_gun`, `can_shoot`, `is_thief_invincible`
+角色邏輯移至 `data.json` 中的 `ROLE_DICT`，核心屬性包含：
+- `faction`: 陣營 (wolf, good, third_party, lone_wolf)
+- `seer_result`: 查驗結果 (evil, good, dynamic)
+- `ui_type`: 面板型態 (none, info_only, inspection, target_select, custom_panel)
+- `max_targets` / `min_targets`: 目標數量限制
+- `can_select_self`: 是否可點擊自己
+- `immune_poison` / `immune_gun` / `immune_wolf_kill`: 特定免疫旗標，取代寫死的 if-else 判定。
 
 ### 函式
 
-- 使用 **camelCase**
-- 範例：`buildNightQueue()`, `calculateNightDeaths()`, `handleChainDeaths()`
-- 避免過度縮寫，`btn` (button)、`el` (element)、`arr` (array) 等常見縮寫可接受
+- 使用 **camelCase**：`buildNightQueue()`, `calculateNightDeaths()`, `insertNightStatusFlow()`
+- 避免過度縮寫，`btn` (button)、`el` (element)、`arr` (array) 等常見縮寫可接受。
 
-### 角色識別碼 (Role ID)
+### CSS Class 與 DOM ID
 
-- 使用 **snake_case** 英文：`wolf_beauty`, `awaken_wolf_king`, `ghost_rider`
-- 覺醒角色統一前綴 `awaken_`
-- 對應的中文名稱存放在 `data.json` 的 `ROLE_DICT[role].name`
-
-### CSS Class
-
-- 使用 **kebab-case**：`num-btn`, `grid-container`, `primary-btn`
+- 使用 **kebab-case**：`num-btn`, `grid-container`, `screen-night`, `btn-confirm-action`
 - 狀態類別：`hidden`, `selected`, `action-selected`
-
-### DOM ID
-
-- 使用 **kebab-case**：`screen-night`, `btn-confirm-action`, `number-pad`
-- 按鈕前綴 `btn-`，畫面前綴 `screen-`，區塊前綴依功能命名
 
 ## 可維護性與可延伸性
 
 ### 核心設計原則
 
-- **資料驅動**：角色的基本屬性（名稱、圖示、行動順序）集中在 `data.json`，避免散落在邏輯程式碼中
-- **單一職責**：每個角色的行動邏輯應盡量獨立，避免在一個 `if-else` 分支中混合多個角色的判斷
-- **統一介面模式**：角色行動的共通流程為「語音播報→顯示操作面板→玩家選擇→紀錄結果→閉眼」，新角色應遵循此模式
-- **集中註冊**：新增角色時，所有需要修改的位置都列在「新增角色的步驟」中，不應有隱藏的散落判斷
+- **資料驅動 (Data-Driven)**：角色的基本屬性集中在 `data.json`，避免散落在邏輯程式碼中。
+- **策略模式 (Strategy Pattern)**：每個角色的行動邏輯應透過 `actions.js` 註冊表獨立，避免在單一 `if-else` 分支中混合判斷。
+- **統一介面模式**：角色行動的共通流程為「語音播報→顯示操作面板→玩家選擇→紀錄結果(Action Queue)→閉眼」。
 
-### 延伸新職業的指引
+### 程式碼品質與開發準則
 
-- 新角色的夜晚行動邏輯，優先以獨立 `if` 區塊處理，而非嵌套在既有角色的邏輯中
-- 如果新角色的行為與既有角色高度相似（如覺醒版本），可共用部分邏輯但透過旗標區分差異
-- 角色間的交互效果（如免疫、反傷、連帶死亡）應在 `calculateNightDeaths` 中以明確的條件判斷處理，並附帶註解說明規則來源
-- 「不入狼隊」的角色（隱狼、石像鬼、蝕日侍女等）統一透過 `wolfFaction` 陣列管理陣營歸屬，入隊時機透過 wakeOrder 和 nightQueue 控制
-- 新增的狀態變數應在 `core.js` 的 `s` 物件中對應分類區段內加入，並附帶中文註解
+- **避免魔法數字**：`wake_queue` 應在 `data.json` 集中管理，程式碼中以有意義的 stage 名稱引用。
+- **複雜邏輯註解**：結算邏輯應附帶區塊註解，說明對應的遊戲規則（例如「// 規則：奶穿判定」）。
+- **管線化結算**：`day.js` 中的死亡結算必須分層處理（失效→防護→查驗致死→狼刀/毒藥→反傷→連鎖死亡），所有護盾/免疫判定必須在加入 `primary_killed` 前完成。
+- **遞迴連帶死亡**：`handleChainDeaths()` 以遞迴方式處理連帶死亡鏈，直到沒有新增死亡為止。
 
-### 程式碼品質
+### 新增角色的標準步驟 (Data-Driven Approach)
 
-- 避免魔法數字：wake_queue 應在 `data.json` 集中管理，程式碼中以有意義的 stage 名稱引用
-- 複雜的結算邏輯應附帶區塊註解，說明對應的遊戲規則（例如「// 規則：奶穿判定」）
-- 當某角色的邏輯超過 50 行，考慮抽成獨立函式並以角色名命名（如 `handleGrayWolfAction()`）
-
-## 開發準則
-
-### 一般原則
-
-- 保持程式碼可在手機瀏覽器順暢運行，注意效能
-- UI 以行動裝置為主要考量（觸控友善、字體夠大）
-- 所有使用者看到的文字使用繁體中文
-- 程式碼註解使用繁體中文
-- 角色相關的硬編碼數值（wake_queue_、陣營歸屬）集中在 `data.json` 或 `core.js` 頂層
-
-### 夜晚流程
-
-- 夜晚行動順序由 `ROLE_DICT` 中的 `wake_queue` 數值決定，佇列越前越早行動
-- `nightQueue` 在每夜開始時根據場上存活角色動態建立
-- 每個角色行動結束後呼叫 `runNextNightRole()` 推進佇列
-
-### 結算邏輯
-
-- 死亡結算分為 `primaryKilled`（直接致死）和 `chainKilled`（連帶死亡）
-- `handleChainDeaths()` 以遞迴方式處理連帶死亡鏈，直到沒有新增死亡為止
-- 所有護盾/免疫判定必須在加入 `primaryKilled` 之前完成
-
-### 新增角色的步驟
-
-1. 在 `data.json` 的 `ROLE_DICT` 加入角色定義（name, icon, wakeOrder）
-2. 在 `core.js` 的陣營陣列（`wolfFaction` 或 `evilRoles`）中加入（如適用）
-3. 在 `roleUI.js` 的 `renderRolePanel` 中加入該角色的面板渲染邏輯
-4. 在 `night.js` 的 `createNumberPad` 中加入選擇限制規則（如適用）
-5. 在 `actions.js` 的 `resolveNonInspectionAction` 中加入結果寫入邏輯
-6. 在 `day.js` 的 `calculateNightDeaths` 中加入結算邏輯（如適用）
-7. 在對應的 `BOARD_CONFIGS` 板子中加入角色配置
-8. 對照 `proposal/狼人殺各版子 前.md`、`proposal/狼人殺各版子 中.md`、`proposal/狼人殺各版子 後.md` 中的規則確認實作正確性
+1. **設定資料 (data.json)**：
+   在 `ROLE_DICT` 中宣告角色，包含 `ui_type`、陣營、查驗結果、免疫屬性、選擇目標數量等。
+2. **處理自訂面板 (roleUI.js)** *(若 ui_type 不為預設)*：
+   若使用了 `custom_panel`，在 `roleUI.js` 的 `roleHandlers` 中新增對應的 UI 繪製邏輯。預設型態（如 `target_select`）則無需撰寫 UI 程式碼。
+3. **註冊行動策略 (actions.js)**：
+   在 `inspectionStrategies` 或 `nonInspectionStrategies` 中註冊該角色確認後的邏輯。單/多目標技能可直接使用 `createSingleTargetStrategy` 或 `createMultiTargetStrategy`。
+4. **特殊結算 (day.js)** *(若有特殊死亡/免疫效果)*：
+   在 `calculateNightDeaths` 的管線中，使用 `getActionsByEffect` 提取行動紀錄並施加影響。若為單純的護盾/毒藥免疫，只需在 `data.json` 加上 `immune_xxx` 即可。
+5. **板子加入 (data.json)**：
+   於 `BOARD_CONFIGS` 加入對應配置，並對照規則文件確認實作正確性。

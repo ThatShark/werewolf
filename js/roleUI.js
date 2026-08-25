@@ -1,6 +1,6 @@
 // js/roleUI.js
-import { s, getStageVoiceName, getWolfTeamRoles, isEvilRole, speak, getNightTarget, getNightTargets } from './core.js';
-import { createNumberPad, resetSelections } from './night.js';
+import { s, getStageVoiceName, getWolfTeamRoles, getNightTarget, getNightTargets } from './core.js';
+import { createNumberPad } from './night.js';
 
 export const roleHandlers = {};
 

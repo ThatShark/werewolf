@@ -48,44 +48,18 @@ export function isPlayerWolfFaction(seat) {
     return rData.faction === 'wolf';
 }
 
-// 💡 升級 isPlayerEvil，專注於「查驗結果」
-export function isPlayerEvil(seat, visited = new Set()) {
-    if (visited.has(seat)) return true;
-    visited.add(seat);
-    seat = parseInt(seat);
-
-    // 如果實質上是狼人陣營，查驗必定是壞人 (除了雪狼、隱狼等特殊狼在 JSON 裡 seer_result 是 good)
-    let role = s.player_roles[seat];
-    let rData = s.ROLE_DICT[role] || {};
-
-    if (seat === s.puppet_target) return true; // 傀儡查殺
-    if (isPlayerWolfFaction(seat) && rData.seer_result !== 'good') return true;
-
-    if (role === 'pumpkin') { 
-        let gs = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'gargoyle'); 
-        if (gs && !s.final_killed.includes(parseInt(gs))) return false; 
-        return true; 
-    }
-    if (role === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
-    
-    return rData.seer_result === 'evil';
-}
-
 // 取得會跟著狼隊一起行動的角色
 export function getWolfTeamRoles() {
     let roles = [];
     for (let rId in s.ROLE_DICT) {
         if (isWolfRole(rId)) {
             // 排除特定不跟狼隊伍一起刀人的獨立狼
-            if (!['wolf_crow', 'awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B', 'big_gray_wolf', 'gargoyle'].includes(rId)) {
-                roles.push(rId);
-            }
+            if (s.ROLE_DICT[rId].type !== "lone_wolf") roles.push(rId);
         }
     }
     return roles;
 }
 
-// 取代原本依賴 ROLE_RULES 的查驗邏輯
 export function isPlayerEvil(seat, visited = new Set()) {
     if (visited.has(seat)) return true;
     visited.add(seat);
@@ -145,7 +119,20 @@ export function resetNightState() {
 }
 
 export function vibrate(pattern = 15) { if (navigator.vibrate) navigator.vibrate(pattern); }
-export function speak(text, callback) { const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'zh-TW'; utterance.rate = 0.9; if (callback) utterance.onend = callback; window.speechSynthesis.speak(utterance); }
+
+export const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+export function speak(text, callback) {
+    return new Promise(resolve => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        utterance.rate = 0.9;
+        utterance.onend = () => {
+            if (callback) callback();
+            resolve();
+        };
+        window.speechSynthesis.speak(utterance);
+    });
+}
 
 export function getStageVoiceName(stage, sub_label) {
     if (stage === 'seer') return sub_label ? `預言家${sub_label}` : '預言家';
