@@ -466,15 +466,20 @@ export async function runNextNightRole() {
 
     let penguinTarget = getNightTarget('disable', 'penguin');
 
-    if (penguinTarget && parseInt(actor_seat) === penguinTarget && !s.current_stage.startsWith('notify_') && !['lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
-        s.is_current_role_frozen = true; let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
+    let isWolfTeamFrozen = s.current_stage === 'wolf' && penguinTarget &&
+        Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k])).includes(penguinTarget.toString());
+
+    if ((penguinTarget && parseInt(actor_seat) === penguinTarget || isWolfTeamFrozen) && !s.current_stage.startsWith('notify_') && !['lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
+        s.is_current_role_frozen = true;
+        let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
+
         if (s.current_stage === 'wolf') {
             let w_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
             let has_lg = Object.values(s.player_roles).includes('little_girl');
             if (has_lg) w_seats.push(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'little_girl'));
             w_seats.sort((a, b) => a - b);
             night_role_title.textContent = has_lg ? "🐺 狼隊與小女孩行動 (被冰凍)" : "🐺 狼人行動 (被冰凍)";
-            night_instruction.innerHTML = `<span style="color:#4fc3f7;">今晚有狼人被企鵝冰凍，全隊無法刀人。</span><br><br>🐺 睜眼名單：${has_lg ? '【隱藏】' : w_seats.map(id => id + '號').join(', ')}<br><span style="color:#fca311;">被冰凍的是：${penguinTarget}號</span>`;
+            night_instruction.innerHTML = `<span style="color:#4fc3f7;">今晚有狼人被企鵝冰凍，全隊無法刀人或感染。</span><br><br>🐺 睜眼名單：${has_lg ? '【隱藏】' : w_seats.map(id => id + '號').join(', ')}<br><span style="color:#fca311;">被冰凍的是：${penguinTarget}號</span>`;
             btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼"; speak(`${has_lg ? "狼隊和小女孩" : "狼人"}請睜眼。`); return;
         }
         night_role_title.textContent = `🧊 ${role_name}行動 (被冰凍)`; night_instruction.textContent = "今晚已被企鵝冰凍，無法發動技能。"; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認並閉眼"; speak(`${role_name}請睜眼。`); return;
@@ -779,7 +784,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (myEffects.some(a => a.effect === 'protect' && a.role === 'awaken_idiot')) status_strs.push("🤡 白痴保護");
             if (myEffects.some(a => a.effect === 'curse_vote')) status_strs.push("🐦‍⬛ 烏鴉詛咒");
-            if (myEffects.some(a => a.effect === 'convert' && a.role === 'seed_wolf')) status_strs.push("🐺 感染成狼");
+            if (s.player_status[i].isConvertedWolf && s.player_status[i].convertedFromRole) {
+                let originalRoleName = s.ROLE_DICT[s.player_status[i].convertedFromRole]?.name || "未知";
+                status_strs.push(`🐺 ${originalRoleName}被感染`);
+            } else if (myEffects.some(a => a.effect === 'convert' && a.role === 'seed_wolf')) {
+                status_strs.push("🐺 感染成狼");
+            }
             if (myEffects.some(a => a.effect === 'convert' && a.role.includes('gargoyle'))) status_strs.push("🦇 覺石轉化");
 
             if (s.ghost_bride_groom === i) status_strs.push("🤵 新郎");

@@ -22,7 +22,7 @@ export function canPlayerShoot(seat, role = s.player_roles[seat]) {
     let isConverted = s.player_status[seat]?.isConvertedWolf;
 
     if (nightmareTarget === parseInt(seat) || witchPoisonTarget === parseInt(seat) || isStolen || isSleeping || isCharmed || isConverted) return false;
-    
+
     // 【標籤驅動】：取代硬編碼的獵人與狼王陣列
     return rules.tags?.includes('shoot_on_death')
         || (role === 'hunter' && s.player_status[seat]?.isVWK)
@@ -67,8 +67,12 @@ function applyDisableRules() {
     let freezeActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'freeze');
     if (freezeActions.length > 0) {
         let fTarget = freezeActions[0].resolved_targets[0];
-        if (getWolfTeamRoles().includes(s.player_roles[fTarget])) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因冰凍無法刀人"));
-        else s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被企鵝冰凍"));
+        if (getWolfTeamRoles().includes(s.player_roles[fTarget])) {
+            // 加入 'convert'，讓狼隊也不能感染
+            s.night_actions.filter(a => ['kill', 'convert'].includes(a.effect) && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因冰凍無法刀人與感染"));
+        } else {
+            s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被企鵝冰凍"));
+        }
     }
 
     let foxCharmActions = getActionsByEffect('charm').filter(a => a.role === 'fox');
@@ -95,7 +99,9 @@ function applyGlobalProtections() {
     if (celebActions.length > 0) {
         let celebTarget = celebActions[0].resolved_targets[0];
         let celebSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
-        if (celebSeat && !s.final_killed.includes(parseInt(celebSeat))) s.night_actions.filter(a => a.effect === 'kill' && a.resolved_targets.includes(celebTarget)).forEach(a => cancelAction(a.id, "名媛保護"));
+        if (celebSeat && !s.final_killed.includes(parseInt(celebSeat))) {
+            s.night_actions.filter(a => ['kill', 'convert'].includes(a.effect) && a.resolved_targets.includes(celebTarget)).forEach(a => cancelAction(a.id, "名媛保護"));
+        }
     }
 }
 
@@ -104,10 +110,10 @@ function resolveInspectionDeaths() {
 
     // 【標籤驅動】：被驗到會致死（如：咒狐）
     let foxInspects = validInspects.filter(a => ['seer', 'awaken_seer', 'shadow_seer'].includes(a.role));
-    foxInspects.forEach(a => { 
+    foxInspects.forEach(a => {
         let target = a.resolved_targets[0];
         if (s.ROLE_DICT[s.player_roles[target]]?.tags?.includes('die_when_checked')) {
-            addDeathEvent(target, s.player_roles[target], `查驗致死(${s.ROLE_DICT[s.player_roles[target]].name})`); 
+            addDeathEvent(target, s.player_roles[target], `查驗致死(${s.ROLE_DICT[s.player_roles[target]].name})`);
         }
     });
 
@@ -136,7 +142,7 @@ function resolveWolfKills(validProtects, pgGuards, validSaves, validDreams, idio
             let isSaved = validSaves.some(a => a.resolved_targets.includes(target));
             let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
             let isIdiotProtected = idiotProtects.some(a => a.resolved_targets.includes(target)) || (awakenIdiotSeat && parseInt(awakenIdiotSeat) === target);
-            let targetRole = s.player_roles[target]; 
+            let targetRole = s.player_roles[target];
             let diesToWolf = false;
 
             let rules = s.ROLE_DICT[targetRole] || {};
@@ -155,9 +161,9 @@ function resolveWolfKills(validProtects, pgGuards, validSaves, validDreams, idio
     });
 }
 
-function resolvePoisons(validProtects, validDreams, immuneToNightDamageTargets) {
+function resolvePoisons(validDreams, immuneToNightDamageTargets) {
     getActionsByEffect('poison').forEach(poisonAction => {
-        let target = poisonAction.resolved_targets[0]; 
+        let target = poisonAction.resolved_targets[0];
         let targetRole = s.player_roles[target];
         let isDreamed = validDreams.some(a => a.resolved_targets.includes(target));
         let rules = s.ROLE_DICT[targetRole] || {};
@@ -272,18 +278,6 @@ export function calculateNightDeaths() {
         }
     }
 
-    let demonHunterTarget = getNightTarget('hunt', 'demon_hunter');
-    if (demonHunterTarget) {
-        let dhSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'demon_hunter');
-        let targetRole = s.player_roles[demonHunterTarget];
-
-        let isTargetEvil = isWolfRole(targetRole);
-        if (s.ROLE_DICT[targetRole]?.tags?.includes('immune_wolf_kill')) isTargetEvil = false; // 戰狼免疫神職技能
-
-        if (isTargetEvil) { addDeathEvent(demonHunterTarget, 'demon_hunter', '獵魔人狩獵'); }
-        else if (dhSeat) { addDeathEvent(parseInt(dhSeat), 'demon_hunter', '狩獵好人反噬'); }
-    }
-
     let beautySeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'wolf_beauty');
     let vwkBeautySeat = (s.vwk_seat && s.player_roles[s.vwk_seat] === 'bear') ? s.vwk_seat : null;
     [beautySeat, vwkBeautySeat].forEach(seat => {
@@ -354,9 +348,10 @@ export function handleChainDeaths() {
 
     let celebKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
     let celebTarget = getActionsByEffect('protect').find(a => a.metadata?.mode === 'celebrity')?.resolved_targets[0];
-    if (celebKey && s.final_killed.includes(parseInt(celebKey)) && celebTarget && !s.final_killed.includes(celebTarget)) {
-        if (!s.ROLE_DICT[s.player_roles[celebTarget]]?.tags?.includes('immune_wolf_kill')) { 
-            addDeathEvent(celebTarget, 'chain', '連帶死亡(名媛殉情)'); 
+    let isCelebInfected = celebKey ? s.player_status[celebKey]?.isConvertedWolf : false;
+    if (celebKey && (s.final_killed.includes(parseInt(celebKey)) || isCelebInfected) && celebTarget && !s.final_killed.includes(celebTarget)) {
+        if (!s.ROLE_DICT[s.player_roles[celebTarget]]?.tags?.includes('immune_wolf_kill')) {
+            addDeathEvent(celebTarget, 'chain', '連帶死亡(名媛殉情)');
         }
     }
 
@@ -471,7 +466,7 @@ export function generateDayReport() {
     // 【標籤驅動】：熊的咆哮
     let bearSeat = Object.keys(s.player_roles).find(k => s.ROLE_DICT[s.player_roles[k]]?.tags?.includes('has_roar_mechanic') || s.player_status[k]?.convertedFromRole === 'bear');
     const isSeatWolfForBear = (seatId) => {
-       if (!seatId || s.final_killed.includes(seatId)) return false;
+        if (!seatId || s.final_killed.includes(seatId)) return false;
         return isPlayerEvil(seatId);
     };
     const getAdjacent = (seat) => {
@@ -514,7 +509,7 @@ export function generateDayReport() {
         else report.extraText += `<span style="color:#fca311;">🐡 ${pfSeat} 號 (河豚) 死亡！</span><br><br>`;
         s.beauty_target = null;
     }
-    
+
     // 【標籤驅動】：首日白天公開身份
     let hvSeat = Object.keys(s.player_roles).find(k => s.ROLE_DICT[s.player_roles[k]]?.tags?.includes('announce_role_on_day_one'));
     if (hvSeat && s.seed_wolf_target !== parseInt(hvSeat)) report.extraText += `<span style="color:#fca311;">👑 高級平民是 ${hvSeat} 號玩家！</span><br><br>`;
