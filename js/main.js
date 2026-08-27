@@ -70,7 +70,7 @@ export function buildNightQueue() {
         }
 
         // 群體與特定機制轉換
-        if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet'].includes(qItem)) {
+        if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet', 'puppet_select'].includes(qItem)) {
             stage = qItem;
             if (qItem === 'wolf' || qItem === 'wolves') {
                 stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf';
@@ -96,8 +96,31 @@ export function buildNightQueue() {
             } else if (qItem === 'gift_receiver') {
                 if (!active_roles.includes('pandora')) return;
                 stage = 'pandora_gift_receiver';
+            } else if (qItem === 'puppet_select') {
+                stage = 'puppet_select';
+                if (!active_roles.some(r => getWolfTeamRoles().includes(r)) || s.puppet_target !== null) return;
             }
         } else {
+            if (qItem === 'seer' || qItem === 'shadow_seer') {
+                let s_a = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'seer_A');
+                let s_b = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'seer_B');
+                let shadow = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'shadow_seer');
+                let seer_seat = Object.keys(s.player_roles).find(k => ['seer', 'pure_white', 'real_fox', 'psychic', 'awaken_seer'].includes(s.player_roles[k]));
+
+                if (qItem === 'seer' && s_a) { seat = parseInt(s_a); subLabel = 'A'; stage = 'seer_A'; }
+                else if (qItem === 'seer' && seer_seat) { seat = parseInt(seer_seat); stage = s.player_roles[seer_seat]; }
+                else if (qItem === 'shadow_seer') {
+                    if (s_b) { seat = parseInt(s_b); stage = 'seer_B'; subLabel = 'B'; }
+                    else if (shadow) { seat = parseInt(shadow); stage = 'shadow_seer'; }
+                }
+            }
+
+            // 如果剛剛的替換成功賦予了 seat，我們直接推進佇列，跳過後面的 activeRolesSeats 檢查
+            if (seat !== null) {
+                queue_list.push({ stage, order: index, seat, subLabel, isFake });
+                return;
+            }
+
             let baseRole = qItem;
             let match = qItem.match(/^(.+)_([A-Z])$/);
             if (match && !s.ROLE_DICT[qItem]) {
@@ -450,7 +473,7 @@ export async function runNextNightRole() {
 
     let nightmareTarget = getNightTarget('disable', 'nightmare');
 
-    if (nightmareTarget && parseInt(actor_seat) === nightmareTarget && !s.current_stage.startsWith('notify_') && !['lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
+    if (nightmareTarget && parseInt(actor_seat) === nightmareTarget && !s.current_stage.startsWith('notify_') && !['zombie_infected', 'lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
         s.is_current_role_feared = true; let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf') {
             let w_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
@@ -469,7 +492,7 @@ export async function runNextNightRole() {
     let isWolfTeamFrozen = s.current_stage === 'wolf' && penguinTarget &&
         Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k])).includes(penguinTarget.toString());
 
-    if ((penguinTarget && parseInt(actor_seat) === penguinTarget || isWolfTeamFrozen) && !s.current_stage.startsWith('notify_') && !['lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
+    if ((penguinTarget && parseInt(actor_seat) === penguinTarget || isWolfTeamFrozen) && !s.current_stage.startsWith('notify_') && !['zombie_infected', 'lovers_meet', 'wolf_meet', 'lucky_boy_action', 'awaken_wolf_king_gun', 'wolf_gun_confirm', 'awaken_witch_assistant_action', 'hidden_wolf', 'curse_fox', 'ghost_bride_couple', 'ghost_bride_witness', 'awaken_dreamwalker_result'].includes(s.current_stage)) {
         s.is_current_role_frozen = true;
         let role_name = getStageVoiceName(s.current_stage, s.current_sub_label);
 
@@ -714,6 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         resolveNonInspectionAction();
+
+        if (s.night_queue.length > 0 && s.current_stage === 'puppet_select' && s.night_queue[0].stage === 'wolf') {
+            runNextNightRole();
+            return;
+        }
 
         hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
         let v = getStageVoiceName(s.current_stage, s.current_sub_label);

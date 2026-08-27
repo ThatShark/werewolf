@@ -63,7 +63,7 @@
             "max_targets": 1,
             "min_targets": 1,
             "can_select_self": false,
-            "tags": ["cannot_be_wolf_target", "substitute_death"]
+            "tags": ["cannot_be_wolf_target"]
         },
         "snow_wolf": {
             "name": "雪狼",
@@ -529,8 +529,7 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none",
-            "tags": ["announce_role_on_day_one"]
+            "ui_type": "none"
         },
         "penguin": {
             "name": "企鵝",
@@ -2082,8 +2081,16 @@
                 "id": "10_connect",
                 "name": "連連看 (4獵魔人｜6尋香魅影)",
                 "roles": {
-                    "phantom": 6,
-                    "demon_hunter": 4
+                    "phantom_A": 1,
+                    "phantom_B": 1,
+                    "phantom_C": 1,
+                    "phantom_D": 1,
+                    "phantom_E": 1,
+                    "phantom_F": 1,
+                    "demon_hunter_A": 1,
+                    "demon_hunter_B": 1,
+                    "demon_hunter_C": 1,
+                    "demon_hunter_D": 1
                 },
                 "wake_queue": [
                     "phantom_A",
@@ -3123,8 +3130,8 @@
                 "wake_queue": [
                     "guard",
                     "wolves",
-                    "big_bad_wolf",
                     "witch",
+                    "big_bad_wolf",
                     "hunter"
                 ]
             },
@@ -3226,6 +3233,7 @@
                 },
                 "wake_queue": [
                     "guard",
+                    "puppet_select",
                     "wolves",
                     "witch",
                     "seer",
@@ -3581,7 +3589,7 @@
                     "witch",
                     "seer",
                     "super_black_market",
-                    "lucky_player"
+                    "take_turns"
                 ]
             },
             {

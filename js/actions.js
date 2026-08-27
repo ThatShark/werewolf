@@ -17,10 +17,18 @@ const createMultiTargetStrategy = (roleId, effect, actionText, fallbackText, met
 };
 
 const targetSelectStrategy = (ctx) => {
-    let roleName = s.ROLE_DICT[ctx.stage].name;
-    setPersistentState(ctx.stage === 'half_blood' ? 'half_blood_target' : ctx.stage === 'wild_child' ? 'wild_child_target' : ctx.stage === 'awaken_lonely_girl' ? 'lonely_girl_target' : 'shadow_master_target', ctx.targetNum);
+    let roleName = s.ROLE_DICT[ctx.stage]?.name || (ctx.stage === 'puppet_select' ? '狼隊(選傀儡)' : ctx.stage);
+    let stateKey = ctx.stage === 'half_blood' ? 'half_blood_target' :
+        ctx.stage === 'wild_child' ? 'wild_child_target' :
+            ctx.stage === 'awaken_lonely_girl' ? 'lonely_girl_target' :
+                ctx.stage === 'puppet_select' ? 'puppet_target' : 'shadow_master_target';
+
+    setPersistentState(stateKey, ctx.targetNum);
     logNightAction(ctx.targetNum ? `【${roleName}】選擇了 ${ctx.targetNum}號` : `【${roleName}】未選擇`);
-    if (ctx.targetNum) addNightAction(ctx.actorSeat, ctx.stage, 'target_select', [ctx.targetNum]);
+
+    // 選傀儡算作 wolf 的動作，方便法官紀錄檢視
+    let actorRole = ctx.stage === 'puppet_select' ? 'wolf' : ctx.stage;
+    if (ctx.targetNum) addNightAction(ctx.actorSeat || 'wolves', actorRole, 'target_select', [ctx.targetNum]);
 };
 
 // ==========================================
@@ -48,7 +56,7 @@ export const inspectionStrategies = {
         let p1 = t - 1 < 1 ? s.total_players : t - 1; let p2 = t + 1 > s.total_players ? 1 : t + 1;
         const isWolf = (seat) => isWolfRole(s.player_roles[seat]) || seat === s.seed_wolf_target;
         let has_wolf = isWolf(t) || isWolf(p1) || isWolf(p2);
-        
+
         if (has_wolf) { ctx.text = "🐺 有狼人"; ctx.color = "#e94560"; } else { ctx.text = "🧑‍🌾 無狼人"; ctx.color = "#00ff88"; }
         logNightAction(`【${ctx.logName}】查驗了 ${t}號 範圍`);
         addNightAction(ctx.actorSeat, 'real_fox', 'inspect', [p1, t, p2]);
@@ -57,7 +65,7 @@ export const inspectionStrategies = {
         if ((s.merchant_item === 'check' || s.merchant_item === 'seer') && ctx.targetNum) {
             let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
             let isEvil = isPlayerEvil(t);
-            ctx.text = isEvil ? "🐺 狼人 (壞人)" : "🧑‍🌾 好人"; 
+            ctx.text = isEvil ? "🐺 狼人 (壞人)" : "🧑‍🌾 好人";
             ctx.color = isEvil ? "#e94560" : "#00ff88";
             logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】查驗了 ${t}號`);
             addNightAction(ctx.actorSeat, 'lucky_boy', 'check', [t]);
@@ -160,8 +168,8 @@ export const nonInspectionStrategies = {
             logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】選擇不使用技能`);
             return;
         }
-        if (s.merchant_type === 'black_market') { 
-            logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】獲得黑市商人技能，暫時無法發動`); 
+        if (s.merchant_type === 'black_market') {
+            logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】獲得黑市商人技能，暫時無法發動`);
         } else {
             if (s.merchant_item === 'poison') {
                 logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】對 ${ctx.targetNum} 號使用了毒藥`);
@@ -200,6 +208,7 @@ export const nonInspectionStrategies = {
             if (infected_now.length) addNightAction(ctx.actorSeat, 'zombie', 'infect', [...infected_now]);
         }
     },
+    'puppet_select': targetSelectStrategy,
     'super_black_market': (ctx) => {
         if (ctx.targetsArr.length === 0) { logNightAction(`【超級黑市商人】未發動技能`); } else {
             const sp_gifts = ['seer', 'poison', 'gun'];
@@ -219,7 +228,7 @@ export const nonInspectionStrategies = {
     },
     'treasure_master': (ctx) => {
         if (s.treasure_hunter_choice) {
-            let has_wolf = s.spare_cards.some(r => isWolfRole(r)); 
+            let has_wolf = s.spare_cards.some(r => isWolfRole(r));
             setPersistentState('is_treasure_hunter_evil', has_wolf);
             logNightAction(`【盜寶大師】選擇了 ${s.ROLE_DICT[s.treasure_hunter_choice]?.name || s.treasure_hunter_choice}`);
             addNightAction(ctx.actorSeat, 'treasure_master', 'choose_role', [], { chosen_role: s.treasure_hunter_choice });
@@ -250,7 +259,7 @@ export const nonInspectionStrategies = {
         } else { setPersistentState('pandora_target', null); logNightAction(`【潘朵拉】未贈送`); }
     },
     'phantom_king': (ctx) => {
-        if (s.selected_number === 'skip') { logNightAction(`【怪盜狼王】發動了無敵技能`); addNightAction(ctx.actorSeat, 'phantom_king', 'invincible', [ctx.actorSeat]); } 
+        if (s.selected_number === 'skip') { logNightAction(`【怪盜狼王】發動了無敵技能`); addNightAction(ctx.actorSeat, 'phantom_king', 'invincible', [ctx.actorSeat]); }
         else { logNightAction(`【怪盜狼王】未發動無敵`); }
     },
 
@@ -315,16 +324,16 @@ export function resolveInspectionResult() {
 
     let strategy = inspectionStrategies[s.current_stage] || inspectionStrategies['default'];
     strategy(ctx);
-    
+
     return { label: ctx.label, text: ctx.text, color: ctx.color };
 }
 
 export function resolveNonInspectionAction() {
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
-    
+
     let baseRole = s.current_stage.replace(/_[AB]$/, '');
     let isInspection = s.ROLE_DICT[baseRole]?.ui_type === 'inspection';
-    
+
     if (s.current_stage === 'lucky_boy_action' && (s.merchant_item === 'seer' || s.merchant_item === 'check') && s.merchant_type !== 'black_market') isInspection = true;
     if (s.current_stage === 'gray_wolf_action' && s.gray_wolf_stolen_skill === 'seer') isInspection = true;
 
@@ -351,23 +360,23 @@ export function resolveNonInspectionAction() {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('merchant', targets, { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets: [] });
     }
-    
+
     // 超級黑市商人：補上 reveal_targets: []
     if (s.current_stage === 'super_black_market') {
         insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts, reveal_targets: [] });
     }
-    
+
     // 💡 邱比特：補上 reveal_targets: [] (後續有專屬的情侶睜眼階段)
     if (s.current_stage === 'cupid') {
         if (ctx.targetsArr.length === 2) setPersistentState('cupid_lovers', ctx.targetsArr);
         insertNightStatusFlow('lovers', ctx.targetsArr.length === 2 ? ctx.targetsArr : [], { reveal_targets: [] });
     }
-    
+
     // 覺醒石像鬼 (這個保留通知，因為它沒有 take_turns)
     if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
         insertNightStatusFlow('gargoyle_conversion', ctx.targetNum ? [ctx.targetNum] : []);
     }
-    
+
     // 💡 鬼魅新娘系列：補上 reveal_targets: [] (後續有專屬的睜眼階段)
     if (s.current_stage === 'ghost_bride') {
         insertNightStatusFlow('ghost_groom', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
@@ -375,19 +384,19 @@ export function resolveNonInspectionAction() {
     if (s.current_stage === 'ghost_bride_couple') {
         insertNightStatusFlow('ghost_witness', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
     }
-    
+
     // 💡 種狼：補上 reveal_targets: [] (這樣輪流睜眼完就會直接進入下一個身分！)
     if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
         let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
         insertNightStatusFlow('seed_wolf', targets, { reveal_targets: [] });
     }
-    
+
     // 潘朵拉與殭屍：原本就已經有傳入 reveal_targets: []
     if (s.current_stage === 'pandora') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('pandora', targets, { reveal_targets: [] });
     }
-    
+
     if (s.current_stage === 'zombie') {
         insertNightStatusFlow('zombie', ctx.targetsArr, { reveal_targets: [] });
     }

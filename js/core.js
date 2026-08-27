@@ -35,15 +35,15 @@ export function isPlayerWolfFaction(seat) {
     seat = parseInt(seat);
     let role = s.player_roles[seat];
     let rData = s.ROLE_DICT[role] || {};
-    
+
     // 狀態轉換 (包含被感染、覺醒石像鬼轉化、百變狼王)
     if (s.player_status[seat]?.isConvertedWolf) return true;
     if (s.player_status[seat]?.isVWK) return true;
     if (seat === s.awk_gargoyle_target || seat === s.awk_gargoyle_target_a || seat === s.awk_gargoyle_target_b) return true;
-    
+
     // 盜寶大師的動態陣營
     if (role === 'treasure_master') return s.is_treasure_hunter_evil;
-    
+
     // 預設陣營判斷
     return rData.faction === 'wolf';
 }
@@ -67,14 +67,14 @@ export function isPlayerEvil(seat, visited = new Set()) {
 
     let role = s.player_roles[seat];
     let rData = s.ROLE_DICT[role] || {};
-    
+
     if (seat === s.puppet_target) return true;
     if (s.player_status[seat]?.isVWK) return true;
     if (seat === s.awk_gargoyle_target || seat === s.awk_gargoyle_target_a || seat === s.awk_gargoyle_target_b) return true;
 
     if (role === 'treasure_master') return s.is_treasure_hunter_evil;
     if (role === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
-    
+
     // 直接讀取 JSON 中設定的查驗結果
     return rData.seer_result === 'evil';
 }
@@ -135,7 +135,7 @@ export function speak(text, callback) {
 }
 
 export function getStageVoiceName(stage, sub_label) {
-    if (stage === 'seer') return sub_label ? `預言家${sub_label}` : '預言家';
+    if (stage === 'seer') return sub_label ? `預言家${sub_label}` : '預言家'; if (stage === 'zombie_infected') return '感染者';
     if (stage === 'awaken_witch') return '覺醒女巫'; if (stage === 'awaken_wolf_king_gun') return '覺醒狼王'; if (stage === 'wolf_gun_confirm') return '三小狼';
     if (stage === 'wolf' || stage === 'wolf_meet') return '狼人'; if (stage === 'lovers_meet') return '情侶'; if (stage === 'wolf_brother_meet') return '狼兄狼弟';
     if (stage === 'lucky_boy_action') return '幸運兒'; if (stage === 'awaken_witch_assistant_action') return '協助者'; if (stage === 'variable_wolf_king') return '百變狼王';

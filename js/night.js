@@ -84,7 +84,7 @@ export function createNumberPad() {
         if (is_disabled) { btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; }
 
         btn.addEventListener('click', () => {
-            if (s.is_current_role_feared || s.is_current_role_frozen || ['wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) return;
+            if (s.is_current_role_feared || s.is_current_role_frozen || ['zombie_infected', 'wolf_brother_meet', 'wolf_gun_confirm', 'lovers_meet', 'wolf_meet', 'hidden_wolf', 'eclipse_maid', 'curse_fox', 'awaken_dreamwalker_result', 'ghost_bride_witness'].includes(s.current_stage) || s.current_stage.startsWith('notify_')) return;
             vibrate(10);
             const btn_confirm_action = document.getElementById('btn-confirm-action');
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'poison_target') { resetSelections(); btn.classList.add('selected'); s.selected_number = i; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "下一步"; return; }

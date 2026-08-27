@@ -74,14 +74,6 @@ function applyDisableRules() {
             s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被企鵝冰凍"));
         }
     }
-
-    let foxCharmActions = getActionsByEffect('charm').filter(a => a.role === 'fox');
-    if (foxCharmActions.length > 0) {
-        let fcTarget = foxCharmActions[0].resolved_targets[0];
-        if (isWolfRole(s.player_roles[fcTarget])) {
-            s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因被子狐魅惑空刀"));
-        }
-    }
 }
 
 function applyGlobalProtections() {
@@ -331,6 +323,16 @@ export function handleChainDeaths() {
         else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) { addDeathEvent(p1, 'chain', '連帶死亡(情侶殉情)'); s.cupid_lovers = []; }
     }
 
+    let twins_seats = Object.keys(s.player_roles).filter(k => s.player_roles[k] === 'twins').map(Number);
+    if (twins_seats.length === 2) {
+        let [t1, t2] = twins_seats;
+        if (s.final_killed.includes(t1) && !s.final_killed.includes(t2)) { 
+            addDeathEvent(t2, 'chain', '連帶死亡(雙子殉情)'); 
+        } else if (s.final_killed.includes(t2) && !s.final_killed.includes(t1)) { 
+            addDeathEvent(t1, 'chain', '連帶死亡(雙子殉情)'); 
+        }
+    }
+
     if (s.ghost_bride_groom && s.ghost_bride_witness) {
         let gbKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride');
         if (gbKey) {
@@ -463,10 +465,9 @@ export function generateDayReport() {
     let tonight_deaths = s.death_events.filter(e => e.source !== 'vote').map(e => e.seat);
     let report = { bearRoarText: "", extraText: "", isPeaceful: tonight_deaths.length === 0, killedSeats: [], shootersQueue: [], isSnakeWin: s.is_snake_win };
 
-    // 【標籤驅動】：熊的咆哮
-    let bearSeat = Object.keys(s.player_roles).find(k => s.ROLE_DICT[s.player_roles[k]]?.tags?.includes('has_roar_mechanic') || s.player_status[k]?.convertedFromRole === 'bear');
+    let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear' || s.player_status[k]?.convertedFromRole === 'bear');
     const isSeatWolfForBear = (seatId) => {
-        if (!seatId || s.final_killed.includes(seatId)) return false;
+       if (!seatId || s.final_killed.includes(seatId)) return false;
         return isPlayerEvil(seatId);
     };
     const getAdjacent = (seat) => {

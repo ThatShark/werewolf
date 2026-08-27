@@ -52,7 +52,9 @@ roleHandlers['_info_only'] = (ctx) => {
             instruction = "請情侶互相確認身分。";
             break;
         case 'twins':
-            instruction = "雙子請睜眼確認彼此。";
+            let all_twins = Object.keys(s.player_roles).filter(k => s.player_roles[k] === 'twins');
+            let other_twin = all_twins.find(k => k !== ctx.actorSeat.toString());
+            customHTML = `你的雙子同伴是：<br><span style="color:#00ff88; font-size:24px; font-weight:bold;">${other_twin ? other_twin + ' 號' : '無'}</span>`;
             break;
         case 'hidden_wolf':
             let w = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]) && s.player_roles[k] !== 'hidden_wolf');
@@ -81,6 +83,11 @@ roleHandlers['_info_only'] = (ctx) => {
             let awkWolfGunTarget = getNightTarget('grant_gun', 'awaken_wolf_king');
             let t = awkWolfGunTarget ? awkWolfGunTarget + " 號" : "無 (狼王自己保留兩把槍)";
             customHTML = `狼王分槍的對象是：<br><span style="color:#e94560; font-size:24px; font-weight:bold;">${t}</span>`;
+            break;
+        case 'zombie_infected':
+            let infected = s.zombie_infected || [];
+            infected.sort((a, b) => a - b);
+            customHTML = `目前所有感染者是：<br><span style="color:#00ff88; font-size:24px; font-weight:bold;">${infected.length ? infected.join(', ') + ' 號' : '無'}</span>`;
             break;
     }
 
@@ -318,42 +325,42 @@ roleHandlers['wolf'] = (ctx) => {
 
     if (Object.values(s.player_roles).includes('seed_wolf')) {
         // 💡 初始狀態就加上 wolf_list_html
-        nightInstruction.innerHTML += `請選擇行動模式：${wolf_list_html}`; 
+        nightInstruction.innerHTML += `請選擇行動模式：${wolf_list_html}`;
         numberPad.classList.add('hidden');
-        
+
         let customPanel = document.createElement('div'); customPanel.id = 'custom-action-panel'; customPanel.style = "display: flex; gap: 10px; width: 100%; justify-content: center; margin-bottom: 15px;";
-        let btnKill = document.createElement('button'); btnKill.className = 'primary-btn'; btnKill.textContent = "一般刀人"; 
-        let btnInfect = document.createElement('button'); btnInfect.className = 'special-btn'; btnInfect.textContent = "發動感染"; 
-        let btnSkip = document.createElement('button'); btnSkip.className = 'secondary-btn'; btnSkip.textContent = "空刀 (不擊殺)"; 
-        
-        customPanel.appendChild(btnKill); customPanel.appendChild(btnInfect); customPanel.appendChild(btnSkip); 
+        let btnKill = document.createElement('button'); btnKill.className = 'primary-btn'; btnKill.textContent = "一般刀人";
+        let btnInfect = document.createElement('button'); btnInfect.className = 'special-btn'; btnInfect.textContent = "發動感染";
+        let btnSkip = document.createElement('button'); btnSkip.className = 'secondary-btn'; btnSkip.textContent = "空刀 (不擊殺)";
+
+        customPanel.appendChild(btnKill); customPanel.appendChild(btnInfect); customPanel.appendChild(btnSkip);
         numberPad.parentNode.insertBefore(customPanel, numberPad);
-        
-        btnKill.onclick = () => { 
-            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; 
-            btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); 
-            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); 
+
+        btnKill.onclick = () => {
+            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null;
+            btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
             // 💡 點擊後顯示
-            nightInstruction.innerHTML = `請選擇擊殺目標：${wolf_list_html}`; 
+            nightInstruction.innerHTML = `請選擇擊殺目標：${wolf_list_html}`;
         };
-        
-        btnInfect.onclick = () => { 
-            s.is_seed_wolf_infecting = true; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null; 
-            document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } }); 
-            btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected'); 
-            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden'); 
+
+        btnInfect.onclick = () => {
+            s.is_seed_wolf_infecting = true; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null;
+            document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } });
+            btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
+            numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
             // 💡 點擊後顯示
-            nightInstruction.innerHTML = `請選擇要感染的目標：${wolf_list_html}`; 
+            nightInstruction.innerHTML = `請選擇要感染的目標：${wolf_list_html}`;
         };
-        
-        btnSkip.onclick = () => { 
-            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = 'skip'; 
-            btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected'); 
-            numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認"; 
+
+        btnSkip.onclick = () => {
+            s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = 'skip';
+            btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected');
+            numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
             // 💡 點擊後顯示
-            nightInstruction.innerHTML = `請選擇行動模式：${wolf_list_html}`; 
+            nightInstruction.innerHTML = `請選擇行動模式：${wolf_list_html}`;
         };
-        
+
         if (alchFogs.length > 0) btnSkip.classList.add('hidden');
     } else {
         // 💡  一般模式也直接用變數
@@ -403,10 +410,10 @@ roleHandlers['_notify'] = (ctx) => {
 
         const status_text = messages.length ? messages.join('<br>') : '沒有特殊身份';
         numberPad.classList.add('hidden'); actionPad.classList.remove('hidden'); actionPad.innerHTML = '';
-        
+
         nightRoleTitle.textContent = `${seat}號確認狀態`;
         nightInstruction.textContent = "請確認自己的狀態：";
-        
+
         const status_box = document.createElement('div');
         status_box.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
         const status_text_element = document.createElement('p');
@@ -426,11 +433,11 @@ roleHandlers['_notify'] = (ctx) => {
         const wake_names = { merchant: '幸運兒', super_black_market: '幸運兒', lovers: '情侶', assistant: '協助者', gargoyle_conversion: '覺醒石像鬼轉化者', ghost_groom: '新郎', ghost_witness: '證婚人', seed_wolf: '感染者' };
         const gift = flow?.metadata?.gifts?.find(item => item.seat === seat);
         const wake_name = flow?.type === 'super_black_market' && gift ? `幸運兒 ${gift.label}` : (wake_names[flow?.type] || '特殊身份');
-        
+
         nightRoleTitle.textContent = `${wake_name}請睜眼`;
         nightInstruction.textContent = "請確認你的身份，完成後閉眼。";
         numberPad.classList.add('hidden'); actionPad.classList.remove('hidden'); actionPad.innerHTML = '';
-        
+
         const status_box = document.createElement('div');
         status_box.style = "padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid var(--color-success); margin: 20px 0;";
         const status_text_element = document.createElement('p');
@@ -468,3 +475,12 @@ roleHandlers['hunter'] = (ctx) => {
 };
 
 roleHandlers['phantom_king'] = (ctx) => { ctx.nightRoleTitle.textContent = "🦹 怪盜狼王確認"; ctx.nightInstruction.innerHTML = "請問是否發動「無敵」技能？<br><small>（發動後免疫死亡直到下次入夜）</small>"; ctx.numberPad.classList.add('hidden'); ctx.btnConfirmAction.classList.remove('hidden'); ctx.btnConfirmAction.textContent = "不發動，確認閉眼"; ctx.btnOptionalSkip.textContent = "發動無敵"; ctx.btnOptionalSkip.classList.remove('hidden'); };
+
+roleHandlers['puppet_select'] = (ctx) => {
+    const { btnOptionalSkip, nightRoleTitle, nightInstruction } = ctx;
+    nightRoleTitle.textContent = `🐺 狼隊行動 (選傀儡)`;
+    
+    let all_wolf_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
+    nightInstruction.innerHTML = `請狼隊伍選擇一名與狼相鄰的玩家作為傀儡：<br><span style="color:#e94560; font-size:16px;">🐺 狼隊名單：${all_wolf_seats.sort((a, b) => a - b).join(', ')} 號</span>`;
+    btnOptionalSkip.classList.add('hidden');
+};
