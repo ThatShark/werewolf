@@ -127,7 +127,7 @@
             "name": "尋香魅影",
             "icon": "🌸",
             "faction": "wolf",
-            "type": "wolf",
+            "type": "lone_wolf",
             "seer_result": "evil",
             "ui_type": "target_select",
             "max_targets": 2,
@@ -171,8 +171,8 @@
         "eclipse_maid": {
             "name": "蝕日侍女",
             "icon": "🌑",
-            "faction": "lone_wolf",
-            "type": "wolf",
+            "faction": "wolf",
+            "type": "lone_wolf",
             "seer_result": "evil",
             "ui_type": "info_only"
         },
@@ -762,7 +762,7 @@
             "type": "commoner",
             "seer_result": "good",
             "ui_type": "none",
-            "tags": ["flip_to_survive"]
+            "tags": ["injured_instead_of_death"]
         },
         "charmer": {
             "name": "蠱惑師",
@@ -922,7 +922,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["immune_petrify"]
         },
         "super_grave_keeper": {
             "name": "超級守墓人",
@@ -1006,7 +1007,8 @@
             "faction": "good",
             "type": "god",
             "seer_result": "good",
-            "ui_type": "none"
+            "ui_type": "none",
+            "tags": ["injured_instead_of_death"]
         },
         "pandora": {
             "name": "潘朵拉",

@@ -54,7 +54,9 @@ function applyDisableRules() {
     let medusaActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'petrify');
     if (medusaActions.length > 0) {
         let mTarget = medusaActions[0].resolved_targets[0];
-        s.night_actions.filter(a => a.actor === mTarget).forEach(a => cancelAction(a.id, "被梅杜莎石化"));
+        if (!s.ROLE_DICT[s.player_roles[mTarget]]?.tags?.includes('immune_petrify')) {
+            s.night_actions.filter(a => a.actor === mTarget).forEach(a => cancelAction(a.id, "被梅杜莎石化"));
+        }
     }
 
     let fearActions = getActionsByEffect('disable').filter(a => a.metadata?.mode === 'fear');
@@ -181,10 +183,12 @@ function resolveReflections() {
     let medusaAction = getActionsByEffect('disable').find(a => a.metadata?.mode === 'petrify');
     if (medusaAction) {
         let medusaTarget = medusaAction.resolved_targets[0];
-        let poisonAction = getActionsByEffect('poison').find(a => a.resolved_targets.includes(medusaTarget));
-        if (poisonAction) {
-            s.death_events = s.death_events.filter(e => !(e.seat === medusaTarget && e.reason === '毒殺'));
-            addDeathEvent(poisonAction.actor, 'medusa', '梅杜莎石化反彈毒藥');
+        if (!s.ROLE_DICT[s.player_roles[medusaTarget]]?.tags?.includes('immune_petrify')) {
+            let poisonAction = getActionsByEffect('poison').find(a => a.resolved_targets.includes(medusaTarget));
+            if (poisonAction) {
+                s.death_events = s.death_events.filter(e => !(e.seat === medusaTarget && e.reason === '毒殺'));
+                addDeathEvent(poisonAction.actor, 'medusa', '梅杜莎石化反彈毒藥');
+            }
         }
     }
 
@@ -326,10 +330,10 @@ export function handleChainDeaths() {
     let twins_seats = Object.keys(s.player_roles).filter(k => s.player_roles[k] === 'twins').map(Number);
     if (twins_seats.length === 2) {
         let [t1, t2] = twins_seats;
-        if (s.final_killed.includes(t1) && !s.final_killed.includes(t2)) { 
-            addDeathEvent(t2, 'chain', '連帶死亡(雙子殉情)'); 
-        } else if (s.final_killed.includes(t2) && !s.final_killed.includes(t1)) { 
-            addDeathEvent(t1, 'chain', '連帶死亡(雙子殉情)'); 
+        if (s.final_killed.includes(t1) && !s.final_killed.includes(t2)) {
+            addDeathEvent(t2, 'chain', '連帶死亡(雙子殉情)');
+        } else if (s.final_killed.includes(t2) && !s.final_killed.includes(t1)) {
+            addDeathEvent(t1, 'chain', '連帶死亡(雙子殉情)');
         }
     }
 
@@ -360,7 +364,9 @@ export function handleChainDeaths() {
     let medusaKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'medusa');
     let medusaTarget = getActionsByEffect('disable').find(a => a.metadata?.mode === 'petrify')?.resolved_targets[0];
     if (medusaKey && s.final_killed.includes(parseInt(medusaKey)) && medusaTarget && !s.final_killed.includes(medusaTarget)) {
-        addDeathEvent(medusaTarget, 'chain', '連帶死亡(梅杜莎石化)');
+        if (!s.ROLE_DICT[s.player_roles[medusaTarget]]?.tags?.includes('immune_petrify')) {
+            addDeathEvent(medusaTarget, 'chain', '連帶死亡(梅杜莎石化)');
+        }
     }
 
     if (s.final_killed.length > initialLength) {
@@ -467,7 +473,7 @@ export function generateDayReport() {
 
     let bearSeat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'bear' || s.player_status[k]?.convertedFromRole === 'bear');
     const isSeatWolfForBear = (seatId) => {
-       if (!seatId || s.final_killed.includes(seatId)) return false;
+        if (!seatId || s.final_killed.includes(seatId)) return false;
         return isPlayerEvil(seatId);
     };
     const getAdjacent = (seat) => {
