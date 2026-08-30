@@ -477,16 +477,19 @@ function handleStartNight(count_select, setting_board) {
         }
     }
 
-    if (s.current_board.hasSleepingBeauty) {
+    if (s.current_board.id === '12_sleeping_beauty') {
         let alien_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'alien_prince');
         let all_seats = Object.keys(s.player_roles).map(Number);
         let candidate = all_seats[Math.floor(Math.random() * all_seats.length)];
+        
+        s.sleeping_beauty_seat = candidate; // 無論是誰都紀錄座位
+        
+        // 若抽中異族王子，標記睡美人機制失效
         if (candidate === parseInt(alien_seat)) {
-            s.sleeping_beauty_seat = null;
+            s.is_sleeping_beauty_active = false;
         } else {
-            s.sleeping_beauty_seat = candidate;
+            s.is_sleeping_beauty_active = true;
         }
-        s.is_sleeping_beauty_active = true;
     }
 
     buildNightQueue();

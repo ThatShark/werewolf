@@ -459,7 +459,8 @@ roleHandlers['hunter'] = (ctx) => {
     numberPad.classList.add('hidden'); actionPad.classList.remove('hidden');
     const hunterSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'hunter'));
     const witchPoisonTarget = getNightTarget('poison', 'witch') || getNightTarget('poison', 'awaken_witch');
-    const canShoot = isVWKTurn || !(witchPoisonTarget === hunterSeat || isStolen);
+    const isSleeping = s.sleeping_beauty_seat === hunterSeat && s.is_sleeping_beauty_active;
+    const canShoot = isVWKTurn || !(witchPoisonTarget === hunterSeat || isStolen || isSleeping);
     const statusBox = document.createElement('div');
     statusBox.style = `padding: 20px; background-color: var(--bg-card); border-radius: 8px; width: 100%; text-align: center; border: 2px solid ${canShoot ? 'var(--color-success)' : 'var(--color-primary)'}; margin: 20px 0;`;
     const statusText = document.createElement('p');

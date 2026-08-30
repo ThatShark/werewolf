@@ -280,7 +280,13 @@ export function proceedDayResultRender() {
     }
     if (s.is_pandora_win) htmlOutput += `<br><br><span style="color:#ff00ff; font-size:28px;">🎉 潘朵拉使用希望之光，獲得勝利！</span>`;
 
-    if (s.speech_order_text) htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+    if (report.shootersQueue.length === 0) {
+        let silencedAction = getActionsByEffect('silence').find(a => a.role === 'silence_elder');
+        if (silencedAction && silencedAction.resolved_targets.length > 0) {
+            htmlOutput += `<br><br><span style="color:#fca311; font-size: 20px;">🤫 昨晚被禁言的玩家是：${silencedAction.resolved_targets[0]} 號！</span>`;
+        }
+        if (s.speech_order_text) htmlOutput += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+    }
     document.getElementById('day-result').innerHTML = htmlOutput;
 
     if (report.shootersQueue.length > 0) processNextShooter(); else triggerTricksterVoteSection();
@@ -292,7 +298,17 @@ export function processNextShooter() {
         document.getElementById('day-skill-section').classList.add('hidden');
         if (s.speech_order_text) {
             let dayResult = document.getElementById('day-result');
-            if (dayResult && !dayResult.innerHTML.includes('發言順序')) dayResult.innerHTML += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+            if (dayResult && !dayResult.innerHTML.includes('發言順序')) {
+                let extraStr = "";
+                let silencedAction = getActionsByEffect('silence').find(a => a.role === 'silence_elder');
+                if (silencedAction && silencedAction.resolved_targets.length > 0) {
+                    extraStr += `<br><br><span style="color:#fca311; font-size: 20px;">🤫 昨晚被禁言的玩家是：${silencedAction.resolved_targets[0]} 號！</span>`;
+                }
+                if (s.speech_order_text) {
+                    extraStr += `<br><br><span style="color:#51c9c1; font-size: 20px;">🗣️ 發言順序：<br>${s.speech_order_text}</span>`;
+                }
+                dayResult.innerHTML += extraStr;
+            }
         }
         triggerTricksterVoteSection();
         return;
@@ -819,6 +835,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (s.sp_grave_keeper_heir === i) status_strs.push("⚰️ 超級守墓人繼承人");
             if (s.puppet_target === i) status_strs.push("🪆 傀儡目標");
             if (s.shadow_seer_seat === i) status_strs.push("💡 燈影預言家");
+
+            if (s.sleeping_beauty_seat === i) {
+                if (s.is_sleeping_beauty_active) {
+                    status_strs.push("💤 睡美人");
+                } else {
+                    status_strs.push("💤 睡美人 (異族王子，本局失效)");
+                }
+            }
 
             if (s.merchant_target === i) {
                 let item_map = { 'seer': '查驗', 'poison': '毒藥', 'guard': '護盾', 'gun': '槍' };

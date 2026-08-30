@@ -120,7 +120,7 @@ export const inspectionStrategies = {
             addNightAction(ctx.actorSeat, 'seer', 'inspect', [t]);
         } else {
             let display_role = s.player_roles[t];
-            if (ctx.stage === 'psychic' && display_role === 'machine_wolf' && s.machine_wolf_learn_target) display_role = s.player_roles[s.machine_wolf_learn_target];
+            if (['psychic', 'pure_white'].includes(ctx.stage) && display_role === 'machine_wolf' && s.machine_wolf_learn_target) display_role = s.player_roles[s.machine_wolf_learn_target];
             ctx.text = `${s.ROLE_DICT[display_role].icon} ${s.ROLE_DICT[display_role].name}`; ctx.color = "#fca311";
             addNightAction(ctx.actorSeat, ctx.stage, 'inspect', [t]);
         }

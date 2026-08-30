@@ -1,5 +1,5 @@
 // js/day.js
-import { s, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, isWolfRole, isPlayerWolfFaction, getWolfTeamRoles, isPlayerEvil } from './core.js';
+import { s, findNearestWolf, getActionsByEffect, cancelAction, resolveAllTargets, getNightTarget, removeDeathEvent, addDeathEvent, isPlayerWolfFaction, getWolfTeamRoles, isPlayerEvil } from './core.js';
 
 function checkSnakeWin(dead1, dead2) {
     let r1 = s.player_roles[dead1]; let r2 = s.player_roles[dead2];
@@ -82,10 +82,6 @@ function applyGlobalProtections() {
     if (s.sleeping_beauty_seat && s.is_sleeping_beauty_active) {
         let sb = s.sleeping_beauty_seat; let sbRole = s.player_roles[sb];
         if (['witch', 'awaken_witch'].includes(sbRole)) s.night_actions.filter(a => a.actor === sb && a.effect === 'poison').forEach(a => cancelAction(a.id, "睡美人女巫無法用毒"));
-        if (getWolfTeamRoles().includes(sbRole)) {
-            let alive_wolves = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
-            if (alive_wolves.every(k => parseInt(k) === sb)) s.night_actions.filter(a => a.effect === 'kill' && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊全體沉睡"));
-        }
         if (sbRole === 'silence_elder') s.night_actions.filter(a => a.effect === 'silence').forEach(a => cancelAction(a.id, "睡美人禁言長老無效"));
     }
 
