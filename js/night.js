@@ -25,7 +25,6 @@ export function createNumberPad() {
         let alchFogs = getNightTargets('mark', 'alchemist');
 
         if (s.current_stage === 'alchemist' && s.final_killed.includes(i)) is_disabled = true;
-        // 資料驅動：查驗型技能不能點死人
         if (stageRoleData.ui_type === 'inspection' && s.final_killed.includes(i)) is_disabled = true;
 
         if (['wolf', 'big_bad_wolf', 'big_gray_wolf'].includes(s.current_stage)) {
@@ -44,11 +43,12 @@ export function createNumberPad() {
             }
         }
 
-        // 資料驅動：取代原本近40個角色的不能自選名單
         if (i === actual_current_actor_seat) {
             let can_select = stageRoleData.can_select_self !== false;
-            // 例外：覺醒女巫選協助者時可以選自己
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'assistant_target') can_select = true;
+            if (s.current_stage === 'jack_ripper_select_fanatic' && s.player_second_roles[i] !== 'detective') {
+                is_disabled = true;
+            }
             if (!can_select) is_disabled = true;
         }
 
@@ -56,7 +56,6 @@ export function createNumberPad() {
         if (s.current_stage === 'ghost_bride_couple' && (i === parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'ghost_bride')) || i === s.ghost_bride_groom)) is_disabled = true;
         if (s.current_stage === 'lucky_boy_action' && ['seer', 'poison'].includes(s.merchant_item) && i === actual_current_actor_seat) is_disabled = true;
 
-        // 資料驅動：替換掉 third_party_roles 陣列
         if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
             let all_wolf_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
             let adjacent_seats = [];
@@ -72,6 +71,10 @@ export function createNumberPad() {
 
         if (s.current_stage === 'evil_merchant' && s.player_roles[i] !== 'wolf') is_disabled = true;
         if (s.current_stage === 'dark_messenger' && !getWolfTeamRoles().includes(s.player_roles[i])) is_disabled = true;
+        
+        if (s.current_stage === 'demon' && isWolfRole(s.player_roles[i])) {
+            is_disabled = true;
+        }
 
         if (s.current_stage === 'puppet_select') {
             let all_wolf_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
@@ -90,7 +93,6 @@ export function createNumberPad() {
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'poison_target') { resetSelections(); btn.classList.add('selected'); s.selected_number = i; btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "下一步"; return; }
             if (s.current_stage === 'awaken_witch' && s.awk_witch_step === 'assistant_target') { resetSelections(); btn.classList.add('selected'); s.awk_witch_assistant = parseInt(i); btn_confirm_action.classList.remove('hidden'); btn_confirm_action.textContent = "確認"; return; }
 
-            // 資料驅動：處理單選與多選邏輯
             let max_select = stageRoleData.max_targets || 1;
             let min_select = stageRoleData.min_targets !== undefined ? stageRoleData.min_targets : max_select;
 

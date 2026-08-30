@@ -2,7 +2,7 @@
 
 export const s = {
     total_players: 12, current_board: null, is_random_mode: false, role_transition_delay: 1, ROLE_DICT: {}, BOARD_CONFIGS: {},
-    player_roles: {}, player_status: {}, spare_cards: [], discarded_roles: [], initial_thief_seat: null, thief_chosen_role: null, vwk_seat: null, shadow_seer_seat: null,
+    player_roles: {}, player_second_roles: {}, player_genders: {}, player_status: {}, spare_cards: [], discarded_roles: [], initial_thief_seat: null, thief_chosen_role: null, vwk_seat: null, shadow_seer_seat: null,
     night_queue: [], current_stage: null, current_actor_seat: null, current_sub_label: null, current_viewing_seat: 1, selected_number: null, selected_numbers_arr: [],
     is_showing_result: false, is_fake_wake: false, is_current_role_feared: false, is_current_role_frozen: false, night_action_log: [], speech_order_text: null, defer_speech_order_until_shooting: false, sheriff_candidates: [],
 
@@ -102,7 +102,7 @@ export function resetGameState() {
     s.gray_wolf_stolen_player = null; s.gray_wolf_stolen_skill = null; s.gray_wolf_guess = null; s.machine_wolf_learn_target = null; s.evil_merchant_gun_target = null;
     s.pandora_target = null; s.pandora_pool = null; s.pandora_gift = null; s.sp_merchant_targets = []; s.sp_merchant_gifts = []; s.is_sp_merchant_turns_evil = false; s.treasure_hunter_choice = null; s.is_treasure_hunter_evil = false;
     s.night_status_flows = [];
-    s.player_genders = {}; s.sleeping_beauty_seat = null; s.is_sleeping_beauty_active = true;
+    s.player_genders = {}; s.player_second_roles = {}; s.player_genders = {}; s.sleeping_beauty_seat = null; s.is_sleeping_beauty_active = true;
     s.final_killed = [];
     resetNightState();
 }
@@ -140,7 +140,15 @@ export function getStageVoiceName(stage, sub_label) {
     if (stage === 'wolf' || stage === 'wolf_meet') return '狼人'; if (stage === 'lovers_meet') return '情侶'; if (stage === 'wolf_brother_meet') return '狼兄狼弟';
     if (stage === 'lucky_boy_action') return '幸運兒'; if (stage === 'awaken_witch_assistant_action') return '協助者'; if (stage === 'variable_wolf_king') return '百變狼王';
     if (stage === 'ghost_bride_couple') return '鬼魅新娘與新郎'; if (stage === 'ghost_bride_witness') return '證婚人'; if (stage === 'awaken_dreamwalker_result') return '覺醒攝夢人';
-    if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '灰太狼'; if (stage === 'zombie_infected') return '感染者'; if (stage === 'fanatic_action') return '狂熱粉';
+    if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '灰太狼'; if (stage === 'zombie_infected') return '感染者'; if (stage === 'jack_ripper_select_fanatic') return '開膛手傑克'; 
+    if (stage === 'fanatic_action') return '開膛手傑克與狂熱粉';
+
+    // 處理 1號、2號 輪流請閉眼的名稱配對
+    if (stage.startsWith('status_check_group_')) {
+        const group_match = stage.match(/^status_check_group_(\d+)$/);
+        if (group_match) return `${group_match[1]}號`;
+    }
+
     if (stage.startsWith('notify_')) return `${stage.split('_').pop()}號`;
     return s.ROLE_DICT[stage]?.name || stage;
 }

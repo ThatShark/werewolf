@@ -293,7 +293,16 @@ export const nonInspectionStrategies = {
     'evil_merchant': (ctx) => { setPersistentState('evil_merchant_gun_target', ctx.targetNum || null); createSingleTargetStrategy('evil_merchant', 'grant_gun', '把獵槍給了', '未分槍')(ctx); },
     'dark_messenger': createSingleTargetStrategy('dark_messenger', 'protect', '庇護了', '未庇護', false, { mode: 'absolute_reflect' }),
     'super_grave_keeper': createSingleTargetStrategy('super_grave_keeper', 'choose_heir', '選擇了', '未選擇', false, {}, true),
-
+    'jack_ripper_select_fanatic': (ctx) => {
+        if (ctx.targetNum) {
+            logNightAction(`【開膛手傑克】選擇了 ${ctx.targetNum}號 作為狂熱粉`);
+            s.player_second_roles[ctx.targetNum] = 'fanatic';
+            // 讓狂熱粉只在 1~12 號輪流通知時得知身分，不觸發獨立的睜眼階段
+            insertNightStatusFlow('fanatic', [ctx.targetNum], { reveal_targets: [] });
+        } else {
+            logNightAction(`【開膛手傑克】未選擇狂熱粉`);
+        }
+    },
     'magician': createMultiTargetStrategy('magician', 'swap', '交換了', '未交換'),
     'trickster': createMultiTargetStrategy('trickster', 'swap', '交換了', '未交換'),
     'wolf_sorcerer': createMultiTargetStrategy('wolf_sorcerer', 'swap', '交換了', '未交換'),

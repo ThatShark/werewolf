@@ -30,6 +30,11 @@ function revealDeferredSpeechOrder() {
 export function buildNightQueue() {
     s.night_queue = [];
     const active_roles = Object.values(s.player_roles);
+    if (s.current_board.id === '12_jack_ripper_v2') {
+        Object.values(s.player_second_roles).forEach(r => {
+            if (r && !active_roles.includes(r)) active_roles.push(r);
+        });
+    }
     let queue_list = [];
 
     // 資料驅動：月靈狼咆哮判定
@@ -56,6 +61,12 @@ export function buildNightQueue() {
         if (!activeRolesSeats[role]) activeRolesSeats[role] = [];
         activeRolesSeats[role].push(parseInt(seat));
     });
+    if (s.current_board.id === '12_jack_ripper_v2') {
+        Object.entries(s.player_second_roles).forEach(([seat, role]) => {
+            if (!activeRolesSeats[role]) activeRolesSeats[role] = [];
+            activeRolesSeats[role].push(parseInt(seat));
+        });
+    }
     Object.values(activeRolesSeats).forEach(arr => arr.sort((a, b) => a - b));
     let usedSeats = {};
 
@@ -70,7 +81,7 @@ export function buildNightQueue() {
         }
 
         // 群體與特定機制轉換
-        if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet', 'puppet_select'].includes(qItem)) {
+        if (['wolf', 'wolves', 'lucky_player', 'assistants', 'couple', 'infected', 'ghost_bride_and_groom', 'marriage_witness', 'fanatic', 'gift_receiver', 'lovers_meet', 'wolf_brother_meet', 'big_gray_wolf_meet', 'puppet_select', 'jack_ripper_select_fanatic', 'jack_fanatic_meet'].includes(qItem)) {
             stage = qItem;
             if (qItem === 'wolf' || qItem === 'wolves') {
                 stage = s.current_board?.id === '12_animals' ? 'wolf_meet' : 'wolf';
@@ -99,6 +110,16 @@ export function buildNightQueue() {
             } else if (qItem === 'puppet_select') {
                 stage = 'puppet_select';
                 if (!active_roles.some(r => getWolfTeamRoles().includes(r)) || s.puppet_target !== null) return;
+            } else if (qItem === 'jack_ripper_select_fanatic') {
+                stage = 'jack_ripper_select_fanatic';
+                // 如果場上沒有傑克，或者已經產生過狂熱粉了，就跳過此階段
+                if (!active_roles.includes('jack_ripper') || Object.values(s.player_second_roles).includes('fanatic')) return;
+            } else if (qItem === 'fanatic' || qItem === 'fanatic_action' || qItem === 'jack_fanatic_meet') {
+                if (s.current_board.id === '12_jack_ripper_v2') {
+                    seat = parseInt(Object.keys(s.player_second_roles).find(k => s.player_second_roles[k] === 'fanatic'));
+                    if (!seat) return;
+                    stage = 'fanatic_action';
+                }
             }
         } else {
             if (qItem === 'seer' || qItem === 'shadow_seer') {
@@ -115,7 +136,6 @@ export function buildNightQueue() {
                 }
             }
 
-            // 如果剛剛的替換成功賦予了 seat，我們直接推進佇列，跳過後面的 activeRolesSeats 檢查
             if (seat !== null) {
                 queue_list.push({ stage, order: index, seat, subLabel, isFake });
                 return;
@@ -155,6 +175,21 @@ export function buildNightQueue() {
 
         if (qItem === 'gift_receiver' && active_roles.includes('pandora')) {
             queue_list.push({ stage: 'pandora_knife_action', order: index + 0.5, seat: null, subLabel: null, isFake: false });
+        }
+
+        if (qItem === 'jack_ripper_select_fanatic' || qItem === 'jack_ripper') {
+            if (s.current_board.id === '12_jack_ripper_v2') {
+                seat = parseInt(Object.keys(s.player_second_roles).find(k => s.player_second_roles[k] === 'jack_ripper'));
+                stage = qItem;
+            } else {
+                seat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'jack_ripper'));
+            }
+        } else if (qItem === 'fanatic' || qItem === 'fanatic_action') {
+            if (s.current_board.id === '12_jack_ripper_v2') {
+                seat = parseInt(Object.keys(s.player_second_roles).find(k => s.player_second_roles[k] === 'fanatic'));
+                if (!seat) return;
+                stage = 'fanatic_action';
+            }
         }
     });
 
@@ -307,9 +342,12 @@ export function processNextShooter() {
     document.getElementById('btn-day-skill-confirm').onclick = () => { document.getElementById('btn-day-skill-confirm').classList.add('hidden'); killPlayerDuringDay(selectedDayTarget, true, true, currentShooter.role); finishShooterTurn(); };
 }
 
+// =====================================
+// 解析語音字串 (讓 1號請睜眼 / 1號請閉眼 正確發音)
+// =====================================
 function getStatusStageVoice(stage) {
     const group_match = stage.match(/^status_check_group_(\d+)$/);
-    if (group_match) return `${group_match[1]}號`;
+    if (group_match) return `${group_match[1]}號`; // 這裡直接回傳號碼
 
     const notify_match = stage.match(/^status_notify_(.+)_(\d+)$/);
     if (notify_match) {
@@ -671,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (s.current_stage.startsWith('status_check_group_')) {
             hideNightUIIngame("👤 狀態確認", "請閉上眼睛，將裝置傳給下一位玩家...");
-            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await speak(`${getStatusStageVoice(s.current_stage)}請閉眼。`);
             await delay(s.role_transition_delay * 1000);
             runNextNightRole();
             return;
@@ -680,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 一般的單獨狀態通知
         if (s.current_stage.startsWith('status_')) {
             hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
-            await speak(`${getStageVoiceName(s.current_stage, s.current_sub_label)}請閉眼。`);
+            await speak(`${getStatusStageVoice(s.current_stage)}請閉眼。`);
             await delay(s.role_transition_delay * 1000);
             runNextNightRole();
             return;
@@ -837,7 +875,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            status_html += `<div style="margin-bottom:5px;"><b>${i}號</b> ${role_obj?.icon || ''}${name_text}${thief_tag} ${status_badge}</div>`;
+            let gender_str = s.player_genders[i] === 'male' ? '♂️' : (s.player_genders[i] === 'female' ? '♀️' : '');
+            let sec_role_str = '';
+            if (s.player_second_roles && s.player_second_roles[i]) {
+                if (s.player_second_roles[i] === 'jack_ripper') sec_role_str = ' (🔪 傑克)';
+                if (s.player_second_roles[i] === 'detective') sec_role_str = ' (🔍 偵探)';
+                if (s.player_second_roles[i] === 'fanatic') sec_role_str = ' (🔪 狂熱粉)';
+            }
+
+            let display_name = gender_str ? `<b>${i}號 ${gender_str}</b>` : `<b>${i}號</b>`;
+
+            status_html += `<div style="margin-bottom:5px;">${display_name} ${role_obj?.icon || ''}${name_text}${thief_tag}${sec_role_str} ${status_badge}</div>`;
         }
         judge_player_status.innerHTML = status_html;
         judge_night_log.innerHTML = s.night_action_log.map(log => `<div style="margin-bottom:5px;">• ${log}</div>`).join('');

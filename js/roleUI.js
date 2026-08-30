@@ -24,8 +24,8 @@ export function renderRolePanel(isStolen, isVWKTurn, actorSeat) {
     if (!handler && (s.current_stage.startsWith('notify_') || s.current_stage.startsWith('status_'))) handler = roleHandlers['_notify'];
     if (!handler && ui_type === 'inspection') handler = roleHandlers['_inspection'];
     if (!handler && ['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) handler = roleHandlers['_awaken_gargoyle'];
-    if (!handler && ui_type === 'target_select') handler = roleHandlers['_target_select'];
-    if (!handler && ui_type === 'info_only') handler = roleHandlers['_info_only'];
+    if (!handler && (ui_type === 'target_select' || s.current_stage === 'jack_ripper_select_fanatic')) handler = roleHandlers['_target_select'];
+    if (!handler && (ui_type === 'info_only' || ['wolf_meet', 'lovers_meet', 'twins', 'hidden_wolf', 'eclipse_maid', 'big_gray_wolf_meet', 'wolf_brother_meet', 'ghost_bride_witness', 'wolf_gun_confirm', 'zombie_infected', 'fanatic_action'].includes(s.current_stage))) handler = roleHandlers['_info_only'];
 
     if (handler) handler(ctx);
     else {
@@ -88,6 +88,11 @@ roleHandlers['_info_only'] = (ctx) => {
             let infected = s.zombie_infected || [];
             infected.sort((a, b) => a - b);
             customHTML = `目前所有感染者是：<br><span style="color:#00ff88; font-size:24px; font-weight:bold;">${infected.length ? infected.join(', ') + ' 號' : '無'}</span>`;
+            break;
+        case 'fanatic_action':
+            let jr = Object.keys(s.player_second_roles).find(k => s.player_second_roles[k] === 'jack_ripper');
+            let fn = Object.keys(s.player_second_roles).find(k => s.player_second_roles[k] === 'fanatic');
+            customHTML = `開膛手傑克是：<br><span style="color:#e94560; font-size:24px; font-weight:bold;">${jr ? jr + ' 號' : '無'}</span><br>狂熱粉是：<br><span style="color:#00ff88; font-size:24px; font-weight:bold;">${fn ? fn + ' 號' : '無'}</span>`;
             break;
     }
 
@@ -304,7 +309,7 @@ roleHandlers['thief'] = (ctx) => { const { btnConfirmAction, btnOptionalSkip, nu
 roleHandlers['cupid'] = (ctx) => { ctx.nightRoleTitle.textContent = "👼 邱比特行動"; ctx.nightInstruction.innerHTML += "請選擇兩名玩家成為情侶 (可選自己)："; };
 roleHandlers['awaken_wolf_king_gun'] = (ctx) => { ctx.nightRoleTitle.textContent = "👑✨ 覺醒狼王行動"; ctx.nightInstruction.innerHTML += "請選擇你要分槍的對象 (限狼隊友)："; ctx.btnOptionalSkip.textContent = "跳過 (自己保留兩把槍)"; ctx.btnOptionalSkip.classList.remove('hidden'); };
 roleHandlers['_awaken_gargoyle'] = (ctx) => { let base_role = s.current_stage.replace('_A', '').replace('_B', ''); ctx.nightRoleTitle.textContent = `${s.ROLE_DICT[base_role]?.icon || '🦇✨'} ${s.ROLE_DICT[s.current_stage]?.name || '覺醒石像鬼'}行動`; ctx.nightInstruction.innerHTML += "請選擇要轉化的對象："; ctx.btnOptionalSkip.classList.add('hidden'); };
-roleHandlers['_target_select'] = (ctx) => { const { btnOptionalSkip, nightRoleTitle, nightInstruction } = ctx; let base_key = s.current_stage.replace('_couple', ''); nightRoleTitle.textContent = `${s.ROLE_DICT[base_key].icon} ${s.ROLE_DICT[base_key].name}行動`; if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker', 'half_blood', 'awaken_lonely_girl', 'wild_child'].includes(s.current_stage)) { nightInstruction.innerHTML += "請選擇你的目標對象 (必須選擇)："; if (s.current_stage === 'ghost_bride_couple') nightInstruction.innerHTML += "請選擇你們的證婚人 (必須選擇)："; } else { nightInstruction.innerHTML += "請選擇你的目標對象 (或跳過)："; btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden'); } };
+roleHandlers['_target_select'] = (ctx) => { const { btnOptionalSkip, nightRoleTitle, nightInstruction } = ctx; let base_key = s.current_stage.replace('_couple', ''); nightRoleTitle.textContent = `${s.ROLE_DICT[base_key]?.icon || '🎯'} ${s.ROLE_DICT[base_key]?.name || '選擇'}行動`; if (['ghost_bride', 'ghost_bride_couple', 'awaken_dreamwalker', 'dreamwalker', 'half_blood', 'awaken_lonely_girl', 'wild_child'].includes(s.current_stage)) { nightInstruction.innerHTML += "請選擇你的目標對象 (必須選擇)："; if (s.current_stage === 'ghost_bride_couple') nightInstruction.innerHTML += "請選擇你們的證婚人 (必須選擇)："; } else { nightInstruction.innerHTML += "請選擇你的目標對象 (或跳過)："; btnOptionalSkip.textContent = "跳過"; btnOptionalSkip.classList.remove('hidden'); } };
 roleHandlers['alchemist'] = (ctx) => { ctx.nightRoleTitle.textContent = "⚗️ 煉金魔女行動"; ctx.nightInstruction.innerHTML += "請選擇要使用未明之霧的目標 (請選擇 3 名不同玩家，或跳過)："; ctx.btnOptionalSkip.textContent = "跳過"; ctx.btnOptionalSkip.classList.remove('hidden'); };
 roleHandlers['wolf'] = (ctx) => {
     const { btnConfirmAction, btnOptionalSkip, numberPad, nightRoleTitle, nightInstruction } = ctx;
@@ -320,11 +325,9 @@ roleHandlers['wolf'] = (ctx) => {
     let alch_text = alchFogs.length > 0 ? `<br><span style="color:#fca311;">⚠️ 煉金魔女已施放迷霧，只能從 ${alchFogs.sort().join(', ')} 號中擊殺</span>` : '';
     nightRoleTitle.textContent = has_lg ? "🐺 狼隊與小女孩行動" : "🐺 狼人行動";
 
-    // 💡 新增：將名單與標記狀態拉成一個共用的變數
     let wolf_list_html = `<br><span style="color:#e94560; font-size:16px;">🐺 睜眼名單：${has_lg ? '【隱藏】' : w_text}</span>${dm_text}${alch_text}`;
 
     if (Object.values(s.player_roles).includes('seed_wolf')) {
-        // 💡 初始狀態就加上 wolf_list_html
         nightInstruction.innerHTML += `請選擇行動模式：${wolf_list_html}`;
         numberPad.classList.add('hidden');
 
@@ -340,7 +343,6 @@ roleHandlers['wolf'] = (ctx) => {
             s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null;
             btnKill.classList.add('action-selected'); btnInfect.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
             numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
-            // 💡 點擊後顯示
             nightInstruction.innerHTML = `請選擇擊殺目標：${wolf_list_html}`;
         };
 
@@ -349,7 +351,6 @@ roleHandlers['wolf'] = (ctx) => {
             document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } });
             btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
             numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
-            // 💡 點擊後顯示
             nightInstruction.innerHTML = `請選擇要感染的目標：${wolf_list_html}`;
         };
 
@@ -357,13 +358,11 @@ roleHandlers['wolf'] = (ctx) => {
             s.is_seed_wolf_infecting = false; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = 'skip';
             btnSkip.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnInfect.classList.remove('action-selected');
             numberPad.classList.add('hidden'); btnConfirmAction.classList.remove('hidden'); btnConfirmAction.textContent = "確認";
-            // 💡 點擊後顯示
             nightInstruction.innerHTML = `請選擇行動模式：${wolf_list_html}`;
         };
 
         if (alchFogs.length > 0) btnSkip.classList.add('hidden');
     } else {
-        // 💡  一般模式也直接用變數
         nightInstruction.innerHTML += `請點擊擊殺目標號碼 (或空刀)：${wolf_list_html}`;
         btnOptionalSkip.textContent = "空刀 (不擊殺)"; btnOptionalSkip.classList.remove('hidden');
         if (alchFogs.length > 0) btnOptionalSkip.classList.add('hidden');
@@ -406,6 +405,8 @@ roleHandlers['_notify'] = (ctx) => {
                 const gift_names = { knife: '一把刀', poison: '一滴毒', hope_light: '希望之光', day_gun: '日槍' };
                 messages.push(`你從潘朵拉的魔盒中獲得：【${gift_names[s.pandora_gift] || '未知技能'}】`);
             }
+            // --- 狂熱粉通知 ---
+            if (flow.type === 'fanatic' && is_selected_target) messages.push('你是狂熱粉 🔪');
         });
 
         const status_text = messages.length ? messages.join('<br>') : '沒有特殊身份';
@@ -479,8 +480,15 @@ roleHandlers['phantom_king'] = (ctx) => { ctx.nightRoleTitle.textContent = "🦹
 roleHandlers['puppet_select'] = (ctx) => {
     const { btnOptionalSkip, nightRoleTitle, nightInstruction } = ctx;
     nightRoleTitle.textContent = `🐺 狼隊行動 (選傀儡)`;
-    
+
     let all_wolf_seats = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]));
     nightInstruction.innerHTML = `請狼隊伍選擇一名與狼相鄰的玩家作為傀儡：<br><span style="color:#e94560; font-size:16px;">🐺 狼隊名單：${all_wolf_seats.sort((a, b) => a - b).join(', ')} 號</span>`;
     btnOptionalSkip.classList.add('hidden');
+};
+
+roleHandlers['jack_ripper_select_fanatic'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🔪 開膛手傑克行動 (選狂熱粉)";
+    ctx.nightInstruction.innerHTML += "請選擇一位玩家成為你的狂熱粉：";
+    ctx.btnOptionalSkip.textContent = "跳過";
+    ctx.btnOptionalSkip.classList.remove('hidden');
 };

@@ -3687,9 +3687,9 @@
                     "guard": 1
                 },
                 "wake_queue": [
-                    "jack_ripper",
-                    "take_turns",
-                    "fanatic",
+                    "jack_ripper_select_fanatic", 
+                    "take_turns", 
+                    "jack_fanatic_meet", 
                     "guard",
                     "wolves",
                     "witch",
