@@ -481,12 +481,6 @@ export async function runNextNightRole() {
     if (s.current_stage.startsWith('notify_pandora_')) { let seat = parseInt(s.current_stage.split('_').pop()); if (!s.pandora_target || seat !== parseInt(s.pandora_target)) return runNextNightRole(); }
     if (s.current_stage.startsWith('notify_sp_lucky_')) { let seat = parseInt(s.current_stage.split('_').pop()); if (!s.sp_merchant_targets || !s.sp_merchant_targets.includes(seat)) return runNextNightRole(); }
 
-    if (s.current_stage === 'big_bad_wolf') {
-        let total_wolves = Object.values(s.player_roles).filter(r => getWolfTeamRoles().includes(r)).length;
-        let alive_wolves = Object.keys(s.player_roles).filter(k => getWolfTeamRoles().includes(s.player_roles[k]) && s.player_status[k]?.alive !== false).length;
-        if (alive_wolves < total_wolves) return runNextNightRole();
-    }
-
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
     let is_vwk_turn = actor_seat && s.player_status[actor_seat]?.isVWK;
 

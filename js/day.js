@@ -207,7 +207,6 @@ function resolveReflections() {
         let dmTarget = dmActions[0].resolved_targets[0]; let dmReflectVictims = [];
         let dmInspect = getActionsByEffect('inspect').find(a => a.resolved_targets.includes(dmTarget)); if (dmInspect) dmReflectVictims.push(dmInspect.actor);
         let dmPoison = getActionsByEffect('poison').find(a => a.resolved_targets.includes(dmTarget)); if (dmPoison) { dmReflectVictims.push(dmPoison.actor); removeDeathEvent(dmTarget); }
-        let dmDream = getActionsByEffect('dream').find(a => a.resolved_targets.includes(dmTarget)); if (dmDream && s.prev_dream_target === dmTarget) { dmReflectVictims.push(dmDream.actor); }
         dmReflectVictims.forEach(v => { addDeathEvent(v, 'dark_messenger', '黑夜使者絕對反殺'); });
     }
 }
@@ -395,7 +394,7 @@ export function killPlayerDuringDay(seat, isShot = false, canShoot = true, sourc
 
     // 【標籤驅動】：替代死亡
     let awkBeautyTarget = getNightTarget('charm', 'awaken_wolf_beauty');
-    if (rules.tags?.includes('substitute_death') && awkBeautyTarget && !s.final_killed.includes(awkBeautyTarget)) {
+    if (rules.tags?.includes('substitute_death') && awkBeautyTarget && !s.final_killed.includes(awkBeautyTarget) && source !== 'awaken_hunter') {
         killPlayerDuringDay(awkBeautyTarget, false, false, 'chain');
         return;
     }
