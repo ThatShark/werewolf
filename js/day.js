@@ -27,9 +27,10 @@ export function canPlayerShoot(seat, role = s.player_roles[seat]) {
     return rules.tags?.includes('shoot_on_death')
         || (role === 'hunter' && s.player_status[seat]?.isVWK)
         || s.awk_wolf_gun_target === parseInt(seat)
-        || s.evil_merchant_gun_target === parseInt(seat)
+        || (s.evil_merchant_gun_target === parseInt(seat) && ['hunter', 'awaken_hunter'].includes(deathEvent.source))
         || s.player_status[seat]?.hasPandoraDayGun
-        || s.player_status[seat]?.hasSuperBlackMarketGun;
+        || s.player_status[seat]?.hasSuperBlackMarketGun
+        || (role === 'gray_wolf' && s.gray_wolf_stolen_skill === 'hunter');
 }
 
 function resolveFlipToSurviveImmunity() {
