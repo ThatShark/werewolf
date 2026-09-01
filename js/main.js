@@ -346,16 +346,45 @@ export function processNextShooter() {
     }
 
     let selectedDayTarget = null;
+    let selectedSkipAction = false;
     for (let i = 1; i <= s.total_players; i++) {
         const btn = document.createElement('button'); btn.classList.add('num-btn'); btn.textContent = i;
         if (s.final_killed.includes(i)) { btn.disabled = true; btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; }
         else {
-            btn.onclick = () => { document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedDayTarget = i; document.getElementById('btn-day-skill-confirm').classList.remove('hidden'); };
+            btn.onclick = () => {
+                document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('btn-day-skill-skip').classList.remove('action-selected');
+                btn.classList.add('selected');
+                selectedDayTarget = i;
+                selectedSkipAction = false;
+                document.getElementById('btn-day-skill-confirm').classList.remove('hidden');
+            };
         }
         pad.appendChild(btn);
     }
-    document.getElementById('btn-day-skill-skip').onclick = finishShooterTurn;
-    document.getElementById('btn-day-skill-confirm').onclick = () => { document.getElementById('btn-day-skill-confirm').classList.add('hidden'); killPlayerDuringDay(selectedDayTarget, true, true, currentShooter.role); finishShooterTurn(); };
+    
+    // 修改跳過按鈕邏輯：點擊時進入選中狀態，不直接結束回合
+    document.getElementById('btn-day-skill-skip').onclick = (e) => {
+        document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
+        const skipBtn = document.getElementById('btn-day-skill-skip');
+        skipBtn.classList.toggle('action-selected');
+        selectedDayTarget = null;
+        selectedSkipAction = skipBtn.classList.contains('action-selected');
+        document.getElementById('btn-day-skill-confirm').classList.toggle('hidden', !selectedSkipAction);
+    };
+    
+    // 確認按鈕：根據是否選擇了目標或跳過來執行相應的操作
+    document.getElementById('btn-day-skill-confirm').onclick = () => {
+        document.getElementById('btn-day-skill-confirm').classList.add('hidden');
+        document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('btn-day-skill-skip').classList.remove('action-selected');
+        
+        if (selectedDayTarget) {
+            killPlayerDuringDay(selectedDayTarget, true, true, currentShooter.role);
+        }
+        // 如果是跳過，不需要執行 killPlayerDuringDay
+        finishShooterTurn();
+    };
 }
 
 // =====================================

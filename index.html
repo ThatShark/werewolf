@@ -22,19 +22,11 @@
             <div class="game-settings">
                 <label>
                     遊戲人數：
-                    <select id="setting-player-count">
-                        <option value="6">6 人局</option>
-                        <option value="7">7 人局</option>
-                        <option value="8">8 人局</option>
-                        <option value="9">9 人局</option>
-                        <option value="10">10 人局</option>
-                        <option value="11">11 人局</option>
-                        <option value="12" selected>12 人局</option>
-                        <option value="13">13 人局</option>
-                        <option value="14">14 人局</option>
-                        <option value="15">15 人局</option>
-                        <option value="16">16 人局</option>
-                    </select>
+                    <div class="custom-dropdown count-dropdown" id="player-count-dropdown">
+                        <div class="dropdown-selected" id="player-count-selected">12 人局</div>
+                        <div class="dropdown-list hidden" id="player-count-list"></div>
+                    </div>
+                    <input type="hidden" id="setting-player-count" value="12">
                 </label>
                 <div class="setting-group-label">
                     板子選擇：

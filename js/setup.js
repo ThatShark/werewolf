@@ -292,6 +292,42 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
 function loadGameData(count_select) {
     const board_selected = document.getElementById('board-selected');
     const board_list = document.getElementById('board-list');
+    const count_dropdown = document.getElementById('player-count-dropdown');
+    const count_selected = document.getElementById('player-count-selected');
+    const count_list = document.getElementById('player-count-list');
+    const count_values = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+    const syncCountSelection = () => {
+        const selectedValue = String(count_select.value || '12');
+        count_selected.textContent = `${selectedValue} 人局`;
+        count_list.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.toggle('active', String(item.dataset.value) === selectedValue);
+        });
+    };
+
+    if (count_dropdown && count_list) {
+        count_list.innerHTML = '';
+        count_values.forEach((value) => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.textContent = `${value} 人局`;
+            item.dataset.value = String(value);
+            item.classList.toggle('active', String(value) === String(count_select.value || '12'));
+            item.onclick = (e) => {
+                e.stopPropagation();
+                count_select.value = String(value);
+                syncCountSelection();
+                count_list.classList.add('hidden');
+                count_select.dispatchEvent(new Event('change'));
+            };
+            count_list.appendChild(item);
+        });
+
+        count_dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            count_list.classList.toggle('hidden');
+        });
+    }
 
     if (board_selected) {
         board_selected.addEventListener('click', (e) => {
@@ -317,13 +353,15 @@ function loadGameData(count_select) {
 
     document.addEventListener('click', (e) => {
         if (e.target.id === 'board-search') e.stopPropagation();
-    });
-    
-    document.addEventListener('click', () => {
+        if (count_dropdown && !count_dropdown.contains(e.target)) {
+            count_list.classList.add('hidden');
+        }
         if (board_list && !board_list.classList.contains('hidden')) {
             board_list.classList.add('hidden');
         }
     });
+
+    syncCountSelection();
 
     fetch('data.json')
         .then(res => {
@@ -383,7 +421,9 @@ function loadGameData(count_select) {
                 });
             };
 
-            count_select.addEventListener('change', updateBoards);
+            if (count_select && count_select.addEventListener) {
+                count_select.addEventListener('change', updateBoards);
+            }
             updateBoards();
         })
         .catch(err => {
@@ -517,11 +557,22 @@ export function initSetupEvents() {
     const role_modal = document.getElementById('role-modal');
     const lock_modal = document.getElementById('lock-modal');
 
-    if (document.getElementById('setting-transition-delay')) {
-        document.getElementById('setting-transition-delay').addEventListener('input', (e) => {
+    const transition_delay = document.getElementById('setting-transition-delay');
+    if (transition_delay) {
+        const updateTransitionRange = () => {
+            const min = parseFloat(transition_delay.min);
+            const max = parseFloat(transition_delay.max);
+            const value = parseFloat(transition_delay.value);
+            const percent = ((value - min) / (max - min)) * 100;
+            transition_delay.style.setProperty('--range-fill', `${percent}%`);
+            document.getElementById('transition-delay-value').textContent = `${transition_delay.value}s`;
+        };
+
+        transition_delay.addEventListener('input', (e) => {
             s.role_transition_delay = parseFloat(e.target.value);
-            document.getElementById('transition-delay-value').textContent = `${e.target.value}s`;
+            updateTransitionRange();
         });
+        updateTransitionRange();
     }
 
     loadGameData(count_select);
