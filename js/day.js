@@ -21,7 +21,7 @@ export function canPlayerShoot(seat, role = s.player_roles[seat]) {
     let isCharmed = getNightTarget('charm', 'wolf_beauty') === parseInt(seat);
     let isConverted = s.player_status[seat]?.isConvertedWolf;
 
-    if (nightmareTarget === parseInt(seat) || witchPoisonTarget === parseInt(seat) || isStolen || isSleeping || isCharmed || isConverted) return false;
+    if (nightmareTarget === parseInt(seat) || witchPoisonTarget === parseInt(seat) || isStolen || isSleeping || isCharmed || isConverted || parseInt(seat) === s.puppet_target) return false;
 
     // 【標籤驅動】：取代硬編碼的獵人與狼王陣列
     return rules.tags?.includes('shoot_on_death')
@@ -74,6 +74,13 @@ function applyDisableRules() {
             s.night_actions.filter(a => ['kill', 'convert'].includes(a.effect) && a.actor === 'wolves').forEach(a => cancelAction(a.id, "狼隊因冰凍無法刀人與感染"));
         } else {
             s.night_actions.filter(a => a.actor === fTarget).forEach(a => cancelAction(a.id, "被企鵝冰凍"));
+        }
+    }
+
+    if (s.puppet_target) {
+        let puppetRole = s.player_roles[s.puppet_target];
+        if (['witch', 'awaken_witch', 'guard'].includes(puppetRole)) {
+            s.night_actions.filter(a => a.actor === s.puppet_target).forEach(a => cancelAction(a.id, "被選為傀儡，技能失效"));
         }
     }
 }
@@ -361,6 +368,17 @@ export function handleChainDeaths() {
     if (medusaKey && s.final_killed.includes(parseInt(medusaKey)) && medusaTarget && !s.final_killed.includes(medusaTarget)) {
         if (!s.ROLE_DICT[s.player_roles[medusaTarget]]?.tags?.includes('immune_petrify')) {
             addDeathEvent(medusaTarget, 'chain', '連帶死亡(梅杜莎石化)');
+        }
+    }
+
+    if (s.shadow_revenger_lovers && s.shadow_revenger_lovers.length === 2) {
+        let [p1, p2] = s.shadow_revenger_lovers;
+        if (s.final_killed.includes(p1) && !s.final_killed.includes(p2)) {
+            addDeathEvent(p2, 'chain', '連帶死亡(影子復仇者殉情)');
+            s.shadow_revenger_lovers = [];
+        } else if (s.final_killed.includes(p2) && !s.final_killed.includes(p1)) {
+            addDeathEvent(p1, 'chain', '連帶死亡(影子復仇者殉情)');
+            s.shadow_revenger_lovers = [];
         }
     }
 

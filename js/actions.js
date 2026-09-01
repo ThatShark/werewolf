@@ -115,6 +115,7 @@ export const inspectionStrategies = {
             if (ctx.isVWKTurn) { ctx.text = `${s.ROLE_DICT[s.player_roles[t]].icon} ${s.ROLE_DICT[s.player_roles[t]].name}`; ctx.color = "#fca311"; } else {
                 let is_evil = isPlayerEvil(t);
                 if (s.current_board.id === '12_shadow' && parseInt(ctx.actorSeat) === s.shadow_seer_seat) is_evil = !is_evil;
+                if (parseInt(ctx.actorSeat) === s.puppet_target) is_evil = !is_evil;
                 if (is_evil) { ctx.text = "🐺 狼人 (壞人)"; ctx.color = "#e94560"; } else { ctx.text = "🧑‍🌾 好人"; ctx.color = "#00ff88"; }
             }
             addNightAction(ctx.actorSeat, 'seer', 'inspect', [t]);
@@ -158,7 +159,7 @@ export const nonInspectionStrategies = {
         addNightAction(ctx.actorSeat, 'thief', 'choose_role', [], { chosen_role: s.thief_chosen_role });
         buildNightQueue();
     },
-    'half_blood': targetSelectStrategy, 'wild_child': targetSelectStrategy, 'awaken_lonely_girl': targetSelectStrategy, 'shadow': targetSelectStrategy,
+    'half_blood': targetSelectStrategy, 'wild_child': targetSelectStrategy, 'awaken_lonely_girl': targetSelectStrategy,
     'ghost_bride': (ctx) => { setPersistentState('ghost_bride_groom', ctx.targetNum); logNightAction(`【鬼魅新娘】選擇了 ${ctx.targetNum}號為新郎`); addNightAction(ctx.actorSeat, 'ghost_bride', 'choose_groom', [ctx.targetNum]); },
     'ghost_bride_couple': (ctx) => { setPersistentState('ghost_bride_witness', ctx.targetNum); logNightAction(`【鬼魅新娘與新郎】選擇了 ${ctx.targetNum}號為證婚人`); addNightAction(ctx.actorSeat, 'ghost_bride_couple', 'choose_witness', [ctx.targetNum]); },
     'black_market': (ctx) => { setPersistentState('merchant_target', ctx.targetNum); setPersistentState('merchant_type', ctx.targetNum ? ctx.stage : null); logNightAction(ctx.targetNum ? `【黑市商人】給了 ${ctx.targetNum}號` : `【黑市商人】未發動`); if (ctx.targetNum) addNightAction(ctx.actorSeat, ctx.stage, 'grant', [ctx.targetNum], { item: s.merchant_item }); },
@@ -178,6 +179,13 @@ export const nonInspectionStrategies = {
                 logNightAction(`【幸運兒(${s.merchant_target || ctx.actorSeat}號)】守護了 ${ctx.targetNum} 號`);
                 addNightAction(ctx.actorSeat, 'lucky_boy', 'guard', [ctx.targetNum]);
             }
+        }
+    },
+    'shadow': (ctx) => {
+        targetSelectStrategy(ctx); // 繼承原本的目標選擇
+        if (ctx.targetNum && s.player_roles[ctx.targetNum] === 'revenger') {
+            setPersistentState('shadow_revenger_lovers', [parseInt(ctx.actorSeat), ctx.targetNum]);
+            logNightAction(`【影子】選擇了復仇者，兩人連為情侶並失去原技能`);
         }
     },
     'wolf': (ctx) => {
