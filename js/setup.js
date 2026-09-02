@@ -11,30 +11,21 @@ function openRoleModal(role_setup_grid) {
     const modal_role_options = document.getElementById('modal-role-options');
     const role_modal = document.getElementById('role-modal');
     
-    // 鎖定當前正在設定的座位
     const seat = s.current_editing_seat;
-
     const needsGender = s.current_board.hasGender || s.current_board.id.includes('jack_ripper');
     const needsSecondary = s.current_board.id === '12_jack_ripper_v2';
 
-    // 階段 3：完成該座位的設定並關閉視窗 (絕對不跳轉下一個號碼)
     const finishSeatSetup = () => {
         const grid_btn = role_setup_grid.children[seat - 1];
         grid_btn.dataset.status = 'set';
-        
-        // 卡片上不顯示傑克，只顯示號碼、性別與已隱藏
         grid_btn.innerHTML = `<span class="seat-num">${seat}號</span><span class="role-name">✔️已隱藏</span>`;
-        
-        // 關閉視窗，完成此座位的設定
         role_modal.classList.add('hidden');
     };
 
-    // 階段 2-2：第二身分錄入 (開膛手傑克板子專用)
     const renderSecondarySelection = () => {
         document.getElementById('modal-seat-title').textContent = `設定 ${seat} 號第二身分`;
         modal_role_options.innerHTML = '';
         
-        // 使用垂直大按鈕
         const btnJack = document.createElement('button');
         btnJack.className = 'role-select-btn';
         btnJack.innerHTML = '🔪 開膛手傑克';
@@ -57,12 +48,10 @@ function openRoleModal(role_setup_grid) {
         modal_role_options.appendChild(btnDet);
     };
 
-    // 階段 2-1：性別錄入 (若板子需要性別)
     const renderGenderSelection = () => {
         document.getElementById('modal-seat-title').textContent = `設定 ${seat} 號性別`;
         modal_role_options.innerHTML = '';
 
-        // 使用垂直大按鈕
         const btnMale = document.createElement('button');
         btnMale.className = 'role-select-btn';
         btnMale.innerHTML = '♂️ 男性';
@@ -83,7 +72,6 @@ function openRoleModal(role_setup_grid) {
         modal_role_options.appendChild(btnFemale);
     };
 
-    // 階段 1：基礎身分錄入
     const renderBaseRoleSelection = () => {
         document.getElementById('modal-seat-title').textContent = `設定 ${seat} 號身分`;
         modal_role_options.innerHTML = '';
@@ -103,7 +91,6 @@ function openRoleModal(role_setup_grid) {
             btn.addEventListener('click', () => {
                 s.player_roles[seat] = role_id;
                 
-                // 依序判斷進入下一階段
                 if (needsGender) {
                     renderGenderSelection();
                 } else if (needsSecondary) {
@@ -116,7 +103,6 @@ function openRoleModal(role_setup_grid) {
         }
     };
 
-    // 啟動流程
     renderBaseRoleSelection();
     role_modal.classList.remove('hidden');
 }
@@ -132,7 +118,6 @@ function renderRandomRoleView(btn_start_night) {
     let disp_role = s.player_roles[s.current_viewing_seat];
     let display_role_key = disp_role.replace(/_[A-Z]$/, '');
 
-    // 處理性別顯示
     let gender_html = '';
     if (s.current_board.hasGender || s.current_board.id.includes('jack_ripper')) {
         let gender = s.player_genders[s.current_viewing_seat];
@@ -143,7 +128,6 @@ function renderRandomRoleView(btn_start_night) {
         }
     }
 
-    // 處理第二身分顯示
     let sec_role_html = '';
     if (s.current_board.id === '12_jack_ripper_v2') {
         let sec_role = s.player_second_roles[s.current_viewing_seat];
@@ -228,7 +212,6 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             s.player_status[i] = { poisoned: false, injured: false, isWhiteCatFlipped: false, isVWK: false, deathReason: null };
         }
         
-        // --- 隨機模式自動分配性別 ---
         if (s.current_board.hasGender || s.current_board.id.includes('jack_ripper')) {
             let genders = [];
             for(let i = 0; i < s.total_players / 2; i++) {
@@ -241,7 +224,6 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             }
         }
         
-        // --- 隨機模式自動分配第二身分 ---
         if (s.current_board.id === '12_jack_ripper_v2') {
             let sec_roles = ['jack_ripper'];
             for(let i = 1; i < s.total_players; i++) {
@@ -266,7 +248,6 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
         btn_start_night.classList.remove('hidden');
         if (document.getElementById('random-role-ui')) document.getElementById('random-role-ui').classList.add('hidden');
         
-        // 隱藏舊版的性別面板 (若有)
         let gender_section = document.getElementById('gender-setup-section');
         if (gender_section) gender_section.classList.add('hidden');
         
@@ -423,6 +404,7 @@ function loadGameData(count_select) {
                             board_list_el.classList.add('hidden');
                             document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
                             item.classList.add('active');
+                            setting_board.dispatchEvent(new Event('change')); // 觸發設定檢查
                         };
                         if (index === 0) {
                             board_selected_el.textContent = b.name;
@@ -431,6 +413,7 @@ function loadGameData(count_select) {
                         board_list_el.appendChild(item);
                     }
                 });
+                setting_board.dispatchEvent(new Event('change')); // 初次載入時觸發設定檢查
             };
 
             if (count_select && count_select.addEventListener) {
@@ -465,7 +448,6 @@ function handleStartNight(count_select, setting_board) {
             }
         }
         
-        // 依賴 JSON 定義，徹底移除 boards_with_spare_cards
         const has_spare_cards = s.current_board.spare_cards_count > 0;
         
         if (!is_match && !has_spare_cards) return alert(error_msg);
@@ -509,7 +491,6 @@ function handleStartNight(count_select, setting_board) {
     let thief_key = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'thief');
     s.initial_thief_seat = thief_key ? parseInt(thief_key) : null;
 
-    // === 性別機制驗證 ===
     if (s.current_board.hasGender || s.current_board.id.includes('jack_ripper')) {
         let male_count = Object.values(s.player_genders).filter(g => g === 'male').length;
         let female_count = Object.values(s.player_genders).filter(g => g === 'female').length;
@@ -521,7 +502,6 @@ function handleStartNight(count_select, setting_board) {
         }
     }
     
-    // === 傑克機制驗證 ===
     if (s.current_board.id === '12_jack_ripper_v2') {
         let jack_count = s.player_second_roles ? Object.values(s.player_second_roles).filter(r => r === 'jack_ripper').length : 0;
         if (jack_count !== 1) {
@@ -529,19 +509,16 @@ function handleStartNight(count_select, setting_board) {
         }
     }
 
-    if (s.current_board.id === '12_sleeping_beauty') {
+    if (s.current_board.hasSleepingBeauty) {
         let alien_seat = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'alien_prince');
         let all_seats = Object.keys(s.player_roles).map(Number);
         let candidate = all_seats[Math.floor(Math.random() * all_seats.length)];
-        
-        s.sleeping_beauty_seat = candidate; // 無論是誰都紀錄座位
-        
-        // 若抽中異族王子，標記睡美人機制失效
         if (candidate === parseInt(alien_seat)) {
-            s.is_sleeping_beauty_active = false;
+            s.sleeping_beauty_seat = null;
         } else {
-            s.is_sleeping_beauty_active = true;
+            s.sleeping_beauty_seat = candidate;
         }
+        s.is_sleeping_beauty_active = true;
     }
 
     buildNightQueue();
@@ -589,13 +566,50 @@ export function initSetupEvents() {
 
     loadGameData(count_select);
 
+    // 監聽板子切換，判斷是否有女巫或機械狼，來決定是否顯示對應設定
+    setting_board.addEventListener('change', () => {
+        const boards = s.BOARD_CONFIGS[count_select.value] || [];
+        const currentBoard = boards.find(b => b.id === setting_board.value);
+        
+        // 處理女巫設定顯示
+        const witchRuleInput = document.getElementById('setting-witch-rule');
+        if (witchRuleInput && currentBoard) {
+            const hasWitch = currentBoard.roles.witch > 0 || currentBoard.roles.awaken_witch > 0;
+            let container = witchRuleInput.closest('.setting-item, .setting-row');
+            if (!container) container = witchRuleInput.closest('label');
+            
+            if (container && container.id !== 'screen-setup' && container.id !== 'app') {
+                container.style.display = hasWitch ? '' : 'none';
+            } else {
+                witchRuleInput.style.display = hasWitch ? '' : 'none';
+                let associatedLabel = document.querySelector(`label[for="setting-witch-rule"]`);
+                if (associatedLabel) associatedLabel.style.display = hasWitch ? '' : 'none';
+            }
+        }
+        
+        // 處理機械狼設定顯示
+        const machineWolfRuleInput = document.getElementById('setting-machine-wolf-rule');
+        if (machineWolfRuleInput && currentBoard) {
+            const hasMachineWolf = currentBoard.roles.machine_wolf > 0;
+            let container = machineWolfRuleInput.closest('.setting-item, .setting-row');
+            if (!container) container = machineWolfRuleInput.closest('label');
+            
+            if (container && container.id !== 'screen-setup' && container.id !== 'app') {
+                container.style.display = hasMachineWolf ? '' : 'none';
+            } else {
+                machineWolfRuleInput.style.display = hasMachineWolf ? '' : 'none';
+                let associatedLabel = document.querySelector(`label[for="setting-machine-wolf-rule"]`);
+                if (associatedLabel) associatedLabel.style.display = hasMachineWolf ? '' : 'none';
+            }
+        }
+    });
+
     document.getElementById('btn-close-modal').addEventListener('click', () => role_modal.classList.add('hidden'));
     btn_go_setup.addEventListener('click', () => {
         screen_start.classList.add('hidden');
         screen_setup.classList.remove('hidden');
         initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_night);
     });
-    
     btn_back_start.addEventListener('click', () => {
         if (!confirm('確定要返回？目前的設定將會遺失。')) return;
         screen_setup.classList.add('hidden');

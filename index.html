@@ -42,6 +42,10 @@
                     第一天女巫可自救
                 </label>
                 <label class="checkbox-label">
+                    <input type="checkbox" id="setting-machine-wolf-rule">
+                    首夜機械狼可選擇跳過學習
+                </label>
+                <label class="checkbox-label">
                     <input type="checkbox" id="setting-sheriff" checked>
                     包含上警環節 (競選警長)
                 </label>
@@ -62,7 +66,8 @@
 
         <div id="screen-setup" class="screen hidden">
             <h2>📝 錄入玩家身分</h2>
-            <p style="color: var(--color-text-muted); font-size: 14px; margin-bottom: 15px;">點擊號碼牌設定身分，設定後將自動屏蔽隱藏。進入黑夜前系統會校驗配置是否正確。</p>
+            <p style="color: var(--color-text-muted); font-size: 14px; margin-bottom: 15px;">
+                點擊號碼牌設定身分，設定後將自動屏蔽隱藏。進入黑夜前系統會校驗配置是否正確。</p>
             <div id="role-setup-grid" class="grid-container"></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-back-start" class="text-btn">返回</button>
@@ -99,7 +104,8 @@
             <div id="sheriff-action-section" class="hidden">
                 <h3 style="color:var(--color-accent);">🗣️ 警長競選發言</h3>
                 <p id="sheriff-speech-order"
-                    style="font-size: 24px; font-weight: bold; margin: 20px 0; color: var(--color-success); line-height: 1.5;"></p>
+                    style="font-size: 24px; font-weight: bold; margin: 20px 0; color: var(--color-success); line-height: 1.5;">
+                </p>
                 <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <button id="btn-finish-sheriff" class="primary-btn">警長競選結束 (開始投票)</button>
                     <button id="btn-sheriff-wolf-blow" class="secondary-btn" style="border: 1px solid #e94560;">🐺 狼人自爆
@@ -127,7 +133,8 @@
                 <div id="day-skill-section" class="hidden"
                     style="background-color: var(--bg-card); border: 2px solid var(--color-accent); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <p id="day-skill-notice"
-                        style="color: var(--color-accent); font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【 X 號
+                        style="color: var(--color-accent); font-size: 20px; font-weight: bold; margin: 0 0 15px 0;">🎯 【
+                        X 號
                         】玩家，請問是否發動技能？</p>
                     <div id="day-skill-pad" class="grid-container"></div>
                     <button id="btn-day-skill-skip" class="text-btn" style="margin-top: 10px;">放棄發動技能</button>
