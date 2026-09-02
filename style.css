@@ -274,6 +274,9 @@ button:disabled {
    設定頁 - 強化卡片設計
    ========================================== */
 .game-settings {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
     background: linear-gradient(135deg, rgba(35, 45, 58, 0.8) 0%, rgba(26, 31, 46, 0.8) 100%);
     padding: 18px;
     border-radius: var(--radius-lg);
@@ -398,6 +401,14 @@ button:disabled {
 /* ==========================================
    客製化下拉選單 - 強化視覺層次
    ========================================== */
+#player-count-dropdown {
+    z-index: 3000;
+}
+
+#board-dropdown {
+    z-index: 2000;
+}
+
 .custom-dropdown {
     position: relative;
     width: 100%;
@@ -419,6 +430,7 @@ button:disabled {
     text-overflow: ellipsis;
     position: relative;
     transition: all var(--transition-fast);
+    z-index: 2;
 }
 
 .dropdown-selected:hover {
@@ -439,16 +451,15 @@ button:disabled {
 
 .dropdown-list {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     width: 100%;
     background: linear-gradient(135deg, var(--bg-input) 0%, #1a232d 100%);
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-md);
-    z-index: 1000;
+    z-index: 3000;
     max-height: 250px;
     overflow-y: auto;
-    margin-top: 4px;
     box-shadow: var(--shadow-lg);
     text-align: left;
     backdrop-filter: blur(5px);
@@ -785,6 +796,18 @@ select:focus {
 #btn-optional-skip:active:not(:disabled) {
     transform: scale(0.92) !important;
     box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+#btn-witch-save {
+    background: linear-gradient(135deg, #2ecc71 0%, #1e9e5a 100%) !important;
+    color: white !important;
+    border: 2px solid #7ae7a7 !important;
+    box-shadow: 0 0 12px rgba(46, 204, 113, 0.35) !important;
+}
+
+#btn-witch-save:hover:not(:disabled) {
+    border-color: #dfffe9 !important;
+    box-shadow: 0 0 18px rgba(46, 204, 113, 0.5) !important;
 }
 
 /* 跳過按鈕 - 被選中時 */

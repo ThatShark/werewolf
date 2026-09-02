@@ -297,6 +297,11 @@ function loadGameData(count_select) {
     const count_list = document.getElementById('player-count-list');
     const count_values = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
+    const closeAllDropdowns = () => {
+        if (count_list) count_list.classList.add('hidden');
+        if (board_list) board_list.classList.add('hidden');
+    };
+
     const syncCountSelection = () => {
         const selectedValue = String(count_select.value || '12');
         count_selected.textContent = `${selectedValue} 人局`;
@@ -325,19 +330,27 @@ function loadGameData(count_select) {
 
         count_dropdown.addEventListener('click', (e) => {
             e.stopPropagation();
-            count_list.classList.toggle('hidden');
+            const shouldOpen = count_list.classList.contains('hidden');
+            closeAllDropdowns();
+            if (shouldOpen) {
+                count_list.classList.remove('hidden');
+            }
         });
     }
 
     if (board_selected) {
         board_selected.addEventListener('click', (e) => {
             e.stopPropagation();
-            board_list.classList.toggle('hidden');
-            const search_input = document.getElementById('board-search');
-            if (search_input && !board_list.classList.contains('hidden')) {
-                search_input.value = '';
-                search_input.focus();
-                board_list.querySelectorAll('.dropdown-item').forEach(item => item.style.display = '');
+            const shouldOpen = board_list.classList.contains('hidden');
+            closeAllDropdowns();
+            if (shouldOpen) {
+                board_list.classList.remove('hidden');
+                const search_input = document.getElementById('board-search');
+                if (search_input) {
+                    search_input.value = '';
+                    search_input.focus();
+                    board_list.querySelectorAll('.dropdown-item').forEach(item => item.style.display = '');
+                }
             }
         });
     }
@@ -353,11 +366,10 @@ function loadGameData(count_select) {
 
     document.addEventListener('click', (e) => {
         if (e.target.id === 'board-search') e.stopPropagation();
-        if (count_dropdown && !count_dropdown.contains(e.target)) {
-            count_list.classList.add('hidden');
-        }
-        if (board_list && !board_list.classList.contains('hidden')) {
-            board_list.classList.add('hidden');
+        const isInsideCountDropdown = count_dropdown && (count_dropdown.contains(e.target) || (count_list && count_list.contains(e.target)));
+        const isInsideBoardDropdown = board_selected && (board_selected.contains(e.target) || (board_list && board_list.contains(e.target)));
+        if (!isInsideCountDropdown && !isInsideBoardDropdown) {
+            closeAllDropdowns();
         }
     });
 
