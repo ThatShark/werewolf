@@ -26,7 +26,6 @@ const targetSelectStrategy = (ctx) => {
     setPersistentState(stateKey, ctx.targetNum);
     logNightAction(ctx.targetNum ? `【${roleName}】選擇了 ${ctx.targetNum}號` : `【${roleName}】未選擇`);
 
-    // 選傀儡算作 wolf 的動作，方便法官紀錄檢視
     let actorRole = ctx.stage === 'puppet_select' ? 'wolf' : ctx.stage;
     if (ctx.targetNum) addNightAction(ctx.actorSeat || 'wolves', actorRole, 'target_select', [ctx.targetNum]);
 };
@@ -182,7 +181,7 @@ export const nonInspectionStrategies = {
         }
     },
     'shadow': (ctx) => {
-        targetSelectStrategy(ctx); // 繼承原本的目標選擇
+        targetSelectStrategy(ctx);
         if (ctx.targetNum && s.player_roles[ctx.targetNum] === 'revenger') {
             setPersistentState('shadow_revenger_lovers', [parseInt(ctx.actorSeat), ctx.targetNum]);
             logNightAction(`【影子】選擇了復仇者，兩人連為情侶並失去原技能`);
@@ -238,11 +237,14 @@ export const nonInspectionStrategies = {
         if (s.treasure_hunter_choice) {
             let has_wolf = s.spare_cards.some(r => isWolfRole(r));
             setPersistentState('is_treasure_hunter_evil', has_wolf);
+            
+            // 直接取代身分為所選職業（解決查殺與隊友名單問題）
+            s.player_roles[ctx.actorSeat] = s.treasure_hunter_choice;
+            
             logNightAction(`【盜寶大師】選擇了 ${s.ROLE_DICT[s.treasure_hunter_choice]?.name || s.treasure_hunter_choice}`);
             addNightAction(ctx.actorSeat, 'treasure_master', 'choose_role', [], { chosen_role: s.treasure_hunter_choice });
-            let chosen_order = s.ROLE_DICT[s.treasure_hunter_choice]?.wakeOrder?.[0] || 9999;
-            s.night_queue.push({ stage: s.treasure_hunter_choice, order: chosen_order, seat: ctx.actorSeat, subLabel: null, isFake: false });
-            s.night_queue.sort((a, b) => a.order - b.order);
+            
+            buildNightQueue(); // 重建隊列讓新身分正常醒來
         } else { logNightAction(`【盜寶大師】未選擇`); }
     },
     'pandora': (ctx) => {
@@ -266,6 +268,7 @@ export const nonInspectionStrategies = {
             }
         } else { setPersistentState('pandora_target', null); logNightAction(`【潘朵拉】未贈送`); }
     },
+    'show_pandora_gift': (ctx) => { /* 純UI階段，不紀錄動作 */ },
     'phantom_king': (ctx) => {
         if (s.selected_number === 'skip') { logNightAction(`【怪盜狼王】發動了無敵技能`); addNightAction(ctx.actorSeat, 'phantom_king', 'invincible', [ctx.actorSeat]); }
         else { logNightAction(`【怪盜狼王】未發動無敵`); }
@@ -305,7 +308,6 @@ export const nonInspectionStrategies = {
         if (ctx.targetNum) {
             logNightAction(`【開膛手傑克】選擇了 ${ctx.targetNum}號 作為狂熱粉`);
             s.player_second_roles[ctx.targetNum] = 'fanatic';
-            // 讓狂熱粉只在 1~12 號輪流通知時得知身分，不觸發獨立的睜眼階段
             insertNightStatusFlow('fanatic', [ctx.targetNum], { reveal_targets: [] });
         } else {
             logNightAction(`【開膛手傑克】未選擇狂熱粉`);
@@ -372,29 +374,24 @@ export function resolveNonInspectionAction() {
         console.warn(`[Action] No non-inspection strategy found for stage: ${s.current_stage}`);
     }
 
-    // 商人系列：原本就已經有傳入 reveal_targets: []
     if (s.current_stage === 'black_market' || s.current_stage === 'miracle_merchant') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('merchant', targets, { merchant_type: s.merchant_type, gift: s.merchant_item, reveal_targets: [] });
     }
 
-    // 超級黑市商人：補上 reveal_targets: []
     if (s.current_stage === 'super_black_market') {
         insertNightStatusFlow('super_black_market', ctx.targetsArr, { gifts: s.sp_merchant_gifts, reveal_targets: [] });
     }
 
-    // 💡 邱比特：補上 reveal_targets: [] (後續有專屬的情侶睜眼階段)
     if (s.current_stage === 'cupid') {
         if (ctx.targetsArr.length === 2) setPersistentState('cupid_lovers', ctx.targetsArr);
         insertNightStatusFlow('lovers', ctx.targetsArr.length === 2 ? ctx.targetsArr : [], { reveal_targets: [] });
     }
 
-    // 覺醒石像鬼 (這個保留通知，因為它沒有 take_turns)
     if (['awaken_gargoyle', 'awaken_gargoyle_A', 'awaken_gargoyle_B'].includes(s.current_stage)) {
         insertNightStatusFlow('gargoyle_conversion', ctx.targetNum ? [ctx.targetNum] : []);
     }
 
-    // 💡 鬼魅新娘系列：補上 reveal_targets: [] (後續有專屬的睜眼階段)
     if (s.current_stage === 'ghost_bride') {
         insertNightStatusFlow('ghost_groom', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
     }
@@ -402,13 +399,11 @@ export function resolveNonInspectionAction() {
         insertNightStatusFlow('ghost_witness', ctx.targetNum ? [ctx.targetNum] : [], { reveal_targets: [] });
     }
 
-    // 💡 種狼：補上 reveal_targets: [] (這樣輪流睜眼完就會直接進入下一個身分！)
     if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
         let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
         insertNightStatusFlow('seed_wolf', targets, { reveal_targets: [] });
     }
 
-    // 潘朵拉與殭屍：原本就已經有傳入 reveal_targets: []
     if (s.current_stage === 'pandora') {
         let targets = ctx.targetNum ? [ctx.targetNum] : [];
         insertNightStatusFlow('pandora', targets, { reveal_targets: [] });

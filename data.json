@@ -3587,7 +3587,6 @@
                 "wake_queue": [
                     "guard",
                     "wolves",
-                    "wolf_king",
                     "witch",
                     "seer",
                     "super_black_market",

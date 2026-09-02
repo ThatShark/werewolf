@@ -230,36 +230,29 @@ roleHandlers['super_black_market'] = (ctx) => {
     nightRoleTitle.textContent = "🛒 超級黑市商人行動";
     nightInstruction.innerHTML += "請依序選擇三名不同的玩家 (將分別獲得查驗、毒藥、獵槍)：";
     
-    numberPad.classList.add('hidden');
-    actionPad.classList.remove('hidden');
-    actionPad.innerHTML = '';
-    
     let selected = [];
     let gifts = ['查驗', '毒藥', '獵槍'];
     
     let displayDiv = document.createElement('div');
-    displayDiv.style = "margin-bottom: 15px; font-size: 18px; color: #fca311;";
+    displayDiv.style = "margin-bottom: 15px; font-size: 18px; color: #fca311; text-align:center;";
     displayDiv.innerHTML = `尚未選擇`;
     actionPad.appendChild(displayDiv);
+    actionPad.classList.remove('hidden');
 
-    let pad = document.createElement('div');
-    pad.className = 'grid-container';
-    for (let i = 1; i <= s.total_players; i++) {
-        if (s.final_killed.includes(i)) continue;
-        if (i === parseInt(ctx.actorSeat)) continue; // 不能選自己
-        
-        let btn = document.createElement('button');
-        btn.className = 'num-btn';
-        btn.textContent = i;
-        btn.onclick = () => {
+    numberPad.querySelectorAll('.num-btn').forEach(btn => {
+        let i = parseInt(btn.textContent);
+        if (i === parseInt(ctx.actorSeat) || s.final_killed.includes(i)) {
+            btn.disabled = true; btn.style.opacity = '0.3'; return;
+        }
+        let newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.onclick = () => {
             if (selected.includes(i)) {
                 selected = selected.filter(x => x !== i);
-                btn.classList.remove('selected');
-            } else {
-                if (selected.length < 3) {
-                    selected.push(i);
-                    btn.classList.add('selected');
-                }
+                newBtn.classList.remove('selected');
+            } else if (selected.length < 3) {
+                selected.push(i);
+                newBtn.classList.add('selected');
             }
             
             if (selected.length > 0) {
@@ -278,9 +271,7 @@ roleHandlers['super_black_market'] = (ctx) => {
                 s.selected_numbers_arr = [];
             }
         };
-        pad.appendChild(btn);
-    }
-    actionPad.appendChild(pad);
+    });
     
     btnOptionalSkip.textContent = "不發動技能";
     btnOptionalSkip.classList.remove('hidden');
@@ -291,7 +282,7 @@ roleHandlers['super_black_market'] = (ctx) => {
         btnConfirmAction.classList.remove('hidden');
         btnConfirmAction.textContent = "確認";
         btnOptionalSkip.classList.add('action-selected');
-        pad.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+        numberPad.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
         displayDiv.innerHTML = `跳過發動技能`;
     };
 };
@@ -431,18 +422,21 @@ roleHandlers['thief'] = (ctx) => {
 roleHandlers['treasure_master'] = (ctx) => {
     const { btnConfirmAction, btnOptionalSkip, numberPad, actionPad, nightRoleTitle, nightInstruction } = ctx;
     nightRoleTitle.textContent = "💎 盜寶大師行動";
-    nightInstruction.innerHTML += "請從底牌中選擇一張身分來使用 (若選到狼陣營將視為狼人陣營)：";
+    nightInstruction.innerHTML += "請從底牌中選擇一張身分來使用 (若選到狼陣營將成為狼人陣營)：";
     numberPad.classList.add('hidden');
     actionPad.innerHTML = '';
     
     let cardContainer = document.createElement('div');
-    cardContainer.style = 'display:flex; justify-content:center; gap:20px; width:100%; flex-wrap:wrap;';
+    cardContainer.style = 'display:flex; justify-content:center; gap:10px; width:100%;';
     
     s.spare_cards.forEach(role => {
         const b = document.createElement('button');
         b.className = 'num-btn';
         b.innerHTML = `${s.ROLE_DICT[role].icon} <br> ${s.ROLE_DICT[role].name}`;
-        b.style.width = '140px'; b.style.height = '140px'; b.style.fontSize = '20px';
+        b.style.flex = '1';
+        b.style.height = '120px';
+        b.style.fontSize = '18px';
+        b.style.padding = '5px';
         
         b.onclick = () => {
             cardContainer.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('selected'));
@@ -464,6 +458,30 @@ roleHandlers['pandora'] = (ctx) => {
     ctx.nightRoleTitle.textContent = "📦 潘朵拉行動";
     ctx.nightInstruction.innerHTML += "請選擇你要給予魔盒的對象 (可選自己)：";
     ctx.btnOptionalSkip.textContent = "跳過 (不給予)";
+    ctx.btnOptionalSkip.classList.remove('hidden');
+};
+
+roleHandlers['show_pandora_gift'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🎁 魔盒開啟";
+    ctx.numberPad.classList.add('hidden');
+    
+    const gift_names = { knife: '一把刀 (但你無法使用)', poison: '一滴毒', hope_light: '希望之光', day_gun: '日槍' };
+    let gift = s.pandora_gift;
+    let desc = "";
+    if (gift === 'poison') desc = "你已經死亡，且無法發動技能。";
+    if (gift === 'hope_light') desc = "若你是潘朵拉，你將獲得勝利！否則無事發生。";
+    if (gift === 'day_gun') desc = "白天被放逐出局時，可開槍帶走一人。";
+    if (gift === 'knife') desc = "潘朵拉本人抽到刀，無法使用。";
+
+    ctx.nightInstruction.innerHTML = `你打開了潘朵拉的魔盒，獲得：<br><span style="color:#fca311; font-size:24px; font-weight:bold;">【${gift_names[gift]}】</span><br><span style="color:#a2a8d3;">${desc}</span>`;
+    ctx.btnConfirmAction.classList.remove('hidden');
+    ctx.btnConfirmAction.textContent = "確認並閉眼";
+};
+
+roleHandlers['pandora_knife'] = (ctx) => {
+    ctx.nightRoleTitle.textContent = "🔪 魔盒之刀行動";
+    ctx.nightInstruction.innerHTML = `你從魔盒中獲得了<span style="color:#e94560; font-weight:bold;">【一把刀】</span>！<br>請選擇你要襲擊的對象 (無視解藥，可跳過)：`;
+    ctx.btnOptionalSkip.textContent = "跳過 (不使用)";
     ctx.btnOptionalSkip.classList.remove('hidden');
 };
 
@@ -659,10 +677,12 @@ roleHandlers['_notify'] = (ctx) => {
             if (flow.type === 'ghost_groom' && is_selected_target) messages.push('你是鬼魅新娘的新郎 🤵');
             if (flow.type === 'ghost_witness' && is_selected_target) messages.push('你是證婚人 🕊️');
             if (flow.type === 'seed_wolf' && is_selected_target) messages.push('你被種狼感染成了狼人！🐺');
+            
+            // 潘朵拉全體輪流階段不透露獲得什麼，僅告知收到魔盒
             if (flow.type === 'pandora' && is_selected_target) {
-                const gift_names = { knife: '一把刀', poison: '一滴毒', hope_light: '希望之光', day_gun: '日槍' };
-                messages.push(`你從潘朵拉的魔盒中獲得：【${gift_names[s.pandora_gift] || '未知技能'}】`);
+                messages.push(`你收到了一個潘朵拉魔盒！🎁`);
             }
+            
             if (flow.type === 'fanatic' && is_selected_target) messages.push('你是狂熱粉 🔪');
         });
 
@@ -755,11 +775,10 @@ roleHandlers['revenger'] = (ctx) => {
         let mRole = s.player_roles[master];
         let mFaction = s.ROLE_DICT[mRole]?.faction;
         
-        // 動態處理混血兒與盜寶大師的陣營轉換
         if (mRole === 'half_blood' && s.half_blood_target) {
             mFaction = s.ROLE_DICT[s.player_roles[s.half_blood_target]]?.faction;
             let hbSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'half_blood'));
-            if (s.half_blood_target == actorSeat && master === hbSeat) mFaction = 'good'; // 互選時為好人陣營
+            if (s.half_blood_target == actorSeat && master === hbSeat) mFaction = 'good';
         }
         if (mRole === 'treasure_master') mFaction = s.is_treasure_hunter_evil ? 'wolf' : 'good';
 

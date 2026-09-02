@@ -112,7 +112,6 @@ export function buildNightQueue() {
                 if (!active_roles.some(r => getWolfTeamRoles().includes(r)) || s.puppet_target !== null) return;
             } else if (qItem === 'jack_ripper_select_fanatic') {
                 stage = 'jack_ripper_select_fanatic';
-                // 如果場上沒有傑克，或者已經產生過狂熱粉了，就跳過此階段
                 if (!active_roles.includes('jack_ripper') || Object.values(s.player_second_roles).includes('fanatic')) return;
             } else if (qItem === 'fanatic' || qItem === 'fanatic_action' || qItem === 'jack_fanatic_meet') {
                 if (s.current_board.id === '12_jack_ripper_v2') {
@@ -172,10 +171,6 @@ export function buildNightQueue() {
         }
 
         queue_list.push({ stage, order: index, seat, subLabel, isFake });
-
-        if (qItem === 'gift_receiver' && active_roles.includes('pandora')) {
-            queue_list.push({ stage: 'pandora_knife_action', order: index + 0.5, seat: null, subLabel: null, isFake: false });
-        }
 
         if (qItem === 'jack_ripper_select_fanatic' || qItem === 'jack_ripper') {
             if (s.current_board.id === '12_jack_ripper_v2') {
@@ -363,7 +358,6 @@ export function processNextShooter() {
         pad.appendChild(btn);
     }
     
-    // 修改跳過按鈕邏輯：點擊時進入選中狀態，不直接結束回合
     document.getElementById('btn-day-skill-skip').onclick = (e) => {
         document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
         const skipBtn = document.getElementById('btn-day-skill-skip');
@@ -373,7 +367,6 @@ export function processNextShooter() {
         document.getElementById('btn-day-skill-confirm').classList.toggle('hidden', !selectedSkipAction);
     };
     
-    // 確認按鈕：根據是否選擇了目標或跳過來執行相應的操作
     document.getElementById('btn-day-skill-confirm').onclick = () => {
         document.getElementById('btn-day-skill-confirm').classList.add('hidden');
         document.querySelectorAll('#day-skill-pad .num-btn').forEach(b => b.classList.remove('selected'));
@@ -382,7 +375,6 @@ export function processNextShooter() {
         if (selectedDayTarget) {
             killPlayerDuringDay(selectedDayTarget, true, true, currentShooter.role);
         }
-        // 如果是跳過，不需要執行 killPlayerDuringDay
         finishShooterTurn();
     };
 }
@@ -456,12 +448,10 @@ export async function runNextNightRole() {
 
     if (s.current_stage === 'take_turns') {
         let stages = [];
-        // 1. 強制產生 1~12 號的輪流點擊確認 (不論晚上有沒有人放技能)
         for (let seat = 1; seat <= s.total_players; seat++) {
             stages.push({ stage: `status_check_group_${seat}`, order: -1, seat: null, subLabel: null, isFake: false });
         }
 
-        // 2. 把目前累積的狀態標記為「已處理」，若有需要單獨叫醒的再加進去
         let unprocessed = s.night_status_flows.filter(f => !f.processed);
         unprocessed.forEach(flow => {
             flow.processed = true;
@@ -475,14 +465,17 @@ export async function runNextNightRole() {
         return runNextNightRole();
     }
 
+    // 潘朵拉單獨睜眼路由
     if (s.current_stage === 'pandora_gift_receiver') {
         if (!s.pandora_target) return runNextNightRole();
-        s.current_stage = `notify_pandora_${s.pandora_target}`;
-    }
-    if (s.current_stage === 'pandora_knife_action') {
-        if (s.pandora_gift !== 'knife' || !s.pandora_target || s.player_roles[s.pandora_target] === 'pandora') return runNextNightRole();
-        s.current_stage = 'pandora_knife';
         s.current_actor_seat = parseInt(s.pandora_target);
+        
+        let p_seat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'pandora'));
+        if (s.pandora_gift === 'knife' && s.current_actor_seat !== p_seat) {
+            s.current_stage = 'pandora_knife';
+        } else {
+            s.current_stage = 'show_pandora_gift';
+        }
     }
 
     if (s.is_fake_wake) {
@@ -507,7 +500,6 @@ export async function runNextNightRole() {
     let awkDreamwalkerTarget = getNightTarget('dream', 'awaken_dreamwalker');
     if (s.current_stage === 'awaken_dreamwalker_result' && !awkDreamwalkerTarget) return runNextNightRole();
 
-    if (s.current_stage.startsWith('notify_pandora_')) { let seat = parseInt(s.current_stage.split('_').pop()); if (!s.pandora_target || seat !== parseInt(s.pandora_target)) return runNextNightRole(); }
     if (s.current_stage.startsWith('notify_sp_lucky_')) { let seat = parseInt(s.current_stage.split('_').pop()); if (!s.sp_merchant_targets || !s.sp_merchant_targets.includes(seat)) return runNextNightRole(); }
 
     let actor_seat = s.current_actor_seat || Object.keys(s.player_roles).find(k => s.player_roles[k] === s.current_stage || s.player_roles[k] === 'awaken_' + s.current_stage);
@@ -634,6 +626,10 @@ export async function runNextNightRole() {
     let voice_name = getStageVoiceName(s.current_stage, s.current_sub_label);
     if (s.current_stage.startsWith('status_')) voice_name = getStatusStageVoice(s.current_stage);
     if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('little_girl')) voice_name = "狼隊和小女孩";
+    
+    // 讓魔盒等獨立身分報對聲音
+    if (s.current_stage === 'show_pandora_gift' || s.current_stage === 'pandora_knife') voice_name = "收到魔盒的玩家";
+
     speak(`${voice_name}請睜眼。`);
 }
 
@@ -754,7 +750,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 一般的單獨狀態通知
         if (s.current_stage.startsWith('status_')) {
             hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
             await speak(`${getStatusStageVoice(s.current_stage)}請閉眼。`);
@@ -823,6 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideNightUIIngame("🌙 夜晚持續中", "請閉上眼睛，等待法官指示...");
         let v = getStageVoiceName(s.current_stage, s.current_sub_label);
         if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('little_girl')) v = "狼隊和小女孩";
+        if (s.current_stage === 'show_pandora_gift' || s.current_stage === 'pandora_knife') v = "收到魔盒的玩家";
 
         await speak(`${v}請閉眼。`);
         await delay(s.role_transition_delay * 1000);
