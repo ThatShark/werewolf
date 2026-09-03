@@ -10,10 +10,10 @@ import { buildNightQueue } from './main.js';
 function openRoleModal(role_setup_grid) {
     const modal_role_options = document.getElementById('modal-role-options');
     const role_modal = document.getElementById('role-modal');
-    
+
     const seat = s.current_editing_seat;
     const needsGender = s.current_board.hasGender || s.current_board.id.includes('jack_ripper');
-    const needsSecondary = s.current_board.id === '12_jack_ripper_v2';
+    const needsSecondary = s.current_board.id === '12_jack_second';
 
     const finishSeatSetup = () => {
         const grid_btn = role_setup_grid.children[seat - 1];
@@ -25,7 +25,7 @@ function openRoleModal(role_setup_grid) {
     const renderSecondarySelection = () => {
         document.getElementById('modal-seat-title').textContent = `設定 ${seat} 號第二身分`;
         modal_role_options.innerHTML = '';
-        
+
         const btnJack = document.createElement('button');
         btnJack.className = 'role-select-btn';
         btnJack.innerHTML = '🔪 開膛手傑克';
@@ -82,7 +82,7 @@ function openRoleModal(role_setup_grid) {
 
             const btn = document.createElement('button');
             btn.classList.add('role-select-btn');
-            
+
             let displayName = s.ROLE_DICT[base_role_id].name;
             const suffixMatch = role_id.match(/_([A-Z])$/);
             if (suffixMatch) displayName += ` ${suffixMatch[1]}`;
@@ -90,7 +90,7 @@ function openRoleModal(role_setup_grid) {
             btn.innerHTML = `${s.ROLE_DICT[base_role_id].icon} ${displayName}`;
             btn.addEventListener('click', () => {
                 s.player_roles[seat] = role_id;
-                
+
                 if (needsGender) {
                     renderGenderSelection();
                 } else if (needsSecondary) {
@@ -129,7 +129,7 @@ function renderRandomRoleView(btn_start_night) {
     }
 
     let sec_role_html = '';
-    if (s.current_board.id === '12_jack_ripper_v2') {
+    if (s.current_board.id === '12_jack_second') {
         let sec_role = s.player_second_roles[s.current_viewing_seat];
         if (sec_role === 'jack_ripper') {
             sec_role_html = `<p style="font-size:24px; margin:15px 0 0 0; font-weight:bold; color:#e94560;">附加身分：🔪 開膛手傑克</p>`;
@@ -148,13 +148,13 @@ function renderRandomRoleView(btn_start_night) {
         </div>
         <button id="btn-next-view" class="primary-btn hidden" style="margin-top:15px;">確認並換下一位</button>
     `;
-    
+
     document.getElementById('btn-view-role').onclick = () => {
         document.getElementById('btn-view-role').classList.add('hidden');
         document.getElementById('view-role-result').classList.remove('hidden');
         document.getElementById('btn-next-view').classList.remove('hidden');
     };
-    
+
     document.getElementById('btn-next-view').onclick = () => {
         s.current_viewing_seat++;
         renderRandomRoleView(btn_start_night);
@@ -199,7 +199,7 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             s.discarded_roles = [...s.spare_cards];
         }
 
-        if (s.current_board.id === '10_mask_night') {
+        if (s.current_board.id === '10_random') {
             let god_roles = ['seer', 'witch', 'hunter', 'guard', 'idiot'];
             god_roles.sort(() => Math.random() - 0.5);
             let discarded = god_roles.slice(3);
@@ -211,10 +211,10 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             s.player_roles[i] = roles_arr[i - 1];
             s.player_status[i] = { poisoned: false, injured: false, isWhiteCatFlipped: false, isVWK: false, deathReason: null };
         }
-        
+
         if (s.current_board.hasGender || s.current_board.id.includes('jack_ripper')) {
             let genders = [];
-            for(let i = 0; i < s.total_players / 2; i++) {
+            for (let i = 0; i < s.total_players / 2; i++) {
                 genders.push('male');
                 genders.push('female');
             }
@@ -223,10 +223,10 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
                 s.player_genders[i] = genders[i - 1];
             }
         }
-        
-        if (s.current_board.id === '12_jack_ripper_v2') {
+
+        if (s.current_board.id === '12_jack_second') {
             let sec_roles = ['jack_ripper'];
-            for(let i = 1; i < s.total_players; i++) {
+            for (let i = 1; i < s.total_players; i++) {
                 sec_roles.push('detective');
             }
             sec_roles.sort(() => Math.random() - 0.5);
@@ -239,7 +239,7 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             s.spare_cards = roles_arr.slice(s.total_players);
             s.discarded_roles = [...s.spare_cards];
         }
-        
+
         s.current_viewing_seat = 1;
         renderRandomRoleView(btn_start_night);
     } else {
@@ -247,10 +247,10 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
         if (p_tag) p_tag.classList.remove('hidden');
         btn_start_night.classList.remove('hidden');
         if (document.getElementById('random-role-ui')) document.getElementById('random-role-ui').classList.add('hidden');
-        
+
         let gender_section = document.getElementById('gender-setup-section');
         if (gender_section) gender_section.classList.add('hidden');
-        
+
         role_setup_grid.innerHTML = '';
         for (let i = 1; i <= s.total_players; i++) {
             s.player_roles[i] = null;
@@ -259,7 +259,7 @@ function initRoleSetup(count_select, setting_board, role_setup_grid, btn_start_n
             btn.classList.add('role-btn');
             btn.dataset.status = 'unset';
             btn.innerHTML = `<span class="seat-num">${i}號</span><span class="role-name">未設定</span>`;
-            
+
             btn.addEventListener('click', () => {
                 s.current_editing_seat = i;
                 openRoleModal(role_setup_grid);
@@ -416,11 +416,11 @@ function loadGameData(count_select) {
                 setting_board.dispatchEvent(new Event('change')); // 初次載入時觸發設定檢查
             };
 
-            if (count_select && count_select.addEventListener) {
-                count_select.addEventListener('change', updateBoards);
-            }
-            updateBoards();
-        })
+                if (count_select && count_select.addEventListener) {
+                    count_select.addEventListener('change', updateBoards);
+                }
+                updateBoards();
+            })
         .catch(err => {
             console.error('載入 data.json 失敗：', err);
         });
@@ -447,9 +447,9 @@ function handleStartNight(count_select, setting_board) {
                 error_msg += `${s.ROLE_DICT[role_id].name}: 配置數量錯誤\n`;
             }
         }
-        
+
         const has_spare_cards = s.current_board.spare_cards_count > 0;
-        
+
         if (!is_match && !has_spare_cards) return alert(error_msg);
         if (has_spare_cards) {
             for (const [role_id, count] of Object.entries(current_counts)) {
@@ -458,7 +458,7 @@ function handleStartNight(count_select, setting_board) {
         }
     }
 
-    if (['10_mask_night', '12_thief_cupid', '12_treasure_hunter'].includes(s.current_board.id)) {
+    if (['10_random', '12_thief_cupid', '12_treasure_hunter'].includes(s.current_board.id)) {
         s.spare_cards = [];
         let temp_board = { ...s.current_board.roles };
         for (let i = 1; i <= 12; i++) temp_board[s.player_roles[i]]--;
@@ -501,8 +501,8 @@ function handleStartNight(count_select, setting_board) {
             return alert(`性別分配必須為 ${s.total_players / 2} 男 ${s.total_players / 2} 女！`);
         }
     }
-    
-    if (s.current_board.id === '12_jack_ripper_v2') {
+
+    if (s.current_board.id === '12_jack_second') {
         let jack_count = s.player_second_roles ? Object.values(s.player_second_roles).filter(r => r === 'jack_ripper').length : 0;
         if (jack_count !== 1) {
             return alert("⚠️ 附加身分配置錯誤！\n全場必須有且僅有 1 名開膛手傑克。\n(點擊已隱藏的號碼卡片重新設定)");
@@ -570,14 +570,14 @@ export function initSetupEvents() {
     setting_board.addEventListener('change', () => {
         const boards = s.BOARD_CONFIGS[count_select.value] || [];
         const currentBoard = boards.find(b => b.id === setting_board.value);
-        
+
         // 處理女巫設定顯示
         const witchRuleInput = document.getElementById('setting-witch-rule');
         if (witchRuleInput && currentBoard) {
             const hasWitch = currentBoard.roles.witch > 0 || currentBoard.roles.awaken_witch > 0;
             let container = witchRuleInput.closest('.setting-item, .setting-row');
             if (!container) container = witchRuleInput.closest('label');
-            
+
             if (container && container.id !== 'screen-setup' && container.id !== 'app') {
                 container.style.display = hasWitch ? '' : 'none';
             } else {
@@ -586,14 +586,14 @@ export function initSetupEvents() {
                 if (associatedLabel) associatedLabel.style.display = hasWitch ? '' : 'none';
             }
         }
-        
+
         // 處理機械狼設定顯示
         const machineWolfRuleInput = document.getElementById('setting-machine-wolf-rule');
         if (machineWolfRuleInput && currentBoard) {
             const hasMachineWolf = currentBoard.roles.machine_wolf > 0;
             let container = machineWolfRuleInput.closest('.setting-item, .setting-row');
             if (!container) container = machineWolfRuleInput.closest('label');
-            
+
             if (container && container.id !== 'screen-setup' && container.id !== 'app') {
                 container.style.display = hasMachineWolf ? '' : 'none';
             } else {
@@ -601,6 +601,25 @@ export function initSetupEvents() {
                 let associatedLabel = document.querySelector(`label[for="setting-machine-wolf-rule"]`);
                 if (associatedLabel) associatedLabel.style.display = hasMachineWolf ? '' : 'none';
             }
+        }
+
+        // 動態生成或更新當前板子的主規則連結
+        let mainRuleBtn = document.getElementById('main-rule-btn');
+        if (!mainRuleBtn) {
+            mainRuleBtn = document.createElement('a');
+            mainRuleBtn.id = 'main-rule-btn';
+            mainRuleBtn.target = '_blank';
+            mainRuleBtn.style = 'display: inline-block; margin-top: 12px; font-size: 14px; font-weight: bold; color: #fca311; text-decoration: none; padding: 8px 15px; border: 1px solid #fca311; border-radius: 6px; background: rgba(252, 163, 17, 0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+
+            // 將按鈕插入到 board-dropdown 的正下方
+            const dropdown = document.getElementById('board-dropdown');
+            dropdown.parentNode.insertBefore(mainRuleBtn, dropdown.nextSibling);
+        }
+
+        // 更新當前板子網址與按鈕文字
+        if (currentBoard) {
+            mainRuleBtn.href = `https://hackmd.io/@ThatShark/Werewolf/https%3A%2F%2Fhackmd.io%2F%40ThatShark%2F${currentBoard.id}`;
+            mainRuleBtn.innerHTML = `📖 點此查看【${currentBoard.name.split(' ')[0]}】板子完整規則`;
         }
     });
 
