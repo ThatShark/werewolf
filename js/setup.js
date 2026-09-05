@@ -329,7 +329,6 @@ function loadGameData(count_select) {
                 const search_input = document.getElementById('board-search');
                 if (search_input) {
                     search_input.value = '';
-                    search_input.focus();
                     board_list.querySelectorAll('.dropdown-item').forEach(item => item.style.display = '');
                 }
             }
