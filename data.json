@@ -199,7 +199,7 @@
             "name": "寂夜導師",
             "icon": "🌙",
             "faction": "wolf",
-            "type": "lone_wolf",
+            "type": "wolf",
             "seer_result": "evil",
             "ui_type": "none"
         },

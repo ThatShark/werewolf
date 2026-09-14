@@ -189,8 +189,25 @@ export const nonInspectionStrategies = {
     },
     'wolf': (ctx) => {
         if (s.is_seed_wolf_infecting) {
-            setPersistentState('seed_wolf_target', ctx.targetNum); logNightAction(ctx.targetNum ? `【種狼】感染了 ${ctx.targetNum}號` : `【種狼】空感染`);
-            if (ctx.targetNum) { convertPlayerToWolf(ctx.targetNum); addNightAction('wolves', 'seed_wolf', 'convert', [ctx.targetNum]); }
+            setPersistentState('seed_wolf_target', ctx.targetNum);
+
+            // 新增守護判斷：檢查目標是否有被守衛或幸運兒、喜羊羊守護
+            let isGuarded = false;
+            if (ctx.targetNum) {
+                let protects = getActionsByEffect('protect').filter(a => ['guard', 'lucky_boy'].includes(a.role));
+                let pgGuards = getActionsByEffect('guard').concat(getActionsByEffect('guard_and_anti_theft'));
+                isGuarded = protects.some(a => a.selected_targets.includes(ctx.targetNum)) || pgGuards.some(a => a.selected_targets.includes(ctx.targetNum));
+            }
+
+            if (ctx.targetNum && isGuarded) {
+                logNightAction(`【種狼】嘗試感染 ${ctx.targetNum}號，但被守護而失敗`);
+            } else if (ctx.targetNum) {
+                logNightAction(`【種狼】感染了 ${ctx.targetNum}號`);
+                convertPlayerToWolf(ctx.targetNum);
+                addNightAction('wolves', 'seed_wolf', 'convert', [ctx.targetNum]);
+            } else {
+                logNightAction(`【種狼】空感染`);
+            }
         } else {
             let lg_log = Object.values(s.player_roles).includes('little_girl') ? '與小女孩' : '';
             logNightAction(ctx.targetNum ? `【狼人${lg_log}】擊殺了 ${ctx.targetNum}號` : `【狼人${lg_log}】空刀`);
@@ -237,13 +254,13 @@ export const nonInspectionStrategies = {
         if (s.treasure_hunter_choice) {
             let has_wolf = s.spare_cards.some(r => isWolfRole(r));
             setPersistentState('is_treasure_hunter_evil', has_wolf);
-            
+
             // 直接取代身分為所選職業（解決查殺與隊友名單問題）
             s.player_roles[ctx.actorSeat] = s.treasure_hunter_choice;
-            
+
             logNightAction(`【盜寶大師】選擇了 ${s.ROLE_DICT[s.treasure_hunter_choice]?.name || s.treasure_hunter_choice}`);
             addNightAction(ctx.actorSeat, 'treasure_master', 'choose_role', [], { chosen_role: s.treasure_hunter_choice });
-            
+
             buildNightQueue(); // 重建隊列讓新身分正常醒來
         } else { logNightAction(`【盜寶大師】未選擇`); }
     },
@@ -400,7 +417,11 @@ export function resolveNonInspectionAction() {
     }
 
     if (s.current_stage === 'wolf' && Object.values(s.player_roles).includes('seed_wolf')) {
-        let targets = (s.is_seed_wolf_infecting && ctx.targetNum) ? [ctx.targetNum] : [];
+        let targets = [];
+        if (s.is_seed_wolf_infecting && ctx.targetNum) {
+            let isGuarded = getActionsByEffect('protect').filter(a => ['guard', 'lucky_boy'].includes(a.role)).some(a => a.selected_targets.includes(ctx.targetNum)) || getActionsByEffect('guard').concat(getActionsByEffect('guard_and_anti_theft')).some(a => a.selected_targets.includes(ctx.targetNum));
+            if (!isGuarded) targets = [ctx.targetNum];
+        }
         insertNightStatusFlow('seed_wolf', targets, { reveal_targets: [] });
     }
 

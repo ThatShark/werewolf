@@ -349,12 +349,6 @@ export function handleChainDeaths() {
         }
     }
 
-    let adSeat = parseInt(Object.keys(s.player_roles).find(k => s.player_roles[k] === 'awaken_dreamwalker'));
-    let awkDreamwalkerTarget = getNightTarget('dream', 'awaken_dreamwalker');
-    if (adSeat && s.final_killed.includes(adSeat) && awkDreamwalkerTarget && !s.final_killed.includes(awkDreamwalkerTarget)) {
-        addDeathEvent(awkDreamwalkerTarget, 'chain', '連帶死亡(被覺醒攝夢)');
-    }
-
     let celebKey = Object.keys(s.player_roles).find(k => s.player_roles[k] === 'celebrity');
     let celebTarget = getActionsByEffect('protect').find(a => a.metadata?.mode === 'celebrity')?.resolved_targets[0];
     let isCelebInfected = celebKey ? s.player_status[celebKey]?.isConvertedWolf : false;

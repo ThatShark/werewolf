@@ -626,7 +626,7 @@ roleHandlers['wolf'] = (ctx) => {
 
         btnInfect.onclick = () => {
             s.is_seed_wolf_infecting = true; createNumberPad(); document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected')); s.selected_number = null;
-            document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.faction === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } });
+            document.querySelectorAll('#number-pad .num-btn').forEach(b => { let seat_id = parseInt(b.textContent); if (seat_id && s.ROLE_DICT[s.player_roles[seat_id]]?.type === 'wolf') { b.disabled = true; b.style.opacity = '0.3'; b.style.cursor = 'not-allowed'; } });
             btnInfect.classList.add('action-selected'); btnKill.classList.remove('action-selected'); btnSkip.classList.remove('action-selected');
             numberPad.classList.remove('hidden'); btnConfirmAction.classList.add('hidden');
             nightInstruction.innerHTML = `請選擇要感染的目標：${wolf_list_html}`;
