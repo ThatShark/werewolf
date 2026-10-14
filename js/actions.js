@@ -82,10 +82,12 @@ export const inspectionStrategies = {
         let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
         if (!s.machine_wolf_learn_target) {
             setPersistentState('machine_wolf_learn_target', t);
-            ctx.text = `${s.ROLE_DICT[s.player_roles[t]].icon} ${s.ROLE_DICT[s.player_roles[t]].name}`; ctx.color = "#fca311";
+            let baseRole = s.player_roles[t]?.replace(/_[A-Z]$/, '');
+            ctx.text = `${s.ROLE_DICT[baseRole]?.icon || '🎭'} ${s.ROLE_DICT[baseRole]?.name || baseRole}`; 
+            ctx.color = "#fca311";
             addNightAction(ctx.actorSeat, 'machine_wolf', 'learn', [t]);
         } else {
-            let lr = s.player_roles[s.machine_wolf_learn_target];
+            let lr = s.player_roles[s.machine_wolf_learn_target]?.replace(/_[A-Z]$/, '');
             ctx.text = `${s.ROLE_DICT[lr]?.icon || '🎭'} ${s.ROLE_DICT[lr]?.name || lr}`;
             ctx.color = "#fca311";
             logNightAction(`【機械狼】確認學習到的身分：${s.ROLE_DICT[lr]?.name || lr}`);
@@ -111,7 +113,11 @@ export const inspectionStrategies = {
         let t = applyTimeWolfReflection(ctx.targetNum, ctx.actorSeat);
         logNightAction(`【${ctx.logName}】查驗了 ${t}號`);
         if (['seer', 'seer_A', 'seer_B', 'shadow_seer'].includes(ctx.stage)) {
-            if (ctx.isVWKTurn) { ctx.text = `${s.ROLE_DICT[s.player_roles[t]].icon} ${s.ROLE_DICT[s.player_roles[t]].name}`; ctx.color = "#fca311"; } else {
+            if (ctx.isVWKTurn) { 
+                let baseRole = s.player_roles[t]?.replace(/_[A-Z]$/, '');
+                ctx.text = `${s.ROLE_DICT[baseRole]?.icon || '🎭'} ${s.ROLE_DICT[baseRole]?.name || baseRole}`; 
+                ctx.color = "#fca311"; 
+            } else {
                 let is_evil = isPlayerEvil(t);
                 if (s.current_board.id === '12_shadow' && parseInt(ctx.actorSeat) === s.shadow_seer_seat) is_evil = !is_evil;
                 if (parseInt(ctx.actorSeat) === s.puppet_target) is_evil = !is_evil;
@@ -120,8 +126,12 @@ export const inspectionStrategies = {
             addNightAction(ctx.actorSeat, 'seer', 'inspect', [t]);
         } else {
             let display_role = s.player_roles[t];
-            if (['psychic', 'pure_white'].includes(ctx.stage) && display_role === 'machine_wolf' && s.machine_wolf_learn_target) display_role = s.player_roles[s.machine_wolf_learn_target];
-            ctx.text = `${s.ROLE_DICT[display_role].icon} ${s.ROLE_DICT[display_role].name}`; ctx.color = "#fca311";
+            if (['psychic', 'pure_white'].includes(ctx.stage) && display_role === 'machine_wolf' && s.machine_wolf_learn_target) {
+                display_role = s.player_roles[s.machine_wolf_learn_target];
+            }
+            let base_display_role = display_role?.replace(/_[A-Z]$/, '');
+            ctx.text = `${s.ROLE_DICT[base_display_role]?.icon || '🎭'} ${s.ROLE_DICT[base_display_role]?.name || display_role}`; 
+            ctx.color = "#fca311";
             addNightAction(ctx.actorSeat, ctx.stage, 'inspect', [t]);
         }
     }
