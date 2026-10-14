@@ -24,38 +24,38 @@ Object.defineProperty(s, 'primary_killed', { get: function () { return this.deat
 Object.defineProperty(s, 'chain_killed', { get: function () { return this.death_events.filter(e => e.source === 'chain').map(e => e.seat); } });
 
 // ==========================================
-// ¸ê®ÆÅX°Ê«¬ºA§PÂ_¤u¨ã (Data-Driven Helpers)
+// è³‡æ–™é©…å‹•å‹æ…‹åˆ¤æ–·å·¥å…· (Data-Driven Helpers)
 // ==========================================
 export function isWolfRole(role) {
     let baseRole = role?.replace(/_[A-Z]$/, '');
     return s.ROLE_DICT[baseRole]?.faction === 'wolf' || s.ROLE_DICT[baseRole]?.type === 'wolf';
 }
 
-// §PÂ_¡u¹ê½è¯T¤H°}Àç¡vªº¨ç¦¡
+// åˆ¤æ–·ã€Œå¯¦è³ªç‹¼äººé™£ç‡Ÿã€çš„å‡½å¼
 export function isPlayerWolfFaction(seat) {
     seat = parseInt(seat);
     let role = s.player_roles[seat];
     let baseRole = role?.replace(/_[A-Z]$/, '');
     let rData = s.ROLE_DICT[baseRole] || {};
 
-    // ª¬ºAÂà´« (¥]§t³Q·P¬V¡BÄ±¿ô¥Û¹³°­Âà¤Æ¡B¦ÊÅÜ¯T¤ı)
+    // ç‹€æ…‹è½‰æ› (åŒ…å«è¢«æ„ŸæŸ“ã€è¦ºé†’çŸ³åƒé¬¼è½‰åŒ–ã€ç™¾è®Šç‹¼ç‹)
     if (s.player_status[seat]?.isConvertedWolf) return true;
     if (s.player_status[seat]?.isVWK) return true;
     if (seat === s.awk_gargoyle_target || seat === s.awk_gargoyle_target_a || seat === s.awk_gargoyle_target_b) return true;
 
-    // µsÄ_¤j®vªº°ÊºA°}Àç
+    // ç›œå¯¶å¤§å¸«çš„å‹•æ…‹é™£ç‡Ÿ
     if (baseRole === 'treasure_master') return s.is_treasure_hunter_evil;
 
-    // ¹w³]°}Àç§PÂ_
+    // é è¨­é™£ç‡Ÿåˆ¤æ–·
     return rData.faction === 'wolf';
 }
 
-// ¨ú±o·|¸òµÛ¯T¶¤¤@°_¦æ°Êªº¨¤¦â
+// å–å¾—æœƒè·Ÿè‘—ç‹¼éšŠä¸€èµ·è¡Œå‹•çš„è§’è‰²
 export function getWolfTeamRoles() {
     let roles = [];
     for (let rId in s.ROLE_DICT) {
         if (isWolfRole(rId)) {
-            // ±Æ°£¯S©w¤£¸ò¯T¶¤¥î¤@°_¤M¤Hªº¿W¥ß¯T
+            // æ’é™¤ç‰¹å®šä¸è·Ÿç‹¼éšŠä¼ä¸€èµ·åˆ€äººçš„ç¨ç«‹ç‹¼
             if (s.ROLE_DICT[rId].type !== "lone_wolf") {
                 roles.push(rId);
                 roles.push(`${rId}_A`);
@@ -82,7 +82,7 @@ export function isPlayerEvil(seat, visited = new Set()) {
     if (baseRole === 'treasure_master') return s.is_treasure_hunter_evil;
     if (baseRole === 'machine_wolf' && s.machine_wolf_learn_target) return isPlayerEvil(s.machine_wolf_learn_target, visited);
 
-    // ª½±µÅª¨ú JSON ¤¤³]©wªº¬dÅçµ²ªG
+    // ç›´æ¥è®€å– JSON ä¸­è¨­å®šçš„æŸ¥é©—çµæœ
     return rData.seer_result === 'evil';
 }
 
@@ -142,21 +142,21 @@ export function speak(text, callback) {
 }
 
 export function getStageVoiceName(stage, sub_label) {
-    if (stage === 'seer') return sub_label ? `¹w¨¥®a${sub_label}` : '¹w¨¥®a'; if (stage === 'zombie_infected') return '·P¬VªÌ';
-    if (stage === 'awaken_witch') return 'Ä±¿ô¤k§Å'; if (stage === 'awaken_wolf_king_gun') return 'Ä±¿ô¯T¤ı'; if (stage === 'wolf_gun_confirm') return '¤T¤p¯T';
-    if (stage === 'wolf' || stage === 'wolf_meet') return '¯T¤H'; if (stage === 'lovers_meet') return '±¡«Q'; if (stage === 'wolf_brother_meet') return '¯T¥S¯T§Ì';
-    if (stage === 'lucky_boy_action') return '©¯¹B¨à'; if (stage === 'awaken_witch_assistant_action') return '¨ó§UªÌ'; if (stage === 'variable_wolf_king') return '¦ÊÅÜ¯T¤ı';
-    if (stage === 'ghost_bride_couple') return '°­¾y·s®Q»P·s­¦'; if (stage === 'ghost_bride_witness') return 'ÃÒ±B¤H'; if (stage === 'awaken_dreamwalker_result') return 'Ä±¿ôÄá¹Ú¤H';
-    if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return '¦Ç¤Ó¯T'; if (stage === 'zombie_infected') return '·P¬VªÌ'; if (stage === 'jack_ripper_select_fanatic') return '¶}½£¤â³Ç§J'; 
-    if (stage === 'fanatic_action') return '¶}½£¤â³Ç§J»P¨g¼ö¯»';
+    if (stage === 'seer') return sub_label ? `é è¨€å®¶${sub_label}` : 'é è¨€å®¶'; if (stage === 'zombie_infected') return 'æ„ŸæŸ“è€…';
+    if (stage === 'awaken_witch') return 'è¦ºé†’å¥³å·«'; if (stage === 'awaken_wolf_king_gun') return 'è¦ºé†’ç‹¼ç‹'; if (stage === 'wolf_gun_confirm') return 'ä¸‰å°ç‹¼';
+    if (stage === 'wolf' || stage === 'wolf_meet') return 'ç‹¼äºº'; if (stage === 'lovers_meet') return 'æƒ…ä¾¶'; if (stage === 'wolf_brother_meet') return 'ç‹¼å…„ç‹¼å¼Ÿ';
+    if (stage === 'lucky_boy_action') return 'å¹¸é‹å…’'; if (stage === 'awaken_witch_assistant_action') return 'å”åŠ©è€…'; if (stage === 'variable_wolf_king') return 'ç™¾è®Šç‹¼ç‹';
+    if (stage === 'ghost_bride_couple') return 'é¬¼é­…æ–°å¨˜èˆ‡æ–°éƒ'; if (stage === 'ghost_bride_witness') return 'è­‰å©šäºº'; if (stage === 'awaken_dreamwalker_result') return 'è¦ºé†’æ”å¤¢äºº';
+    if (stage === 'gray_wolf_steal' || stage === 'gray_wolf_action') return 'ç°å¤ªç‹¼'; if (stage === 'zombie_infected') return 'æ„ŸæŸ“è€…'; if (stage === 'jack_ripper_select_fanatic') return 'é–‹è†›æ‰‹å‚‘å…‹'; 
+    if (stage === 'fanatic_action') return 'é–‹è†›æ‰‹å‚‘å…‹èˆ‡ç‹‚ç†±ç²‰';
 
-    // ³B²z 1¸¹¡B2¸¹ ½ü¬y½Ğ³¬²´ªº¦WºÙ°t¹ï
+    // è™•ç† 1è™Ÿã€2è™Ÿ è¼ªæµè«‹é–‰çœ¼çš„åç¨±é…å°
     if (stage.startsWith('status_check_group_')) {
         const group_match = stage.match(/^status_check_group_(\d+)$/);
-        if (group_match) return `${group_match[1]}¸¹`;
+        if (group_match) return `${group_match[1]}è™Ÿ`;
     }
 
-    if (stage.startsWith('notify_')) return `${stage.split('_').pop()}¸¹`;
+    if (stage.startsWith('notify_')) return `${stage.split('_').pop()}è™Ÿ`;
     let base = stage.replace(/_[A-Z]$/, '');
     return s.ROLE_DICT[stage]?.name || (s.ROLE_DICT[base] ? s.ROLE_DICT[base].name + (sub_label || '') : stage);
 }
